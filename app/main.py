@@ -1,7 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 from app.api.router import api_router
 from app.core.config import settings
+from app.core.exceptions import AppError
+from app.schemas.common import ErrorResponse
 
 
 def create_app() -> FastAPI:
@@ -12,9 +16,44 @@ def create_app() -> FastAPI:
         docs_url="/docs",
         redoc_url="/redoc",
     )
+    app.add_exception_handler(AppError, app_error_handler)
+    app.add_exception_handler(RequestValidationError, validation_error_handler)
     app.include_router(api_router, prefix=settings.api_v1_prefix)
     return app
 
 
-app = create_app()
+async def app_error_handler(_: Request, exc: AppError) -> JSONResponse:
+    payload = ErrorResponse(
+        error={
+            "code": exc.code,
+            "message": exc.message,
+            "field": exc.field,
+            "issues": None,
+        }
+    )
+    return JSONResponse(status_code=exc.status_code, content=payload.model_dump(mode="json"))
 
+
+async def validation_error_handler(_: Request, exc: RequestValidationError) -> JSONResponse:
+    issues: list[dict] = []
+    for error in exc.errors():
+        location = ".".join(str(part) for part in error["loc"] if part != "body")
+        issues.append(
+            {
+                "field": location or None,
+                "message": error["msg"],
+                "type": error["type"],
+            }
+        )
+    payload = ErrorResponse(
+        error={
+            "code": "validation_error",
+            "message": "Request validation failed.",
+            "field": None,
+            "issues": issues,
+        }
+    )
+    return JSONResponse(status_code=422, content=payload.model_dump(mode="json"))
+
+
+app = create_app()

@@ -46,6 +46,41 @@ def test_simulation_preview_context() -> None:
     assert body["preview"]["risk_summary"]["level"] == "bahaya"
 
 
+def test_simulation_invalid_lookup_returns_structured_error() -> None:
+    response = client.post(
+        "/api/v1/simulations/preview-context",
+        json={
+            "duck_count": 40,
+            "land_area_are": 10,
+            "rice_variety": "unknown-variety",
+            "planting_system": "legowo",
+            "planting_date": "2026-06-01",
+        },
+    )
+    assert response.status_code == 422
+    body = response.json()
+    assert body["error"]["code"] == "invalid_reference"
+    assert body["error"]["field"] == "rice_variety"
+
+
+def test_simulation_validation_error_returns_issues() -> None:
+    response = client.post(
+        "/api/v1/simulations/preview-context",
+        json={
+            "duck_count": 40,
+            "land_area_are": 0,
+            "rice_variety": "ciherang",
+            "planting_system": "legowo",
+            "planting_date": "2026-06-01",
+        },
+    )
+    assert response.status_code == 422
+    body = response.json()
+    assert body["error"]["code"] == "validation_error"
+    assert body["error"]["issues"]
+    assert any(issue["field"] == "land_area_are" for issue in body["error"]["issues"])
+
+
 def test_simulation_evaluate() -> None:
     response = client.post(
         "/api/v1/simulations/evaluate",
@@ -92,3 +127,11 @@ def test_simulation_history_and_detail() -> None:
     assert detail_body["simulation_id"] == simulation_id
     assert detail_body["input_summary"]["duck_count"] == 32
     assert "optimization_meta" in detail_body
+
+
+def test_simulation_detail_not_found_returns_structured_error() -> None:
+    response = client.get("/api/v1/simulations/not-found-id")
+    assert response.status_code == 404
+    body = response.json()
+    assert body["error"]["code"] == "not_found"
+    assert body["error"]["field"] == "simulation_id"

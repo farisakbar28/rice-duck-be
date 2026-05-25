@@ -1,4 +1,5 @@
 from app.core.config import settings
+from app.core.exceptions import InvalidReferenceError, ResourceNotFoundError
 from app.domain.enums import EmissionStatus, RiskLevel
 from app.domain.models import MarketPrices, ParameterSet, PlantingSystem, RiceVariety
 from app.engines.differential_evolution import DifferentialEvolutionOptimizer
@@ -37,15 +38,6 @@ from app.schemas.simulation import (
     TimelineSummary,
     PreviewSummary,
 )
-
-
-class SimulationInputError(ValueError):
-    """Raised when the request references an unknown lookup or invalid domain."""
-
-
-class SimulationNotFoundError(LookupError):
-    """Raised when a stored simulation is not found."""
-
 
 class SimulationService:
     def __init__(self) -> None:
@@ -333,27 +325,37 @@ class SimulationService:
     def get_simulation_detail(self, simulation_id: str) -> SimulationResponse:
         record = simulation_repository.get_by_id(simulation_id)
         if record is None or not record.response_payload:
-            raise SimulationNotFoundError(f"Simulation '{simulation_id}' was not found.")
+            raise ResourceNotFoundError(
+                message=f"Simulation '{simulation_id}' was not found.",
+                field="simulation_id",
+            )
         return SimulationResponse.model_validate(record.response_payload)
 
     def _resolve_parameter_set(self, parameter_set_id: str) -> ParameterSet:
         parameter_set = parameter_repository.get_by_id(parameter_set_id)
         if parameter_set is None:
-            raise SimulationInputError(
-                f"Unknown parameter_set_id '{parameter_set_id}'. Only seeded parameter sets are available."
+            raise InvalidReferenceError(
+                message=f"Unknown parameter_set_id '{parameter_set_id}'. Only seeded parameter sets are available.",
+                field="parameter_set_id",
             )
         return parameter_set
 
     def _find_variety(self, code: str) -> RiceVariety:
         variety = lookup_repository.get_rice_variety(code)
         if variety is None:
-            raise SimulationInputError(f"Unknown rice_variety '{code}'.")
+            raise InvalidReferenceError(
+                message=f"Unknown rice_variety '{code}'.",
+                field="rice_variety",
+            )
         return variety
 
     def _find_planting_system(self, code: str) -> PlantingSystem:
         planting_system = lookup_repository.get_planting_system(code)
         if planting_system is None:
-            raise SimulationInputError(f"Unknown planting_system '{code}'.")
+            raise InvalidReferenceError(
+                message=f"Unknown planting_system '{code}'.",
+                field="planting_system",
+            )
         return planting_system
 
     def _merge_market_prices(self, prices: MarketPrices, payload: SimulationRequest) -> MarketPrices:

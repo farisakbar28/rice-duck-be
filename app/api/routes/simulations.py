@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter
 
 from app.schemas.simulation import (
     SimulationListResponse,
@@ -7,35 +7,19 @@ from app.schemas.simulation import (
     SimulationRequest,
     SimulationResponse,
 )
-from app.services.simulation_service import (
-    SimulationInputError,
-    SimulationNotFoundError,
-    simulation_service,
-)
+from app.services.simulation_service import simulation_service
 
 router = APIRouter()
 
 
 @router.post("/preview-context", response_model=SimulationPreviewResponse)
 def preview_simulation_context(payload: SimulationPreviewRequest) -> SimulationPreviewResponse:
-    try:
-        return simulation_service.preview_context(payload)
-    except SimulationInputError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(exc),
-        ) from exc
+    return simulation_service.preview_context(payload)
 
 
 @router.post("/evaluate", response_model=SimulationResponse)
 def evaluate_simulation(payload: SimulationRequest) -> SimulationResponse:
-    try:
-        return simulation_service.evaluate(payload)
-    except SimulationInputError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(exc),
-        ) from exc
+    return simulation_service.evaluate(payload)
 
 
 @router.get("", response_model=SimulationListResponse)
@@ -45,10 +29,4 @@ def list_simulations() -> SimulationListResponse:
 
 @router.get("/{simulation_id}", response_model=SimulationResponse)
 def get_simulation_detail(simulation_id: str) -> SimulationResponse:
-    try:
-        return simulation_service.get_simulation_detail(simulation_id)
-    except SimulationNotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(exc),
-        ) from exc
+    return simulation_service.get_simulation_detail(simulation_id)

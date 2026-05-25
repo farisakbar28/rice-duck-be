@@ -346,6 +346,33 @@ Response `preview-context` berisi:
 - `calculation_status`
 - `assumptions`
 
+## Error Contract
+
+Backend mengembalikan error terstruktur dalam bentuk:
+
+```json
+{
+  "error": {
+    "code": "validation_error",
+    "message": "Request validation failed.",
+    "field": null,
+    "issues": [
+      {
+        "field": "land_area_are",
+        "message": "Input should be greater than 0",
+        "type": "greater_than"
+      }
+    ]
+  }
+}
+```
+
+Code yang saat ini digunakan:
+
+- `validation_error`: request body tidak valid secara schema.
+- `invalid_reference`: nilai referensi seperti `rice_variety`, `planting_system`, atau `parameter_set_id` tidak ditemukan.
+- `not_found`: resource seperti `simulation_id` tidak ditemukan.
+
 ## Bentuk Output
 
 Kontrak output utama sekarang mengikuti satuan berikut:
