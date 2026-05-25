@@ -29,6 +29,15 @@ class SimulationRequest(BaseModel):
     market_overrides: MarketPriceOverrides | None = None
 
 
+class SimulationPreviewRequest(BaseModel):
+    duck_count: int = Field(ge=0)
+    land_area_are: float = Field(gt=0)
+    rice_variety: str = Field(min_length=1)
+    planting_system: str = Field(min_length=1)
+    planting_date: date
+    parameter_set_id: str = "active"
+
+
 class AreaSummary(BaseModel):
     value_are: float
 
@@ -145,6 +154,28 @@ class OptimizationMeta(BaseModel):
     converged: bool
     best_objective_value_rp: float
     bounds: OptimizationBounds
+
+
+class PreviewSummary(BaseModel):
+    duck_count: int
+    land_area_are: float
+    duck_density_per_are: float
+    duration_days: int
+    max_duck_capacity: int
+    recommended_duck_upper_bound: int
+    estimated_rice_yield_kg_per_are: float
+    estimated_rice_yield_total_kg: float
+    timeline: TimelineSummary
+    risk_summary: RiskSummary
+    warnings: list[str]
+
+
+class SimulationPreviewResponse(BaseModel):
+    input_summary: InputSummary
+    agronomic_context: AgronomicContext
+    preview: PreviewSummary
+    calculation_status: CalculationStatus
+    assumptions: list[str]
 
 
 class SimulationListItem(BaseModel):

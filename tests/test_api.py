@@ -27,6 +27,25 @@ def test_get_active_parameter_set() -> None:
     assert body["data"]["optimization"]["population_size"] == 40
 
 
+def test_simulation_preview_context() -> None:
+    response = client.post(
+        "/api/v1/simulations/preview-context",
+        json={
+            "duck_count": 40,
+            "land_area_are": 10,
+            "rice_variety": "ciherang",
+            "planting_system": "legowo",
+            "planting_date": "2026-06-01",
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["agronomic_context"]["safe_window_days"] == 60
+    assert body["preview"]["duck_density_per_are"] == 4.0
+    assert body["preview"]["max_duck_capacity"] == 38
+    assert body["preview"]["risk_summary"]["level"] == "bahaya"
+
+
 def test_simulation_evaluate() -> None:
     response = client.post(
         "/api/v1/simulations/evaluate",

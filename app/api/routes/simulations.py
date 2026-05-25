@@ -1,6 +1,12 @@
 from fastapi import APIRouter, HTTPException, status
 
-from app.schemas.simulation import SimulationListResponse, SimulationRequest, SimulationResponse
+from app.schemas.simulation import (
+    SimulationListResponse,
+    SimulationPreviewRequest,
+    SimulationPreviewResponse,
+    SimulationRequest,
+    SimulationResponse,
+)
 from app.services.simulation_service import (
     SimulationInputError,
     SimulationNotFoundError,
@@ -8,6 +14,17 @@ from app.services.simulation_service import (
 )
 
 router = APIRouter()
+
+
+@router.post("/preview-context", response_model=SimulationPreviewResponse)
+def preview_simulation_context(payload: SimulationPreviewRequest) -> SimulationPreviewResponse:
+    try:
+        return simulation_service.preview_context(payload)
+    except SimulationInputError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
 
 
 @router.post("/evaluate", response_model=SimulationResponse)

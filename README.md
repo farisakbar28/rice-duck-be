@@ -307,6 +307,12 @@ GET /api/v1/parameters/active
 POST /api/v1/simulations/evaluate
 ```
 
+### Preview context simulasi
+
+```text
+POST /api/v1/simulations/preview-context
+```
+
 ### List histori simulasi
 
 ```text
@@ -329,6 +335,14 @@ Response utama evaluasi berisi:
 - `proactive_result`
 - `comparison`
 - `optimization_meta`
+- `calculation_status`
+- `assumptions`
+
+Response `preview-context` berisi:
+
+- `input_summary`
+- `agronomic_context`
+- `preview`
 - `calculation_status`
 - `assumptions`
 

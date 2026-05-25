@@ -29,10 +29,13 @@ from app.schemas.simulation import (
     ReactiveResult,
     RiskSummary,
     SimulationListItem,
+    SimulationPreviewRequest,
+    SimulationPreviewResponse,
     SimulationRequest,
     SimulationResponse,
     SoilNutrientSummary,
     TimelineSummary,
+    PreviewSummary,
 )
 
 
@@ -72,6 +75,76 @@ class SimulationService:
             )
             for item in lookup_repository.list_planting_systems()
         ]
+
+    def preview_context(self, payload: SimulationPreviewRequest) -> SimulationPreviewResponse:
+        variety = self._find_variety(payload.rice_variety)
+        planting_system = self._find_planting_system(payload.planting_system)
+        parameter_set = self._resolve_parameter_set(payload.parameter_set_id)
+
+        area_are = payload.land_area_are
+        safe_window_days = compute_safe_window_days(variety, parameter_set.biological_constants)
+        actual_density = payload.duck_count / area_are
+        preview_metrics = self._evaluate_candidate(
+            duck_count=payload.duck_count,
+            density_per_are=actual_density,
+            duration_days=safe_window_days,
+            area_are=area_are,
+            variety=variety,
+            planting_system=planting_system,
+            prices=parameter_set.market_prices,
+            parameter_set=parameter_set,
+            planting_date=payload.planting_date,
+        )
+        agronomic_context = self._build_agronomic_context(
+            variety=variety,
+            planting_system=planting_system,
+            safe_window_days=safe_window_days,
+            baseline_yield_kg_per_are=parameter_set.market_prices.baseline_yield_kg_per_are,
+        )
+        return SimulationPreviewResponse(
+            input_summary=InputSummary(
+                duck_count=payload.duck_count,
+                area=AreaSummary(value_are=round(area_are, 4)),
+                rice_variety=variety.code,
+                planting_system=planting_system.code,
+                planting_date=payload.planting_date,
+                parameter_set_id=parameter_set.id,
+            ),
+            agronomic_context=agronomic_context,
+            preview=PreviewSummary(
+                duck_count=payload.duck_count,
+                land_area_are=round(area_are, 4),
+                duck_density_per_are=round(actual_density, 3),
+                duration_days=safe_window_days,
+                max_duck_capacity=max(0, round(planting_system.k_max_per_are * area_are)),
+                recommended_duck_upper_bound=max(
+                    0,
+                    round(planting_system.k_max_per_are * area_are),
+                ),
+                estimated_rice_yield_kg_per_are=round(preview_metrics["final_yield_kg_per_are"], 3),
+                estimated_rice_yield_total_kg=round(preview_metrics["total_rice_yield_kg"], 3),
+                timeline=TimelineSummary(
+                    duck_release_date=preview_metrics["release_date"],
+                    duck_pull_date=preview_metrics["pull_date"],
+                    safe_window_days=safe_window_days,
+                ),
+                risk_summary=self._build_risk_summary(
+                    density_per_are=actual_density,
+                    k_max_per_are=planting_system.k_max_per_are,
+                    risk_level=preview_metrics["risk_level"],
+                ),
+                warnings=preview_metrics["warnings"],
+            ),
+            calculation_status=CalculationStatus(
+                economy="preview",
+                emission=EmissionStatus.NOT_CALCULATED.value,
+                calibration=parameter_set.calibration_status.value,
+            ),
+            assumptions=[
+                "Preview context does not run Differential Evolution; it only derives the current agronomic baseline from the input scenario.",
+                "The preview yield estimate uses the same static parameter set as the full simulation unless a later evaluate call overrides market prices.",
+            ],
+        )
 
     def evaluate(self, payload: SimulationRequest) -> SimulationResponse:
         variety = self._find_variety(payload.rice_variety)
@@ -149,17 +222,10 @@ class SimulationService:
             risk_transition=risk_transition,
             summary=self._build_summary(reactive_metrics, proactive_metrics),
         )
-        agronomic_context = AgronomicContext(
-            rice_variety_code=variety.code,
-            rice_variety_name=variety.name,
-            planting_system_code=planting_system.code,
-            planting_system_name=planting_system.name,
-            hst_entry=variety.hst_entry,
-            hst_heading=variety.hst_heading,
+        agronomic_context = self._build_agronomic_context(
+            variety=variety,
+            planting_system=planting_system,
             safe_window_days=safe_window_days,
-            k_max_per_are=round(planting_system.k_max_per_are, 3),
-            warning_limit_per_are=round(planting_system.k_max_per_are * 1.3, 3),
-            f_yield=planting_system.f_yield,
             baseline_yield_kg_per_are=prices.baseline_yield_kg_per_are,
         )
         optimization_meta = OptimizationMeta(
@@ -519,6 +585,27 @@ class SimulationService:
             warning_limit_per_are=round(k_max_per_are * 1.3, 3),
             exceeded_density_per_are=round(exceeded_density, 3),
             exceeded_ratio_pct=round(exceeded_ratio_pct, 3),
+        )
+
+    def _build_agronomic_context(
+        self,
+        variety: RiceVariety,
+        planting_system: PlantingSystem,
+        safe_window_days: int,
+        baseline_yield_kg_per_are: float,
+    ) -> AgronomicContext:
+        return AgronomicContext(
+            rice_variety_code=variety.code,
+            rice_variety_name=variety.name,
+            planting_system_code=planting_system.code,
+            planting_system_name=planting_system.name,
+            hst_entry=variety.hst_entry,
+            hst_heading=variety.hst_heading,
+            safe_window_days=safe_window_days,
+            k_max_per_are=round(planting_system.k_max_per_are, 3),
+            warning_limit_per_are=round(planting_system.k_max_per_are * 1.3, 3),
+            f_yield=planting_system.f_yield,
+            baseline_yield_kg_per_are=baseline_yield_kg_per_are,
         )
 
 
