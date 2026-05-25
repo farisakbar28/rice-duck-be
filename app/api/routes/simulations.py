@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.schemas.simulation import (
+    SimulationDashboardSummaryResponse,
     SimulationListResponse,
     SimulationPreviewRequest,
     SimulationPreviewResponse,
@@ -25,6 +26,11 @@ def evaluate_simulation(payload: SimulationRequest) -> SimulationResponse:
 @router.get("", response_model=SimulationListResponse)
 def list_simulations() -> SimulationListResponse:
     return SimulationListResponse(data=simulation_service.list_simulations())
+
+
+@router.get("/{simulation_id}/summary", response_model=SimulationDashboardSummaryResponse)
+def get_simulation_summary(simulation_id: str) -> SimulationDashboardSummaryResponse:
+    return simulation_service.get_simulation_summary(simulation_id)
 
 
 @router.get("/{simulation_id}", response_model=SimulationResponse)

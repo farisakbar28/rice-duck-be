@@ -325,6 +325,12 @@ GET /api/v1/simulations
 GET /api/v1/simulations/{simulation_id}
 ```
 
+### Ringkasan dashboard simulasi
+
+```text
+GET /api/v1/simulations/{simulation_id}/summary
+```
+
 Response utama evaluasi berisi:
 
 - `simulation_id`
@@ -345,6 +351,14 @@ Response `preview-context` berisi:
 - `preview`
 - `calculation_status`
 - `assumptions`
+
+Response `summary` berisi:
+
+- `header`
+- `reactive_card`
+- `proactive_card`
+- `recommendation`
+- `calculation_status`
 
 ## Error Contract
 
@@ -388,6 +402,14 @@ Response `evaluate` juga membawa:
 - context agronomis yang dipakai mesin, seperti `HST_entry`, `HST_heading`, `safe_window_days`, `k_max_per_are`, dan `f_yield`,
 - risk summary terstruktur untuk skenario aktual dan rekomendasi,
 - metadata optimasi, termasuk batas pencarian, jumlah generasi yang dieksekusi, status konvergensi, dan objective terbaik.
+
+Response `summary` ditujukan untuk tampilan kartu dashboard yang ringkas, dengan isi utama:
+
+- identitas simulasi dan konteks input singkat,
+- kartu skenario reaktif,
+- kartu skenario proaktif,
+- delta hasil panen dan manfaat ekonomi,
+- ringkasan transisi risiko.
 
 Backend mengembalikan area dalam `are` serta hasil panen dalam `kg/are` dan `kg total`.
 

@@ -197,6 +197,46 @@ class SimulationListResponse(BaseModel):
     data: list[SimulationListItem]
 
 
+class SimulationSummaryHeader(BaseModel):
+    simulation_id: str
+    created_at: datetime
+    rice_variety: str
+    planting_system: str
+    planting_date: date
+    duck_count: int
+    area_are: float
+
+
+class ScenarioSummaryCard(BaseModel):
+    label: str
+    duck_total: int
+    duck_density_per_are: float
+    duration_days: int
+    predicted_rice_yield_kg_per_are: float
+    predicted_rice_yield_total_kg: float
+    total_benefit_rp: float
+    risk_level: str
+    warning_count: int
+    duck_release_date: date
+    duck_pull_date: date
+
+
+class RecommendationSummary(BaseModel):
+    profit_gain_rp: float
+    yield_gain_kg_per_are: float
+    yield_gain_total_kg: float
+    risk_transition: str
+    recommended_action: str
+
+
+class SimulationDashboardSummaryResponse(BaseModel):
+    header: SimulationSummaryHeader
+    reactive_card: ScenarioSummaryCard
+    proactive_card: ScenarioSummaryCard
+    recommendation: RecommendationSummary
+    calculation_status: CalculationStatus
+
+
 class SimulationResponse(BaseModel):
     simulation_id: str
     created_at: datetime

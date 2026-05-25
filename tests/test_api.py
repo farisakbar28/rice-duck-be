@@ -129,8 +129,41 @@ def test_simulation_history_and_detail() -> None:
     assert "optimization_meta" in detail_body
 
 
+def test_simulation_summary() -> None:
+    evaluate_response = client.post(
+        "/api/v1/simulations/evaluate",
+        json={
+            "duck_count": 28,
+            "land_area_are": 8,
+            "rice_variety": "ciherang",
+            "planting_system": "legowo",
+            "planting_date": "2026-06-07",
+        },
+    )
+    assert evaluate_response.status_code == 200
+    simulation_id = evaluate_response.json()["simulation_id"]
+
+    summary_response = client.get(f"/api/v1/simulations/{simulation_id}/summary")
+    assert summary_response.status_code == 200
+    body = summary_response.json()
+    assert body["header"]["simulation_id"] == simulation_id
+    assert body["header"]["area_are"] == 8.0
+    assert body["reactive_card"]["label"] == "reactive"
+    assert body["reactive_card"]["duck_total"] == 28
+    assert body["proactive_card"]["label"] == "proactive"
+    assert body["recommendation"]["risk_transition"]
+
+
 def test_simulation_detail_not_found_returns_structured_error() -> None:
     response = client.get("/api/v1/simulations/not-found-id")
+    assert response.status_code == 404
+    body = response.json()
+    assert body["error"]["code"] == "not_found"
+    assert body["error"]["field"] == "simulation_id"
+
+
+def test_simulation_summary_not_found_returns_structured_error() -> None:
+    response = client.get("/api/v1/simulations/not-found-id/summary")
     assert response.status_code == 404
     body = response.json()
     assert body["error"]["code"] == "not_found"

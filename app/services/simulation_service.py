@@ -26,14 +26,18 @@ from app.schemas.simulation import (
     InputSummary,
     OptimizationBounds,
     OptimizationMeta,
+    RecommendationSummary,
     ProactiveResult,
     ReactiveResult,
     RiskSummary,
+    ScenarioSummaryCard,
+    SimulationDashboardSummaryResponse,
     SimulationListItem,
     SimulationPreviewRequest,
     SimulationPreviewResponse,
     SimulationRequest,
     SimulationResponse,
+    SimulationSummaryHeader,
     SoilNutrientSummary,
     TimelineSummary,
     PreviewSummary,
@@ -331,6 +335,30 @@ class SimulationService:
             )
         return SimulationResponse.model_validate(record.response_payload)
 
+    def get_simulation_summary(self, simulation_id: str) -> SimulationDashboardSummaryResponse:
+        response = self.get_simulation_detail(simulation_id)
+        return SimulationDashboardSummaryResponse(
+            header=SimulationSummaryHeader(
+                simulation_id=response.simulation_id,
+                created_at=response.created_at,
+                rice_variety=response.input_summary.rice_variety,
+                planting_system=response.input_summary.planting_system,
+                planting_date=response.input_summary.planting_date,
+                duck_count=response.input_summary.duck_count,
+                area_are=response.input_summary.area.value_are,
+            ),
+            reactive_card=self._to_summary_card(response, scenario="reactive"),
+            proactive_card=self._to_summary_card(response, scenario="proactive"),
+            recommendation=RecommendationSummary(
+                profit_gain_rp=response.comparison.profit_gain_rp,
+                yield_gain_kg_per_are=response.comparison.yield_gain_kg_per_are,
+                yield_gain_total_kg=response.comparison.yield_gain_total_kg,
+                risk_transition=response.comparison.risk_transition,
+                recommended_action=response.comparison.summary,
+            ),
+            calculation_status=response.calculation_status,
+        )
+
     def _resolve_parameter_set(self, parameter_set_id: str) -> ParameterSet:
         parameter_set = parameter_repository.get_by_id(parameter_set_id)
         if parameter_set is None:
@@ -569,6 +597,39 @@ class SimulationService:
         if proactive_metrics["total_benefit_rp"] > reactive_metrics["total_benefit_rp"]:
             return "The proactive recommendation improves projected benefit while staying inside the modeled safe window."
         return "The reactive scenario is already competitive under the current seed assumptions."
+
+    def _to_summary_card(
+        self,
+        response: SimulationResponse,
+        scenario: str,
+    ) -> ScenarioSummaryCard:
+        if scenario == "reactive":
+            return ScenarioSummaryCard(
+                label="reactive",
+                duck_total=response.input_summary.duck_count,
+                duck_density_per_are=response.reactive_result.duck_density_per_are,
+                duration_days=response.reactive_result.duration_days,
+                predicted_rice_yield_kg_per_are=response.reactive_result.predicted_rice_yield_kg_per_are,
+                predicted_rice_yield_total_kg=response.reactive_result.predicted_rice_yield_total_kg,
+                total_benefit_rp=response.reactive_result.total_benefit_rp,
+                risk_level=response.reactive_result.risk_level,
+                warning_count=len(response.reactive_result.warnings),
+                duck_release_date=response.reactive_result.timeline.duck_release_date,
+                duck_pull_date=response.reactive_result.timeline.duck_pull_date,
+            )
+        return ScenarioSummaryCard(
+            label="proactive",
+            duck_total=response.proactive_result.recommended_duck_total,
+            duck_density_per_are=response.proactive_result.recommended_duck_density_per_are,
+            duration_days=response.proactive_result.recommended_duration_days,
+            predicted_rice_yield_kg_per_are=response.proactive_result.predicted_optimal_yield_kg_per_are,
+            predicted_rice_yield_total_kg=response.proactive_result.predicted_optimal_yield_total_kg,
+            total_benefit_rp=response.proactive_result.projected_total_benefit_rp,
+            risk_level=response.proactive_result.risk_summary.level,
+            warning_count=len(response.proactive_result.warnings),
+            duck_release_date=response.proactive_result.timeline.duck_release_date,
+            duck_pull_date=response.proactive_result.timeline.duck_pull_date,
+        )
 
     def _build_risk_summary(
         self,
