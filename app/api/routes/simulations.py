@@ -1,7 +1,11 @@
 from fastapi import APIRouter, HTTPException, status
 
-from app.schemas.simulation import SimulationRequest, SimulationResponse
-from app.services.simulation_service import SimulationInputError, simulation_service
+from app.schemas.simulation import SimulationListResponse, SimulationRequest, SimulationResponse
+from app.services.simulation_service import (
+    SimulationInputError,
+    SimulationNotFoundError,
+    simulation_service,
+)
 
 router = APIRouter()
 
@@ -16,3 +20,18 @@ def evaluate_simulation(payload: SimulationRequest) -> SimulationResponse:
             detail=str(exc),
         ) from exc
 
+
+@router.get("", response_model=SimulationListResponse)
+def list_simulations() -> SimulationListResponse:
+    return SimulationListResponse(data=simulation_service.list_simulations())
+
+
+@router.get("/{simulation_id}", response_model=SimulationResponse)
+def get_simulation_detail(simulation_id: str) -> SimulationResponse:
+    try:
+        return simulation_service.get_simulation_detail(simulation_id)
+    except SimulationNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc

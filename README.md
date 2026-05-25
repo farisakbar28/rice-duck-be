@@ -1,51 +1,42 @@
 # Rice Duck DSS Backend
 
-Backend ini adalah fondasi API untuk sistem Decision Support System (DSS) prediksi hasil panen padi-bebek. Fokus utamanya adalah mengevaluasi skenario aktual petani, menghitung proyeksi manfaat agronomis dan ekonomi, lalu menghasilkan rekomendasi skenario yang lebih optimal dengan algoritma Differential Evolution (DE).
+Backend ini adalah fondasi API untuk sistem Decision Support System (DSS) prediksi hasil panen padi-bebek. Sistem berfokus pada evaluasi skenario budidaya aktual, estimasi manfaat agronomis dan ekonomi, serta rekomendasi skenario yang lebih optimal menggunakan algoritma Differential Evolution (DE).
 
-Dokumentasi ini hanya menjelaskan ruang lingkup backend, model domain, formula inti, struktur proyek, endpoint, setup lokal, serta batas validasi ilmiah yang perlu dijaga selama pengembangan penelitian.
+Dokumentasi ini memakai aturan satuan yang konsisten:
+
+- luas lahan hanya dalam `are`,
+- hasil panen dan berat hanya dalam `kg` atau turunan yang lebih kecil.
 
 ## Tujuan Sistem
 
 Backend ini dirancang untuk:
 
-- menerima input skenario budidaya padi-bebek,
+- menerima input skenario padi-bebek dari pengguna,
 - menghitung evaluasi kondisi aktual,
 - mengukur tingkat risiko kepadatan bebek,
-- memperkirakan yield padi,
+- memperkirakan hasil panen padi,
 - memperkirakan nilai manfaat ekonomi dan ekologis,
-- mencari kombinasi kepadatan bebek dan durasi integrasi yang lebih baik,
-- menyiapkan hasil komparatif yang siap dipakai frontend DSS.
+- menghasilkan rekomendasi jumlah bebek dan durasi integrasi yang lebih baik,
+- menyediakan hasil komparatif yang siap dipakai frontend DSS.
 
 ## Ruang Lingkup Backend
 
-Backend menangani area berikut:
+Backend menangani:
 
-- validasi input petani,
+- validasi input,
 - lookup varietas padi,
 - lookup sistem tanam,
-- konversi satuan area,
 - perhitungan kepadatan bebek,
-- perhitungan jendela aman integrasi bebek,
+- perhitungan jendela aman integrasi,
 - perhitungan yield model,
 - klasifikasi risiko,
 - estimasi manfaat ekonomi,
 - estimasi manfaat ekologis,
 - optimasi dengan Differential Evolution,
-- penyusunan output komparatif untuk dashboard.
-
-## Prinsip Model
-
-Beberapa prinsip yang dipakai dalam backend ini:
-
-1. Semua perhitungan internal area dinormalisasi ke hektar.
-2. Output tetap dapat ditampilkan dalam hektar dan are agar mudah dipakai pada dashboard petani.
-3. Variabel `t` diperlakukan sebagai durasi integrasi bebek dalam hari, bukan HST absolut.
-4. Output finansial dan ekologis diposisikan sebagai hasil estimasi model, bukan angka pasti lapangan.
-5. Parameter pasar, lookup agronomi, dan koefisien model harus dianggap dapat dikalibrasi ulang.
+- penyusunan output komparatif,
+- histori simulasi.
 
 ## Arsitektur Proyek
-
-Struktur proyek:
 
 ```text
 app/
@@ -55,6 +46,7 @@ app/
   data/
   domain/
   engines/
+  repositories/
   schemas/
   services/
 tests/
@@ -70,9 +62,14 @@ Penjelasan singkat:
 - `data`: seed lookup dan parameter awal.
 - `domain`: enum dan model domain.
 - `engines`: formula bisnis dan optimizer.
+- `repositories`: akses data lookup, parameter, dan histori simulasi.
 - `schemas`: kontrak request-response.
-- `services`: orkestrasi evaluasi simulasi.
-- `tests`: test dasar API.
+- `services`: orkestrasi simulasi.
+
+Mode persistence tahap ini:
+
+- lookup, parameter, dan histori simulasi masih memakai repository in-memory,
+- struktur repository sudah dipisah agar mudah diganti ke PostgreSQL atau Supabase.
 
 ## Stack Teknis
 
@@ -91,8 +88,7 @@ Contoh request minimal:
 ```json
 {
   "duck_count": 40,
-  "land_area": 10,
-  "land_area_unit": "are",
+  "land_area_are": 10,
   "rice_variety": "ciherang",
   "planting_system": "legowo",
   "planting_date": "2026-06-01"
@@ -102,13 +98,12 @@ Contoh request minimal:
 Field utama:
 
 - `duck_count`: jumlah bebek aktual.
-- `land_area`: luas lahan.
-- `land_area_unit`: `are` atau `hectare`.
+- `land_area_are`: luas lahan dalam are.
 - `rice_variety`: kode varietas padi dari lookup.
 - `planting_system`: kode sistem tanam dari lookup.
-- `planting_date`: tanggal tanam untuk konversi HST ke kalender.
+- `planting_date`: tanggal tanam untuk konversi kalender.
 - `parameter_set_id`: identitas parameter set aktif.
-- `market_overrides`: override harga pasar per request jika diperlukan.
+- `market_overrides`: override harga pasar jika diperlukan.
 
 ## Lookup yang Digunakan
 
@@ -126,16 +121,14 @@ Lookup sistem tanam seed:
 - `sri`
 - `double-transplant`
 
-Lookup ini berfungsi sebagai parameter awal dan tetap harus divalidasi atau dikalibrasi dengan data lokal penelitian.
+Lookup sistem tanam mengembalikan:
+
+- `k_max_per_are`
+- `f_yield`
+
+Lookup seed ini tetap harus divalidasi atau dikalibrasi dengan data lokal penelitian.
 
 ## Formula Inti
-
-### Konversi area
-
-```text
-1 hectare = 100 are
-1 are = 0.01 hectare
-```
 
 ### Kepadatan bebek aktual
 
@@ -146,7 +139,8 @@ d_actual = J / A
 Keterangan:
 
 - `J`: jumlah bebek.
-- `A`: luas lahan dalam hektar.
+- `A`: luas lahan dalam are.
+- `d_actual`: kepadatan bebek per are.
 
 ### Jendela aman integrasi
 
@@ -156,17 +150,23 @@ safe_window_days = min(HST_heading - HST_entry, t_max_eff)
 
 Keterangan:
 
-- `HST_entry`: hari setelah tanam saat bebek boleh mulai masuk.
+- `HST_entry`: hari setelah tanam saat bebek mulai masuk.
 - `HST_heading`: batas akhir sebelum heading stage.
 - `t_max_eff`: batas efisiensi ekonomi maksimum.
 
 ### Model yield dasar
 
+Backend memakai bentuk yang sudah dinormalisasi ke `kg/are`:
+
 ```text
-x(d,t) = (-0.0103 d^2 + 2.6314 d + 7569.4) * exp(-((t - 80)^2) / (2 * 80^2))
+x(d,t) = (-1.03 d^2 + 2.6314 d + 75.694) * exp(-((t - 80)^2) / (2 * 80^2))
 ```
 
-Hasil model dasar dalam `kg/ha`.
+Keterangan:
+
+- `d`: kepadatan bebek per are.
+- `t`: durasi integrasi bebek dalam hari.
+- `x(d,t)`: hasil panen dasar dalam `kg/are`.
 
 ### Penalti kepadatan
 
@@ -186,13 +186,8 @@ x_penalized = x(d,t) * (1 - P_rate)
 ### Yield akhir
 
 ```text
-x_final_ton_per_ha = x_penalized * f_yield / 1000
+x_final_kg_per_are = x_penalized * f_yield
 ```
-
-Keterangan:
-
-- `f_yield`: faktor koreksi sistem tanam.
-- pembagian `1000` digunakan untuk konversi dari `kg/ha` menjadi `ton/ha`.
 
 ### Klasifikasi risiko
 
@@ -202,19 +197,21 @@ WASPADA if K_max < d <= 1.3 * K_max
 BAHAYA  if d > 1.3 * K_max
 ```
 
+Semua threshold kepadatan dinyatakan dalam `bebek/are`.
+
 ### Nilai tambah beras
 
 ```text
-delta_v_rice = ((p * x_final * 1000) - (p0 * x0 * 1000)) * A
+delta_v_rice = ((p * x_final) - (p0 * x0)) * A
 ```
 
 Keterangan:
 
 - `p`: harga beras sistem padi-bebek dalam `Rp/kg`.
 - `p0`: harga beras konvensional dalam `Rp/kg`.
-- `x_final`: yield akhir dalam `ton/ha`.
-- `x0`: baseline yield konvensional dalam `ton/ha`.
-- `A`: luas lahan dalam hektar.
+- `x_final`: yield akhir dalam `kg/are`.
+- `x0`: baseline yield konvensional dalam `kg/are`.
+- `A`: luas lahan dalam are.
 
 ### Nilai ekologis pupuk
 
@@ -224,11 +221,13 @@ v_eco1 = ((0.02 * t) - 0.6) * (0.107 * P_N + 0.424 * P_P + 0.058 * P_K) * d * la
 
 ### Nilai ekologis pengendalian hayati
 
+Komponen ini tetap memakai basis literatur yang berasal dari skala area yang lebih besar. Backend mengonversi kepadatan `bebek/are` ke basis internal literatur hanya di dalam engine, tetapi kontrak API tetap memakai `are`.
+
 ```text
-if d > 300:
-  v_eco2 = (400 / (1 + exp(-0.036626 * d)) - 3.327) * A
+if d is above the literature threshold equivalent to 3 ducks/are:
+  v_eco2 = logistic_model(...)
 else:
-  v_eco2 = linear interpolation from 0 to value_at_300
+  v_eco2 = linear_interpolation(...)
 ```
 
 ### Nilai ekonomi bebek
@@ -246,13 +245,13 @@ duck_net_value = duck_revenue - feed_penalty
 total_benefit = delta_v_rice + duck_net_value + v_eco
 ```
 
-Fungsi ini dipakai sebagai objective untuk mode optimasi proaktif.
+Fungsi ini dipakai sebagai objective pada mode optimasi proaktif.
 
 ## Differential Evolution
 
 Variabel keputusan:
 
-- `d`: kepadatan bebek per hektar.
+- `d`: kepadatan bebek per are.
 - `t`: durasi integrasi bebek dalam hari.
 
 Domain optimasi:
@@ -296,20 +295,60 @@ GET /api/v1/lookups/rice-varieties
 GET /api/v1/lookups/planting-systems
 ```
 
+### Parameter aktif
+
+```text
+GET /api/v1/parameters/active
+```
+
 ### Evaluasi simulasi
 
 ```text
 POST /api/v1/simulations/evaluate
 ```
 
-Response utama:
+### List histori simulasi
 
+```text
+GET /api/v1/simulations
+```
+
+### Detail histori simulasi
+
+```text
+GET /api/v1/simulations/{simulation_id}
+```
+
+Response utama evaluasi berisi:
+
+- `simulation_id`
+- `created_at`
 - `input_summary`
+- `agronomic_context`
 - `reactive_result`
 - `proactive_result`
 - `comparison`
+- `optimization_meta`
 - `calculation_status`
 - `assumptions`
+
+## Bentuk Output
+
+Kontrak output utama sekarang mengikuti satuan berikut:
+
+- area: `are`
+- density: `duck/are`
+- yield: `kg/are` dan `kg total`
+- nutrisi tanah: `kg/are` dan `kg total`
+- harga dan manfaat ekonomi: `Rp`
+
+Response `evaluate` juga membawa:
+
+- context agronomis yang dipakai mesin, seperti `HST_entry`, `HST_heading`, `safe_window_days`, `k_max_per_are`, dan `f_yield`,
+- risk summary terstruktur untuk skenario aktual dan rekomendasi,
+- metadata optimasi, termasuk batas pencarian, jumlah generasi yang dieksekusi, status konvergensi, dan objective terbaik.
+
+Backend mengembalikan area dalam `are` serta hasil panen dalam `kg/are` dan `kg total`.
 
 ## Setup Lokal
 
@@ -374,8 +413,8 @@ pytest
 
 Beberapa batas penting yang harus dijaga:
 
-1. Koefisien yield dasar masih perlu kalibrasi dengan data lokal Indonesia.
-2. Lookup `K_max` dan `f_yield` masih harus divalidasi terhadap data lapangan.
+1. Koefisien yield dasar tetap perlu kalibrasi dengan data lokal Indonesia.
+2. Lookup `K_max` dan `f_yield` tetap harus divalidasi terhadap data lapangan.
 3. Parameter harga pasar tidak boleh dianggap universal; harus mengikuti lokasi, musim, dan periode observasi.
 4. Output emisi belum layak dipakai sebagai angka final tanpa konversi fluks musiman dan baseline lokal.
 5. Output finansial tetap harus diposisikan sebagai proyeksi model.
@@ -383,7 +422,7 @@ Beberapa batas penting yang harus dijaga:
 
 ## Pengembangan Lanjutan
 
-Area pengembangan berikut yang relevan untuk backend ini:
+Area pengembangan berikut yang relevan:
 
 1. integrasi PostgreSQL atau Supabase,
 2. migration dan repository persistence,
@@ -391,4 +430,4 @@ Area pengembangan berikut yang relevan untuk backend ini:
 4. seed data harga lokal dan lookup lapangan,
 5. pengujian formula berbasis skenario referensi penelitian,
 6. modul admin untuk kalibrasi parameter,
-7. ekstensi model emisi saat data pendukung telah tersedia.
+7. ekstensi model emisi saat data pendukung tersedia.

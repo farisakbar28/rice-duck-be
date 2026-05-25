@@ -48,28 +48,28 @@ PLANTING_SYSTEMS = [
     PlantingSystem(
         code="konvensional",
         name="Konvensional",
-        k_max_per_hectare=250.0,
+        k_max_per_are=2.5,
         f_yield=1.0,
         notes="Baseline system.",
     ),
     PlantingSystem(
         code="legowo",
         name="Legowo",
-        k_max_per_hectare=375.0,
+        k_max_per_are=3.75,
         f_yield=1.05,
         notes="Initial lookup from the variable workbook.",
     ),
     PlantingSystem(
         code="sri",
         name="SRI",
-        k_max_per_hectare=400.0,
+        k_max_per_are=4.0,
         f_yield=1.10,
         notes="Initial lookup from the variable workbook.",
     ),
     PlantingSystem(
         code="double-transplant",
         name="Double Transplant",
-        k_max_per_hectare=375.0,
+        k_max_per_are=3.75,
         f_yield=1.175,
         notes="Initial lookup from the variable workbook.",
     ),
@@ -83,7 +83,7 @@ ACTIVE_PARAMETER_SET = ParameterSet(
     market_prices=MarketPrices(
         rice_duck_price_rp_per_kg=14000.0,
         conventional_rice_price_rp_per_kg=12500.0,
-        baseline_yield_ton_per_ha=5.5,
+        baseline_yield_kg_per_are=55.0,
         nitrogen_price_rp_per_kg=2500.0,
         phosphate_price_rp_per_kg=4000.0,
         potassium_price_rp_per_kg=7000.0,
@@ -117,4 +117,3 @@ ACTIVE_PARAMETER_SET = ParameterSet(
         epsilon=1e-5,
     ),
 )
-

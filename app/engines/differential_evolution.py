@@ -6,7 +6,7 @@ from app.domain.models import OptimizationParameters
 
 @dataclass(frozen=True)
 class OptimizationResult:
-    density_per_hectare: float
+    density_per_are: float
     duration_days: int
     objective_value: float
     generations: int
@@ -48,7 +48,7 @@ class DifferentialEvolutionOptimizer:
             if abs(best_score - last_best_score) <= params.epsilon:
                 converged = True
                 return OptimizationResult(
-                    density_per_hectare=best_vector[0],
+                    density_per_are=best_vector[0],
                     duration_days=max(1, round(best_vector[1])),
                     objective_value=best_score,
                     generations=generation,
@@ -57,7 +57,7 @@ class DifferentialEvolutionOptimizer:
             last_best_score = best_score
 
         return OptimizationResult(
-            density_per_hectare=best_vector[0],
+            density_per_are=best_vector[0],
             duration_days=max(1, round(best_vector[1])),
             objective_value=best_score,
             generations=params.max_generations,
@@ -97,4 +97,3 @@ class DifferentialEvolutionOptimizer:
             else:
                 trial.append(target[index])
         return trial
-

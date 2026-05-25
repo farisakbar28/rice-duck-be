@@ -13,7 +13,7 @@ class RiceVarietyResponse(BaseModel):
 class PlantingSystemResponse(BaseModel):
     id: str
     name: str
-    k_max_per_hectare: float
+    k_max_per_are: float
     f_yield: float
     notes: str
 
@@ -24,4 +24,3 @@ class RiceVarietyListResponse(BaseModel):
 
 class PlantingSystemListResponse(BaseModel):
     data: list[PlantingSystemResponse]
-

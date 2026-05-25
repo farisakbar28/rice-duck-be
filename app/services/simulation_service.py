@@ -1,7 +1,4 @@
-from dataclasses import replace
-
 from app.core.config import settings
-from app.data.seed import ACTIVE_PARAMETER_SET, PLANTING_SYSTEMS, RICE_VARIETIES
 from app.domain.enums import EmissionStatus, RiskLevel
 from app.domain.models import MarketPrices, ParameterSet, PlantingSystem, RiceVariety
 from app.engines.differential_evolution import DifferentialEvolutionOptimizer
@@ -10,22 +7,28 @@ from app.engines.formula_engine import (
     compute_delta_v_rice_rp,
     compute_duck_gross_value_rp,
     compute_dung_total_per_duck,
-    compute_final_yield_ton_per_ha,
+    compute_final_yield_kg_per_are,
     compute_npk_contribution,
-    compute_risk_level,
     compute_safe_window_days,
     compute_v_eco1_rp,
     compute_v_eco2_rp,
-    to_hectare,
 )
+from app.repositories.lookup_repository import lookup_repository
+from app.repositories.parameter_repository import parameter_repository
+from app.repositories.simulation_repository import simulation_repository
 from app.schemas.lookups import PlantingSystemResponse, RiceVarietyResponse
 from app.schemas.simulation import (
+    AgronomicContext,
     AreaSummary,
     CalculationStatus,
     ComparisonSummary,
     InputSummary,
+    OptimizationBounds,
+    OptimizationMeta,
     ProactiveResult,
     ReactiveResult,
+    RiskSummary,
+    SimulationListItem,
     SimulationRequest,
     SimulationResponse,
     SoilNutrientSummary,
@@ -35,6 +38,10 @@ from app.schemas.simulation import (
 
 class SimulationInputError(ValueError):
     """Raised when the request references an unknown lookup or invalid domain."""
+
+
+class SimulationNotFoundError(LookupError):
+    """Raised when a stored simulation is not found."""
 
 
 class SimulationService:
@@ -51,7 +58,7 @@ class SimulationService:
                 plant_height_category=item.plant_height_category,
                 notes=item.notes,
             )
-            for item in RICE_VARIETIES
+            for item in lookup_repository.list_rice_varieties()
         ]
 
     def list_planting_systems(self) -> list[PlantingSystemResponse]:
@@ -59,11 +66,11 @@ class SimulationService:
             PlantingSystemResponse(
                 id=item.code,
                 name=item.name,
-                k_max_per_hectare=item.k_max_per_hectare,
+                k_max_per_are=item.k_max_per_are,
                 f_yield=item.f_yield,
                 notes=item.notes,
             )
-            for item in PLANTING_SYSTEMS
+            for item in lookup_repository.list_planting_systems()
         ]
 
     def evaluate(self, payload: SimulationRequest) -> SimulationResponse:
@@ -72,16 +79,15 @@ class SimulationService:
         parameter_set = self._resolve_parameter_set(payload.parameter_set_id)
         prices = self._merge_market_prices(parameter_set.market_prices, payload)
 
-        area_hectare = to_hectare(payload.land_area, payload.land_area_unit)
-        area_are = area_hectare * 100.0
+        area_are = payload.land_area_are
         safe_window_days = compute_safe_window_days(variety, parameter_set.biological_constants)
-        actual_density = payload.duck_count / area_hectare
+        actual_density = payload.duck_count / area_are
 
         reactive_metrics = self._evaluate_candidate(
             duck_count=payload.duck_count,
-            density_per_hectare=actual_density,
+            density_per_are=actual_density,
             duration_days=safe_window_days,
-            area_hectare=area_hectare,
+            area_are=area_are,
             variety=variety,
             planting_system=planting_system,
             prices=prices,
@@ -90,17 +96,17 @@ class SimulationService:
         )
 
         bounds = [
-            (0.0, planting_system.k_max_per_hectare),
+            (0.0, planting_system.k_max_per_are),
             (1.0, float(safe_window_days)),
         ]
         optimization = self._optimizer.optimize(
             bounds=bounds,
             params=parameter_set.optimization,
             objective=lambda density, duration: self._evaluate_candidate(
-                duck_count=max(0, round(density * area_hectare)),
-                density_per_hectare=density,
+                duck_count=max(0, round(density * area_are)),
+                density_per_are=density,
                 duration_days=duration,
-                area_hectare=area_hectare,
+                area_are=area_are,
                 variety=variety,
                 planting_system=planting_system,
                 prices=prices,
@@ -110,12 +116,12 @@ class SimulationService:
         )
 
         optimized_duration = min(optimization.duration_days, safe_window_days)
-        recommended_duck_total = max(0, round(optimization.density_per_hectare * area_hectare))
+        recommended_duck_total = max(0, round(optimization.density_per_are * area_are))
         proactive_metrics = self._evaluate_candidate(
             duck_count=recommended_duck_total,
-            density_per_hectare=optimization.density_per_hectare,
+            density_per_are=optimization.density_per_are,
             duration_days=optimized_duration,
-            area_hectare=area_hectare,
+            area_are=area_are,
             variety=variety,
             planting_system=planting_system,
             prices=prices,
@@ -123,65 +129,18 @@ class SimulationService:
             planting_date=payload.planting_date,
         )
 
-        reactive_result = ReactiveResult(
-            duck_density_per_are=round(actual_density / 100.0, 3),
-            duck_density_per_hectare=round(actual_density, 3),
-            duration_days=reactive_metrics["duration_days"],
-            risk_level=reactive_metrics["risk_level"].value,
-            penalty_rate=round(reactive_metrics["penalty_rate"], 4),
-            predicted_rice_yield_ton_per_ha=round(reactive_metrics["final_yield_ton_per_ha"], 4),
-            total_benefit_rp=round(reactive_metrics["total_benefit_rp"], 2),
-            delta_rice_value_rp=round(reactive_metrics["delta_rice_value_rp"], 2),
-            duck_net_value_rp=round(reactive_metrics["duck_net_value_rp"], 2),
-            ecological_value_rp=round(reactive_metrics["ecological_value_rp"], 2),
-            penalty_yield_rp=round(reactive_metrics["penalty_yield_rp"], 2),
-            penalty_feed_rp=round(reactive_metrics["penalty_feed_rp"], 2),
-            soil_nutrients=SoilNutrientSummary(
-                n_kg_per_ha=round(reactive_metrics["n_kg_per_ha"], 4),
-                p2o5_kg_per_ha=round(reactive_metrics["p_kg_per_ha"], 4),
-                k2o_kg_per_ha=round(reactive_metrics["k_kg_per_ha"], 4),
-            ),
-            timeline=TimelineSummary(
-                duck_release_date=reactive_metrics["release_date"],
-                duck_pull_date=reactive_metrics["pull_date"],
-                safe_window_days=safe_window_days,
-            ),
-            warnings=reactive_metrics["warnings"],
-        )
-
-        proactive_result = ProactiveResult(
-            recommended_duck_total=recommended_duck_total,
-            recommended_duck_density_per_are=round(
-                proactive_metrics["density_per_hectare"] / 100.0,
-                3,
-            ),
-            recommended_duck_density_per_hectare=round(
-                proactive_metrics["density_per_hectare"],
-                3,
-            ),
-            recommended_duration_days=optimized_duration,
-            predicted_optimal_yield_ton_per_ha=round(proactive_metrics["final_yield_ton_per_ha"], 4),
-            projected_total_benefit_rp=round(proactive_metrics["total_benefit_rp"], 2),
-            delta_profit_rp=round(
-                proactive_metrics["total_benefit_rp"] - reactive_metrics["total_benefit_rp"],
-                2,
-            ),
-            timeline=TimelineSummary(
-                duck_release_date=proactive_metrics["release_date"],
-                duck_pull_date=proactive_metrics["pull_date"],
-                safe_window_days=safe_window_days,
-            ),
-            warnings=proactive_metrics["warnings"],
-        )
-
         risk_transition = (
             f"{reactive_metrics['risk_level'].value} -> {proactive_metrics['risk_level'].value}"
         )
         comparison = ComparisonSummary(
             display_mode="side_by_side",
-            yield_gain_ton_per_ha=round(
-                proactive_metrics["final_yield_ton_per_ha"] - reactive_metrics["final_yield_ton_per_ha"],
-                4,
+            yield_gain_kg_per_are=round(
+                proactive_metrics["final_yield_kg_per_are"] - reactive_metrics["final_yield_kg_per_are"],
+                3,
+            ),
+            yield_gain_total_kg=round(
+                proactive_metrics["total_rice_yield_kg"] - reactive_metrics["total_rice_yield_kg"],
+                3,
             ),
             profit_gain_rp=round(
                 proactive_metrics["total_benefit_rp"] - reactive_metrics["total_benefit_rp"],
@@ -189,6 +148,36 @@ class SimulationService:
             ),
             risk_transition=risk_transition,
             summary=self._build_summary(reactive_metrics, proactive_metrics),
+        )
+        agronomic_context = AgronomicContext(
+            rice_variety_code=variety.code,
+            rice_variety_name=variety.name,
+            planting_system_code=planting_system.code,
+            planting_system_name=planting_system.name,
+            hst_entry=variety.hst_entry,
+            hst_heading=variety.hst_heading,
+            safe_window_days=safe_window_days,
+            k_max_per_are=round(planting_system.k_max_per_are, 3),
+            warning_limit_per_are=round(planting_system.k_max_per_are * 1.3, 3),
+            f_yield=planting_system.f_yield,
+            baseline_yield_kg_per_are=prices.baseline_yield_kg_per_are,
+        )
+        optimization_meta = OptimizationMeta(
+            algorithm="Differential Evolution",
+            objective_name="total_benefit_rp",
+            population_size=parameter_set.optimization.population_size,
+            mutation_factor=parameter_set.optimization.mutation_factor,
+            crossover_rate=parameter_set.optimization.crossover_rate,
+            max_generations=parameter_set.optimization.max_generations,
+            executed_generations=optimization.generations,
+            converged=optimization.converged,
+            best_objective_value_rp=round(optimization.objective_value, 2),
+            bounds=OptimizationBounds(
+                density_min_per_are=0.0,
+                density_max_per_are=round(planting_system.k_max_per_are, 3),
+                duration_min_days=1,
+                duration_max_days=safe_window_days,
+            ),
         )
 
         calculation_status = CalculationStatus(
@@ -213,61 +202,112 @@ class SimulationService:
                 "No request-level market override was supplied, so the seed parameter set was used for the financial projection."
             )
 
-        return SimulationResponse(
+        staged_record = simulation_repository.create(
+            request_payload=payload.model_dump(mode="json"),
+            response_payload={},
+        )
+
+        response = SimulationResponse(
+            simulation_id=staged_record.id,
+            created_at=staged_record.created_at,
             input_summary=InputSummary(
                 duck_count=payload.duck_count,
                 area=AreaSummary(
                     value_are=round(area_are, 4),
-                    value_hectare=round(area_hectare, 4),
                 ),
                 rice_variety=variety.code,
                 planting_system=planting_system.code,
                 planting_date=payload.planting_date,
                 parameter_set_id=parameter_set.id,
             ),
-            reactive_result=reactive_result,
-            proactive_result=proactive_result,
+            agronomic_context=agronomic_context,
+            reactive_result=self._to_reactive_result(reactive_metrics, safe_window_days),
+            proactive_result=self._to_proactive_result(
+                proactive_metrics=proactive_metrics,
+                safe_window_days=safe_window_days,
+                reactive_total_benefit_rp=reactive_metrics["total_benefit_rp"],
+                recommended_duck_total=recommended_duck_total,
+                recommended_duration_days=optimized_duration,
+            ),
             comparison=comparison,
+            optimization_meta=optimization_meta,
             calculation_status=calculation_status,
             assumptions=assumptions,
         )
+        simulation_repository.update_response_payload(
+            simulation_id=staged_record.id,
+            response_payload=response.model_dump(mode="json"),
+        )
+        return response
+
+    def list_simulations(self) -> list[SimulationListItem]:
+        items: list[SimulationListItem] = []
+        for record in simulation_repository.list_all():
+            if not record.response_payload:
+                continue
+            response = SimulationResponse.model_validate(record.response_payload)
+            items.append(
+                SimulationListItem(
+                    simulation_id=response.simulation_id,
+                    created_at=response.created_at,
+                    rice_variety=response.input_summary.rice_variety,
+                    planting_system=response.input_summary.planting_system,
+                    planting_date=response.input_summary.planting_date,
+                    duck_count=response.input_summary.duck_count,
+                    area_are=response.input_summary.area.value_are,
+                    reactive_risk_level=response.reactive_result.risk_level,
+                    reactive_total_benefit_rp=response.reactive_result.total_benefit_rp,
+                    proactive_total_benefit_rp=response.proactive_result.projected_total_benefit_rp,
+                    recommended_duck_total=response.proactive_result.recommended_duck_total,
+                    calibration_status=response.calculation_status.calibration,
+                )
+            )
+        return items
+
+    def get_simulation_detail(self, simulation_id: str) -> SimulationResponse:
+        record = simulation_repository.get_by_id(simulation_id)
+        if record is None or not record.response_payload:
+            raise SimulationNotFoundError(f"Simulation '{simulation_id}' was not found.")
+        return SimulationResponse.model_validate(record.response_payload)
 
     def _resolve_parameter_set(self, parameter_set_id: str) -> ParameterSet:
-        if parameter_set_id != ACTIVE_PARAMETER_SET.id:
+        parameter_set = parameter_repository.get_by_id(parameter_set_id)
+        if parameter_set is None:
             raise SimulationInputError(
-                f"Unknown parameter_set_id '{parameter_set_id}'. Only 'active' is available in the seed setup."
+                f"Unknown parameter_set_id '{parameter_set_id}'. Only seeded parameter sets are available."
             )
-        return ACTIVE_PARAMETER_SET
+        return parameter_set
 
     def _find_variety(self, code: str) -> RiceVariety:
-        normalized = code.strip().lower()
-        for item in RICE_VARIETIES:
-            if item.code == normalized:
-                return item
-        raise SimulationInputError(f"Unknown rice_variety '{code}'.")
+        variety = lookup_repository.get_rice_variety(code)
+        if variety is None:
+            raise SimulationInputError(f"Unknown rice_variety '{code}'.")
+        return variety
 
     def _find_planting_system(self, code: str) -> PlantingSystem:
-        normalized = code.strip().lower()
-        for item in PLANTING_SYSTEMS:
-            if item.code == normalized:
-                return item
-        raise SimulationInputError(f"Unknown planting_system '{code}'.")
+        planting_system = lookup_repository.get_planting_system(code)
+        if planting_system is None:
+            raise SimulationInputError(f"Unknown planting_system '{code}'.")
+        return planting_system
 
     def _merge_market_prices(self, prices: MarketPrices, payload: SimulationRequest) -> MarketPrices:
         overrides = payload.market_overrides
         if overrides is None:
             return prices
-        return replace(
-            prices,
-            rice_duck_price_rp_per_kg=overrides.rice_duck_price_rp_per_kg or prices.rice_duck_price_rp_per_kg,
+        return MarketPrices(
+            rice_duck_price_rp_per_kg=(
+                overrides.rice_duck_price_rp_per_kg or prices.rice_duck_price_rp_per_kg
+            ),
             conventional_rice_price_rp_per_kg=(
                 overrides.conventional_rice_price_rp_per_kg
                 or prices.conventional_rice_price_rp_per_kg
             ),
-            baseline_yield_ton_per_ha=(
-                overrides.baseline_yield_ton_per_ha or prices.baseline_yield_ton_per_ha
+            baseline_yield_kg_per_are=(
+                overrides.baseline_yield_kg_per_are or prices.baseline_yield_kg_per_are
             ),
-            nitrogen_price_rp_per_kg=overrides.nitrogen_price_rp_per_kg or prices.nitrogen_price_rp_per_kg,
+            nitrogen_price_rp_per_kg=(
+                overrides.nitrogen_price_rp_per_kg or prices.nitrogen_price_rp_per_kg
+            ),
             phosphate_price_rp_per_kg=(
                 overrides.phosphate_price_rp_per_kg or prices.phosphate_price_rp_per_kg
             ),
@@ -281,53 +321,56 @@ class SimulationService:
     def _evaluate_candidate(
         self,
         duck_count: int,
-        density_per_hectare: float,
+        density_per_are: float,
         duration_days: float,
-        area_hectare: float,
+        area_are: float,
         variety: RiceVariety,
         planting_system: PlantingSystem,
         prices: MarketPrices,
         parameter_set: ParameterSet,
         planting_date,
     ) -> dict:
-        base_yield_kg, penalty_rate, final_yield_ton = compute_final_yield_ton_per_ha(
-            density_per_hectare=density_per_hectare,
+        base_yield_kg_per_are, penalty_rate, final_yield_kg_per_are = compute_final_yield_kg_per_are(
+            density_per_are=density_per_are,
             duration_days=duration_days,
             planting_system=planting_system,
         )
+        total_rice_yield_kg = final_yield_kg_per_are * area_are
         delta_rice_value = compute_delta_v_rice_rp(
             prices=prices,
-            final_yield_ton_per_ha=final_yield_ton,
-            area_hectare=area_hectare,
+            final_yield_kg_per_are=final_yield_kg_per_are,
+            area_are=area_are,
         )
         duck_net_value, feed_penalty = compute_duck_gross_value_rp(
             duck_count=duck_count,
-            density_per_hectare=density_per_hectare,
+            density_per_are=density_per_are,
             duration_days=duration_days,
-            area_hectare=area_hectare,
+            area_are=area_are,
             prices=prices,
             planting_system=planting_system,
             biology=parameter_set.biological_constants,
         )
         eco_1 = compute_v_eco1_rp(
             prices=prices,
-            density_per_hectare=density_per_hectare,
+            density_per_are=density_per_are,
             duration_days=duration_days,
-            area_hectare=area_hectare,
+            area_are=area_are,
             biology=parameter_set.biological_constants,
         )
         eco_2 = compute_v_eco2_rp(
-            density_per_hectare=density_per_hectare,
-            area_hectare=area_hectare,
+            density_per_are=density_per_are,
+            area_are=area_are,
         )
         ecological_value = eco_1 + eco_2
-        penalty_yield = base_yield_kg * penalty_rate * area_hectare * prices.rice_duck_price_rp_per_kg
-        risk_level = compute_risk_level(
-            density_per_hectare=density_per_hectare,
-            k_max_per_hectare=planting_system.k_max_per_hectare,
+        penalty_yield = (
+            base_yield_kg_per_are * penalty_rate * area_are * prices.rice_duck_price_rp_per_kg
         )
-        n_kg, p_kg, k_kg = compute_npk_contribution(
-            density_per_hectare=density_per_hectare,
+        risk_level = compute_risk_level(
+            density_per_are=density_per_are,
+            k_max_per_are=planting_system.k_max_per_are,
+        )
+        n_per_are, p_per_are, k_per_are = compute_npk_contribution(
+            density_per_are=density_per_are,
             duration_days=duration_days,
             biology=parameter_set.biological_constants,
         )
@@ -344,17 +387,20 @@ class SimulationService:
         if risk_level == RiskLevel.BAHAYA:
             warnings.append("Duck density is in the danger zone and may damage rice stands.")
         if duration_days >= parameter_set.biological_constants.t_max_eff_days:
-            warnings.append("Duck duration is at the efficiency ceiling and should not be extended without field validation.")
+            warnings.append(
+                "Duck duration is at the efficiency ceiling and should not be extended without field validation."
+            )
         if duck_count == 0:
             warnings.append("Duck count is zero, so the scenario behaves like a rice-only baseline.")
 
         return {
             "duck_count": duck_count,
-            "density_per_hectare": density_per_hectare,
+            "density_per_are": density_per_are,
             "duration_days": max(1, round(duration_days)),
-            "base_yield_kg_per_ha": base_yield_kg,
+            "base_yield_kg_per_are": base_yield_kg_per_are,
             "penalty_rate": penalty_rate,
-            "final_yield_ton_per_ha": final_yield_ton,
+            "final_yield_kg_per_are": final_yield_kg_per_are,
+            "total_rice_yield_kg": total_rice_yield_kg,
             "delta_rice_value_rp": delta_rice_value,
             "duck_net_value_rp": duck_net_value,
             "ecological_value_rp": ecological_value,
@@ -362,22 +408,118 @@ class SimulationService:
             "penalty_feed_rp": feed_penalty,
             "total_benefit_rp": total_benefit,
             "risk_level": risk_level,
+            "k_max_per_are": planting_system.k_max_per_are,
             "dung_total_per_duck_kg": compute_dung_total_per_duck(
                 duration_days,
                 parameter_set.biological_constants,
             ),
-            "n_kg_per_ha": n_kg,
-            "p_kg_per_ha": p_kg,
-            "k_kg_per_ha": k_kg,
+            "n_kg_per_are": n_per_are,
+            "p_kg_per_are": p_per_are,
+            "k_kg_per_are": k_per_are,
+            "n_total_kg": n_per_are * area_are,
+            "p_total_kg": p_per_are * area_are,
+            "k_total_kg": k_per_are * area_are,
             "release_date": release_date,
             "pull_date": pull_date,
             "warnings": warnings,
         }
 
+    def _to_reactive_result(self, metrics: dict, safe_window_days: int) -> ReactiveResult:
+        return ReactiveResult(
+            duck_density_per_are=round(metrics["density_per_are"], 3),
+            duration_days=metrics["duration_days"],
+            risk_level=metrics["risk_level"].value,
+            risk_summary=self._build_risk_summary(
+                density_per_are=metrics["density_per_are"],
+                k_max_per_are=metrics["k_max_per_are"],
+                risk_level=metrics["risk_level"],
+            ),
+            penalty_rate=round(metrics["penalty_rate"], 4),
+            predicted_rice_yield_kg_per_are=round(metrics["final_yield_kg_per_are"], 3),
+            predicted_rice_yield_total_kg=round(metrics["total_rice_yield_kg"], 3),
+            total_benefit_rp=round(metrics["total_benefit_rp"], 2),
+            delta_rice_value_rp=round(metrics["delta_rice_value_rp"], 2),
+            duck_net_value_rp=round(metrics["duck_net_value_rp"], 2),
+            ecological_value_rp=round(metrics["ecological_value_rp"], 2),
+            penalty_yield_rp=round(metrics["penalty_yield_rp"], 2),
+            penalty_feed_rp=round(metrics["penalty_feed_rp"], 2),
+            soil_nutrients=SoilNutrientSummary(
+                n_kg_per_are=round(metrics["n_kg_per_are"], 4),
+                p2o5_kg_per_are=round(metrics["p_kg_per_are"], 4),
+                k2o_kg_per_are=round(metrics["k_kg_per_are"], 4),
+                n_total_kg=round(metrics["n_total_kg"], 4),
+                p2o5_total_kg=round(metrics["p_total_kg"], 4),
+                k2o_total_kg=round(metrics["k_total_kg"], 4),
+            ),
+            timeline=TimelineSummary(
+                duck_release_date=metrics["release_date"],
+                duck_pull_date=metrics["pull_date"],
+                safe_window_days=safe_window_days,
+            ),
+            warnings=metrics["warnings"],
+        )
+
+    def _to_proactive_result(
+        self,
+        proactive_metrics: dict,
+        safe_window_days: int,
+        reactive_total_benefit_rp: float,
+        recommended_duck_total: int,
+        recommended_duration_days: int,
+    ) -> ProactiveResult:
+        return ProactiveResult(
+            recommended_duck_total=recommended_duck_total,
+            recommended_duck_density_per_are=round(
+                proactive_metrics["density_per_are"],
+                3,
+            ),
+            recommended_duration_days=recommended_duration_days,
+            risk_summary=self._build_risk_summary(
+                density_per_are=proactive_metrics["density_per_are"],
+                k_max_per_are=proactive_metrics["k_max_per_are"],
+                risk_level=proactive_metrics["risk_level"],
+            ),
+            predicted_optimal_yield_kg_per_are=round(
+                proactive_metrics["final_yield_kg_per_are"],
+                3,
+            ),
+            predicted_optimal_yield_total_kg=round(proactive_metrics["total_rice_yield_kg"], 3),
+            projected_total_benefit_rp=round(proactive_metrics["total_benefit_rp"], 2),
+            delta_profit_rp=round(
+                proactive_metrics["total_benefit_rp"] - reactive_total_benefit_rp,
+                2,
+            ),
+            timeline=TimelineSummary(
+                duck_release_date=proactive_metrics["release_date"],
+                duck_pull_date=proactive_metrics["pull_date"],
+                safe_window_days=safe_window_days,
+            ),
+            warnings=proactive_metrics["warnings"],
+        )
+
     def _build_summary(self, reactive_metrics: dict, proactive_metrics: dict) -> str:
         if proactive_metrics["total_benefit_rp"] > reactive_metrics["total_benefit_rp"]:
             return "The proactive recommendation improves projected benefit while staying inside the modeled safe window."
         return "The reactive scenario is already competitive under the current seed assumptions."
+
+    def _build_risk_summary(
+        self,
+        density_per_are: float,
+        k_max_per_are: float,
+        risk_level: RiskLevel,
+    ) -> RiskSummary:
+        exceeded_density = max(0.0, density_per_are - k_max_per_are)
+        exceeded_ratio_pct = 0.0
+        if k_max_per_are > 0:
+            exceeded_ratio_pct = (exceeded_density / k_max_per_are) * 100.0
+        return RiskSummary(
+            level=risk_level.value,
+            current_density_per_are=round(density_per_are, 3),
+            k_max_per_are=round(k_max_per_are, 3),
+            warning_limit_per_are=round(k_max_per_are * 1.3, 3),
+            exceeded_density_per_are=round(exceeded_density, 3),
+            exceeded_ratio_pct=round(exceeded_ratio_pct, 3),
+        )
 
 
 simulation_service = SimulationService()

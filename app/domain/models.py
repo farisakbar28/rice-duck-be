@@ -1,3 +1,4 @@
+from datetime import datetime
 from dataclasses import dataclass
 
 from app.domain.enums import CalibrationStatus
@@ -17,7 +18,7 @@ class RiceVariety:
 class PlantingSystem:
     code: str
     name: str
-    k_max_per_hectare: float
+    k_max_per_are: float
     f_yield: float
     notes: str = ""
 
@@ -26,7 +27,7 @@ class PlantingSystem:
 class MarketPrices:
     rice_duck_price_rp_per_kg: float
     conventional_rice_price_rp_per_kg: float
-    baseline_yield_ton_per_ha: float
+    baseline_yield_kg_per_are: float
     nitrogen_price_rp_per_kg: float
     phosphate_price_rp_per_kg: float
     potassium_price_rp_per_kg: float
@@ -77,3 +78,10 @@ class ParameterSet:
     emission_constants: EmissionConstants
     optimization: OptimizationParameters
 
+
+@dataclass
+class SimulationRecord:
+    id: str
+    created_at: datetime
+    request_payload: dict
+    response_payload: dict

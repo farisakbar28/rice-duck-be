@@ -1,11 +1,6 @@
 from enum import Enum
 
 
-class LandAreaUnit(str, Enum):
-    ARE = "are"
-    HECTARE = "hectare"
-
-
 class DuckEconomicModel(str, Enum):
     LOCAL_GROSS = "local_gross"
 
@@ -26,4 +21,3 @@ class CalibrationStatus(str, Enum):
 class EmissionStatus(str, Enum):
     NOT_CALCULATED = "not_calculated"
     LIMITED = "limited"
-
