@@ -1,170 +1,321 @@
 from fastapi.testclient import TestClient
 
+from app.core.database import get_connection
 from app.main import app
 
 client = TestClient(app)
 
+SIMULATION_PAYLOAD = {
+    "duck_count": 28,
+    "land_area_are": 7,
+    "planting_date": "2026-06-01",
+    "rice_variety": "sertani",
+    "planting_system": "jajar_legowo",
+    "duck_age_days": 30,
+}
+
+
+def register_and_login(
+    *,
+    name: str = "Faris",
+    email: str = "faris@example.com",
+    password: str = "password123",
+) -> tuple[dict, dict[str, str]]:
+    register_response = client.post(
+        "/api/v1/auth/register",
+        json={"name": name, "email": email, "password": password},
+    )
+    assert register_response.status_code == 201
+    login_response = client.post(
+        "/api/v1/auth/login",
+        json={"email": email, "password": password},
+    )
+    assert login_response.status_code == 200
+    login_body = login_response.json()
+    return login_body["user"], {
+        "Authorization": f"Bearer {login_body['access_token']}"
+    }
+
+
+def test_openapi_exposes_only_requested_endpoints() -> None:
+    assert set(app.openapi()["paths"]) == {
+        "/health",
+        "/api/v1/auth/register",
+        "/api/v1/auth/login",
+        "/api/v1/auth/me",
+        "/api/v1/dss/options",
+        "/api/v1/dss/simulate",
+        "/api/v1/dss/histories",
+        "/api/v1/dss/histories/{history_id}",
+    }
+
 
 def test_health_check() -> None:
-    response = client.get("/api/v1/health")
+    response = client.get("/health")
     assert response.status_code == 200
-    assert response.json()["status"] == "ok"
+    assert response.json() == {"status": "ok", "service": "rice-duck-dss-backend"}
 
 
-def test_rice_variety_lookup() -> None:
-    response = client.get("/api/v1/lookups/rice-varieties")
-    assert response.status_code == 200
-    body = response.json()
-    assert body["data"]
-    assert any(item["id"] == "ciherang" for item in body["data"])
-
-
-def test_get_active_parameter_set() -> None:
-    response = client.get("/api/v1/parameters/active")
+def test_dss_options_are_public() -> None:
+    response = client.get("/api/v1/dss/options")
     assert response.status_code == 200
     body = response.json()
-    assert body["data"]["id"] == "active"
-    assert body["data"]["optimization"]["population_size"] == 40
+    assert any(item["code"] == "sertani" for item in body["rice_varieties"])
+    assert any(item["code"] == "jajar_legowo" for item in body["planting_systems"])
+    tegel = next(
+        item for item in body["planting_systems"] if item["code"] == "tegel"
+    )
+    assert tegel["k_max_are"] == 2.5
+    assert tegel["k_max_range_are"] == {"min": 2, "max": 3}
 
 
-def test_simulation_preview_context() -> None:
+def test_register_user() -> None:
     response = client.post(
-        "/api/v1/simulations/preview-context",
+        "/api/v1/auth/register",
         json={
-            "duck_count": 40,
-            "land_area_are": 10,
-            "rice_variety": "ciherang",
-            "planting_system": "legowo",
-            "planting_date": "2026-06-01",
+            "name": "Faris",
+            "email": "faris@example.com",
+            "password": "password123",
         },
+    )
+    assert response.status_code == 201
+    assert response.json()["message"] == "User registered successfully"
+    assert response.json()["user"]["email"] == "faris@example.com"
+    with get_connection() as connection:
+        row = connection.execute(
+            "SELECT password_hash FROM users WHERE email = ?",
+            ("faris@example.com",),
+        ).fetchone()
+    assert row is not None
+    assert row["password_hash"] != "password123"
+    assert row["password_hash"].startswith("pbkdf2_sha256$")
+
+
+def test_duplicate_email_is_rejected() -> None:
+    register_and_login()
+    response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "name": "Another Faris",
+            "email": "FARIS@example.com",
+            "password": "password123",
+        },
+    )
+    assert response.status_code == 409
+    assert response.json()["error"]["field"] == "email"
+
+
+def test_login_and_get_current_user() -> None:
+    user, headers = register_and_login()
+    response = client.get("/api/v1/auth/me", headers=headers)
+    assert response.status_code == 200
+    assert response.json() == user
+    assert response.json()["email"] == "faris@example.com"
+
+
+def test_invalid_login_is_rejected() -> None:
+    client.post(
+        "/api/v1/auth/register",
+        json={
+            "name": "Faris",
+            "email": "faris@example.com",
+            "password": "password123",
+        },
+    )
+    response = client.post(
+        "/api/v1/auth/login",
+        json={"email": "faris@example.com", "password": "wrong-password"},
+    )
+    assert response.status_code == 401
+    assert response.json()["error"]["code"] == "unauthorized"
+
+
+def test_protected_endpoints_require_access_token() -> None:
+    assert client.get("/api/v1/auth/me").status_code == 401
+    assert client.get("/api/v1/dss/histories").status_code == 401
+
+
+def test_public_simulation_does_not_save_history() -> None:
+    response = client.post("/api/v1/dss/simulate", json=SIMULATION_PAYLOAD)
+    assert response.status_code == 200
+    assert response.json()["history_id"] is None
+    assert response.json()["actual_scenario"]["density_are"] == 4.0
+    body = response.json()
+    assert body["economics"]["status"] == "partial"
+    assert body["economics"]["actual"]["net_profit_rp"] is None
+    assert body["ecology"]["actual"]["soil_nutrients"]["status"] == "unavailable"
+    assert body["ecology"]["actual"]["pesticide_herbicide_saving_status"] == "estimation_only"
+    assert body["ecology"]["actual"]["pesticide_herbicide_saving_rp"] is not None
+    assert body["environment"]["status"] == "disabled"
+    assert body["environment"]["actual"]["co2e_kg_per_ha_season"] is None
+    assert body["data_readiness"] == {
+        "agronomy_ready": "ready",
+        "yield_ready": "estimation_only",
+        "economics_ready": "partial",
+        "ecology_ready": "estimation_only",
+        "environment_ready": "disabled",
+        "overall_status": "partial",
+    }
+    assert body["lookup"]["parameters"]["survival_lambda"]["source"] == "data_collection"
+    assert body["lookup"]["parameters"]["survival_lambda"]["status"] == "estimation"
+    assert body["validation"]["input_valid"] is True
+    assert any(
+        "14-21" in warning for warning in body["validation"]["warnings"]
+    )
+    
+    dung_calc = body["trace"]["dung_calculation"]
+    assert dung_calc["dung_total_kg_per_ha"] == 686.08
+
+    trace = body["trace"]["recommendation_grid_search"]
+    recommended = body["recommended_scenario"]
+    assert trace["candidate_basis"] == "integer_duck_count"
+    assert trace["best_duck_count"] == recommended["recommended_duck_count"]
+    assert trace["best_candidate_density_are"] == recommended["recommended_density_are"]
+    assert round(
+        recommended["recommended_duck_count"] / body["input"]["land_area_are"],
+        4,
+    ) == recommended["recommended_density_are"]
+    assert trace["best_duration_days"] <= 80
+    assert 28 + trace["best_duration_days"] <= 60
+    assert trace["objective_components_used"] == [
+        "normalized_yield",
+        "risk_penalty",
+    ]
+
+
+def test_public_simulation_rejects_invalid_optional_token() -> None:
+    response = client.post(
+        "/api/v1/dss/simulate",
+        json=SIMULATION_PAYLOAD,
+        headers={"Authorization": "Bearer invalid-token"},
+    )
+    assert response.status_code == 401
+
+
+def test_simulation_is_saved_as_user_history() -> None:
+    _, headers = register_and_login()
+    response = client.post(
+        "/api/v1/dss/simulate",
+        json=SIMULATION_PAYLOAD,
+        headers=headers,
     )
     assert response.status_code == 200
     body = response.json()
-    assert body["agronomic_context"]["safe_window_days"] == 60
-    assert body["preview"]["duck_density_per_are"] == 4.0
-    assert body["preview"]["max_duck_capacity"] == 38
-    assert body["preview"]["risk_summary"]["level"] == "bahaya"
+    assert body["history_id"]
+    assert body["actual_scenario"]["density_are"] == 4.0
+    assert body["actual_scenario"]["duration_days"] == 32
+    assert body["actual_scenario"]["surviving_ducks"] == 18.76
+    assert body["actual_scenario"]["predicted_yield"]["kg_per_ha"] == 6116.3981
+    assert body["actual_scenario"]["predicted_yield"]["estimated_total_kg"] == 428.1479
+    assert body["actual_scenario"]["risk_status"] == "SAFE"
+    assert body["trace"]["yield_model"]["density_basis"] == "d_ha"
+
+    list_response = client.get("/api/v1/dss/histories", headers=headers)
+    assert list_response.status_code == 200
+    histories = list_response.json()["data"]
+    assert len(histories) == 1
+    assert histories[0]["id"] == body["history_id"]
+    assert "trace" not in histories[0]
+    assert histories[0]["summary"]["rice_variety"] == "Sertani / Seratih"
+
+
+def test_history_detail_and_delete() -> None:
+    _, headers = register_and_login()
+    simulate_response = client.post(
+        "/api/v1/dss/simulate",
+        json=SIMULATION_PAYLOAD,
+        headers=headers,
+    )
+    history_id = simulate_response.json()["history_id"]
+
+    detail_response = client.get(
+        f"/api/v1/dss/histories/{history_id}",
+        headers=headers,
+    )
+    assert detail_response.status_code == 200
+    assert detail_response.json()["history_id"] == history_id
+    assert detail_response.json()["trace"]["yield_model"]["x_final"] == 6116.3981
+    assert detail_response.json()["economics"]["actual"]["net_profit_rp"] is None
+    assert detail_response.json()["ecology"]["actual"]["soil_nutrients"]["n_kg_per_ha"] is None
+    assert detail_response.json()["environment"]["status"] == "disabled"
+
+    delete_response = client.delete(
+        f"/api/v1/dss/histories/{history_id}",
+        headers=headers,
+    )
+    assert delete_response.status_code == 200
+    assert client.get(
+        f"/api/v1/dss/histories/{history_id}",
+        headers=headers,
+    ).status_code == 404
+
+
+def test_user_cannot_access_another_users_history() -> None:
+    _, first_headers = register_and_login(
+        name="First User",
+        email="first@example.com",
+    )
+    simulate_response = client.post(
+        "/api/v1/dss/simulate",
+        json=SIMULATION_PAYLOAD,
+        headers=first_headers,
+    )
+    history_id = simulate_response.json()["history_id"]
+
+    _, second_headers = register_and_login(
+        name="Second User",
+        email="second@example.com",
+    )
+    assert client.get(
+        f"/api/v1/dss/histories/{history_id}",
+        headers=second_headers,
+    ).status_code == 404
+    assert client.delete(
+        f"/api/v1/dss/histories/{history_id}",
+        headers=second_headers,
+    ).status_code == 404
+    assert client.get("/api/v1/dss/histories", headers=second_headers).json() == {
+        "data": []
+    }
 
 
 def test_simulation_invalid_lookup_returns_structured_error() -> None:
+    _, headers = register_and_login()
+    payload = dict(SIMULATION_PAYLOAD)
+    payload["rice_variety"] = "unknown"
     response = client.post(
-        "/api/v1/simulations/preview-context",
-        json={
-            "duck_count": 40,
-            "land_area_are": 10,
-            "rice_variety": "unknown-variety",
-            "planting_system": "legowo",
-            "planting_date": "2026-06-01",
-        },
+        "/api/v1/dss/simulate",
+        json=payload,
+        headers=headers,
     )
     assert response.status_code == 422
-    body = response.json()
-    assert body["error"]["code"] == "invalid_reference"
-    assert body["error"]["field"] == "rice_variety"
+    assert response.json()["error"]["field"] == "rice_variety"
 
 
-def test_simulation_validation_error_returns_issues() -> None:
+def test_simulation_invalid_planting_system_returns_structured_error() -> None:
+    _, headers = register_and_login()
+    payload = dict(SIMULATION_PAYLOAD)
+    payload["planting_system"] = "unknown"
     response = client.post(
-        "/api/v1/simulations/preview-context",
-        json={
-            "duck_count": 40,
-            "land_area_are": 0,
-            "rice_variety": "ciherang",
-            "planting_system": "legowo",
-            "planting_date": "2026-06-01",
-        },
+        "/api/v1/dss/simulate",
+        json=payload,
+        headers=headers,
     )
     assert response.status_code == 422
-    body = response.json()
-    assert body["error"]["code"] == "validation_error"
-    assert body["error"]["issues"]
-    assert any(issue["field"] == "land_area_are" for issue in body["error"]["issues"])
+    assert response.json()["error"]["field"] == "planting_system"
 
 
-def test_simulation_evaluate() -> None:
+def test_simulation_validation_error() -> None:
+    _, headers = register_and_login()
+    payload = dict(SIMULATION_PAYLOAD)
+    payload["land_area_are"] = 0
     response = client.post(
-        "/api/v1/simulations/evaluate",
-        json={
-            "duck_count": 40,
-            "land_area_are": 10,
-            "rice_variety": "ciherang",
-            "planting_system": "legowo",
-            "planting_date": "2026-06-01",
-        },
+        "/api/v1/dss/simulate",
+        json=payload,
+        headers=headers,
     )
-    assert response.status_code == 200
-    body = response.json()
-    assert body["simulation_id"]
-    assert body["reactive_result"]["duck_density_per_are"] == 4.0
-    assert body["agronomic_context"]["k_max_per_are"] == 3.75
-    assert body["reactive_result"]["risk_summary"]["level"] == "bahaya"
-    assert body["optimization_meta"]["algorithm"] == "Differential Evolution"
-    assert body["comparison"]["display_mode"] == "side_by_side"
-
-
-def test_simulation_history_and_detail() -> None:
-    evaluate_response = client.post(
-        "/api/v1/simulations/evaluate",
-        json={
-            "duck_count": 32,
-            "land_area_are": 8,
-            "rice_variety": "ciherang",
-            "planting_system": "legowo",
-            "planting_date": "2026-06-05",
-        },
+    assert response.status_code == 422
+    assert any(
+        issue["field"] == "land_area_are"
+        for issue in response.json()["error"]["issues"]
     )
-    assert evaluate_response.status_code == 200
-    simulation_id = evaluate_response.json()["simulation_id"]
-
-    list_response = client.get("/api/v1/simulations")
-    assert list_response.status_code == 200
-    list_body = list_response.json()
-    assert any(item["simulation_id"] == simulation_id for item in list_body["data"])
-
-    detail_response = client.get(f"/api/v1/simulations/{simulation_id}")
-    assert detail_response.status_code == 200
-    detail_body = detail_response.json()
-    assert detail_body["simulation_id"] == simulation_id
-    assert detail_body["input_summary"]["duck_count"] == 32
-    assert "optimization_meta" in detail_body
-
-
-def test_simulation_summary() -> None:
-    evaluate_response = client.post(
-        "/api/v1/simulations/evaluate",
-        json={
-            "duck_count": 28,
-            "land_area_are": 8,
-            "rice_variety": "ciherang",
-            "planting_system": "legowo",
-            "planting_date": "2026-06-07",
-        },
-    )
-    assert evaluate_response.status_code == 200
-    simulation_id = evaluate_response.json()["simulation_id"]
-
-    summary_response = client.get(f"/api/v1/simulations/{simulation_id}/summary")
-    assert summary_response.status_code == 200
-    body = summary_response.json()
-    assert body["header"]["simulation_id"] == simulation_id
-    assert body["header"]["area_are"] == 8.0
-    assert body["reactive_card"]["label"] == "reactive"
-    assert body["reactive_card"]["duck_total"] == 28
-    assert body["proactive_card"]["label"] == "proactive"
-    assert body["recommendation"]["risk_transition"]
-
-
-def test_simulation_detail_not_found_returns_structured_error() -> None:
-    response = client.get("/api/v1/simulations/not-found-id")
-    assert response.status_code == 404
-    body = response.json()
-    assert body["error"]["code"] == "not_found"
-    assert body["error"]["field"] == "simulation_id"
-
-
-def test_simulation_summary_not_found_returns_structured_error() -> None:
-    response = client.get("/api/v1/simulations/not-found-id/summary")
-    assert response.status_code == 404
-    body = response.json()
-    assert body["error"]["code"] == "not_found"
-    assert body["error"]["field"] == "simulation_id"

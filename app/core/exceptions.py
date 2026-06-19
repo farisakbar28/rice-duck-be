@@ -28,3 +28,22 @@ class ResourceNotFoundError(AppError):
             field=field,
         )
 
+
+class ConflictError(AppError):
+    def __init__(self, *, message: str, field: str | None = None) -> None:
+        super().__init__(
+            message=message,
+            code="conflict",
+            status_code=409,
+            field=field,
+        )
+
+
+class AuthenticationError(AppError):
+    def __init__(self, *, message: str = "Invalid or expired access token.") -> None:
+        super().__init__(
+            message=message,
+            code="unauthorized",
+            status_code=401,
+            field=None,
+        )

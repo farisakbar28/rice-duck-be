@@ -1,5 +1,15 @@
-from app.data.seed import PLANTING_SYSTEMS, RICE_VARIETIES
-from app.domain.models import PlantingSystem, RiceVariety
+from app.data.seed import (
+    DSS_CONSTANTS,
+    PARAMETER_METADATA,
+    PLANTING_SYSTEMS,
+    RICE_VARIETIES,
+)
+from app.domain.models import (
+    DSSConstants,
+    ParameterMetadata,
+    PlantingSystem,
+    RiceVariety,
+)
 
 
 class LookupRepository:
@@ -17,6 +27,11 @@ class LookupRepository:
         normalized = code.strip().lower()
         return next((item for item in PLANTING_SYSTEMS if item.code == normalized), None)
 
+    def get_constants(self) -> DSSConstants:
+        return DSS_CONSTANTS
+
+    def get_parameter_metadata(self) -> dict[str, ParameterMetadata]:
+        return dict(PARAMETER_METADATA)
+
 
 lookup_repository = LookupRepository()
-

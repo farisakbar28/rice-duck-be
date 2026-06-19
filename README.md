@@ -1,496 +1,213 @@
 # Rice Duck DSS Backend
 
-Backend ini adalah fondasi API untuk sistem Decision Support System (DSS) prediksi hasil panen padi-bebek. Sistem berfokus pada evaluasi skenario budidaya aktual, estimasi manfaat agronomis dan ekonomi, serta rekomendasi skenario yang lebih optimal menggunakan algoritma Differential Evolution (DE).
+Backend FastAPI minimal untuk penelitian **DSS Yield Prediction Padi-Bebek**. Sistem ini adalah DSS deterministik berbasis model matematika, bukan machine learning, IoT, atau platform industri.
 
-Dokumentasi ini memakai aturan satuan yang konsisten:
+Referensi parameter hanya berasal dari dokumen model 74 variabel dan `data_collection_padi_bebek.xlsx`. File data collection dipakai sebagai referensi lokal dengan metadata nilai, satuan, sumber, status, rentang, dan catatan. Nilai parsial tidak diperlakukan sebagai konstanta final.
 
-- luas lahan hanya dalam `are`,
-- hasil panen dan berat hanya dalam `kg` atau turunan yang lebih kecil.
+## Akses API
 
-## Tujuan Sistem
+Public:
 
-Backend ini dirancang untuk:
+- `GET /health`
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
+- `GET /api/v1/dss/options`
+- `POST /api/v1/dss/simulate`
 
-- menerima input skenario padi-bebek dari pengguna,
-- menghitung evaluasi kondisi aktual,
-- mengukur tingkat risiko kepadatan bebek,
-- memperkirakan hasil panen padi,
-- memperkirakan nilai manfaat ekonomi dan ekologis,
-- menghasilkan rekomendasi jumlah bebek dan durasi integrasi yang lebih baik,
-- menyediakan hasil komparatif yang siap dipakai frontend DSS.
+Protected:
 
-## Ruang Lingkup Backend
+- `GET /api/v1/auth/me`
+- `GET /api/v1/dss/histories`
+- `GET /api/v1/dss/histories/{id}`
+- `DELETE /api/v1/dss/histories/{id}`
 
-Backend menangani:
+Simulasi tanpa token tetap berjalan dengan `history_id: null`. Jika Bearer token valid dikirim, seluruh response disimpan sebagai history user di SQLite. Token yang dikirim tetapi tidak valid menghasilkan `401`.
 
-- validasi input,
-- lookup varietas padi,
-- lookup sistem tanam,
-- perhitungan kepadatan bebek,
-- perhitungan jendela aman integrasi,
-- perhitungan yield model,
-- klasifikasi risiko,
-- estimasi manfaat ekonomi,
-- estimasi manfaat ekologis,
-- optimasi dengan Differential Evolution,
-- penyusunan output komparatif,
-- histori simulasi.
-
-## Arsitektur Proyek
-
-```text
-app/
-  api/
-    routes/
-  core/
-  data/
-  domain/
-  engines/
-  repositories/
-  schemas/
-  services/
-tests/
-.env.example
-requirements.txt
-README.md
-```
-
-Penjelasan singkat:
-
-- `api`: endpoint FastAPI.
-- `core`: konfigurasi aplikasi.
-- `data`: seed lookup dan parameter awal.
-- `domain`: enum dan model domain.
-- `engines`: formula bisnis dan optimizer.
-- `repositories`: akses data lookup, parameter, dan histori simulasi.
-- `schemas`: kontrak request-response.
-- `services`: orkestrasi simulasi.
-
-Mode persistence tahap ini:
-
-- lookup, parameter, dan histori simulasi masih memakai repository in-memory,
-- struktur repository sudah dipisah agar mudah diganti ke PostgreSQL atau Supabase.
-
-## Stack Teknis
-
-- Python 3.11+
-- FastAPI
-- Pydantic v2
-- Pydantic Settings
-- Uvicorn
-- Pytest
-- HTTPX
-
-## Model Input
-
-Contoh request minimal:
-
-```json
-{
-  "duck_count": 40,
-  "land_area_are": 10,
-  "rice_variety": "ciherang",
-  "planting_system": "legowo",
-  "planting_date": "2026-06-01"
-}
-```
-
-Field utama:
-
-- `duck_count`: jumlah bebek aktual.
-- `land_area_are`: luas lahan dalam are.
-- `rice_variety`: kode varietas padi dari lookup.
-- `planting_system`: kode sistem tanam dari lookup.
-- `planting_date`: tanggal tanam untuk konversi kalender.
-- `parameter_set_id`: identitas parameter set aktif.
-- `market_overrides`: override harga pasar jika diperlukan.
-
-## Lookup yang Digunakan
-
-Lookup varietas seed:
-
-- `ciherang`
-- `inpari32`
-- `ratoon`
-- `lokal`
-
-Lookup sistem tanam seed:
-
-- `konvensional`
-- `legowo`
-- `sri`
-- `double-transplant`
-
-Lookup sistem tanam mengembalikan:
-
-- `k_max_per_are`
-- `f_yield`
-
-Lookup seed ini tetap harus divalidasi atau dikalibrasi dengan data lokal penelitian.
-
-## Formula Inti
-
-### Kepadatan bebek aktual
-
-```text
-d_actual = J / A
-```
-
-Keterangan:
-
-- `J`: jumlah bebek.
-- `A`: luas lahan dalam are.
-- `d_actual`: kepadatan bebek per are.
-
-### Jendela aman integrasi
-
-```text
-safe_window_days = min(HST_heading - HST_entry, t_max_eff)
-```
-
-Keterangan:
-
-- `HST_entry`: hari setelah tanam saat bebek mulai masuk.
-- `HST_heading`: batas akhir sebelum heading stage.
-- `t_max_eff`: batas efisiensi ekonomi maksimum.
-
-### Model yield dasar
-
-Backend memakai bentuk yang sudah dinormalisasi ke `kg/are`:
-
-```text
-x(d,t) = (-1.03 d^2 + 2.6314 d + 75.694) * exp(-((t - 80)^2) / (2 * 80^2))
-```
-
-Keterangan:
-
-- `d`: kepadatan bebek per are.
-- `t`: durasi integrasi bebek dalam hari.
-- `x(d,t)`: hasil panen dasar dalam `kg/are`.
-
-### Penalti kepadatan
-
-```text
-if d <= K_max:
-  P_rate = 0
-else:
-  P_rate = min(0.5, ((d - K_max) / K_max) * 0.5)
-```
-
-Yield setelah penalti:
-
-```text
-x_penalized = x(d,t) * (1 - P_rate)
-```
-
-### Yield akhir
-
-```text
-x_final_kg_per_are = x_penalized * f_yield
-```
-
-### Klasifikasi risiko
-
-```text
-NORMAL  if d <= K_max
-WASPADA if K_max < d <= 1.3 * K_max
-BAHAYA  if d > 1.3 * K_max
-```
-
-Semua threshold kepadatan dinyatakan dalam `bebek/are`.
-
-### Nilai tambah beras
-
-```text
-delta_v_rice = ((p * x_final) - (p0 * x0)) * A
-```
-
-Keterangan:
-
-- `p`: harga beras sistem padi-bebek dalam `Rp/kg`.
-- `p0`: harga beras konvensional dalam `Rp/kg`.
-- `x_final`: yield akhir dalam `kg/are`.
-- `x0`: baseline yield konvensional dalam `kg/are`.
-- `A`: luas lahan dalam are.
-
-### Nilai ekologis pupuk
-
-```text
-v_eco1 = ((0.02 * t) - 0.6) * (0.107 * P_N + 0.424 * P_P + 0.058 * P_K) * d * lambda * A
-```
-
-### Nilai ekologis pengendalian hayati
-
-Komponen ini tetap memakai basis literatur yang berasal dari skala area yang lebih besar. Backend mengonversi kepadatan `bebek/are` ke basis internal literatur hanya di dalam engine, tetapi kontrak API tetap memakai `are`.
-
-```text
-if d is above the literature threshold equivalent to 3 ducks/are:
-  v_eco2 = logistic_model(...)
-else:
-  v_eco2 = linear_interpolation(...)
-```
-
-### Nilai ekonomi bebek
-
-Implementasi seed saat ini memakai pendekatan `local_gross`:
-
-```text
-duck_revenue = harvested_ducks * average_duck_sale_weight_kg * duck_price
-duck_net_value = duck_revenue - feed_penalty
-```
-
-### Objective function
-
-```text
-total_benefit = delta_v_rice + duck_net_value + v_eco
-```
-
-Fungsi ini dipakai sebagai objective pada mode optimasi proaktif.
-
-## Differential Evolution
-
-Variabel keputusan:
-
-- `d`: kepadatan bebek per are.
-- `t`: durasi integrasi bebek dalam hari.
-
-Domain optimasi:
-
-```text
-0 <= d <= K_max
-1 <= t <= safe_window_days
-```
-
-Parameter seed:
-
-```text
-population_size = 40
-mutation_factor = 0.8
-crossover_rate = 0.9
-max_generations = 150
-epsilon = 1e-5
-```
-
-File implementasi:
-
-- [app/engines/differential_evolution.py](app/engines/differential_evolution.py)
-
-## Endpoint API
-
-### Health check
-
-```text
-GET /api/v1/health
-```
-
-### Lookup varietas padi
-
-```text
-GET /api/v1/lookups/rice-varieties
-```
-
-### Lookup sistem tanam
-
-```text
-GET /api/v1/lookups/planting-systems
-```
-
-### Parameter aktif
-
-```text
-GET /api/v1/parameters/active
-```
-
-### Evaluasi simulasi
-
-```text
-POST /api/v1/simulations/evaluate
-```
-
-### Preview context simulasi
-
-```text
-POST /api/v1/simulations/preview-context
-```
-
-### List histori simulasi
-
-```text
-GET /api/v1/simulations
-```
-
-### Detail histori simulasi
-
-```text
-GET /api/v1/simulations/{simulation_id}
-```
-
-### Ringkasan dashboard simulasi
-
-```text
-GET /api/v1/simulations/{simulation_id}/summary
-```
-
-Response utama evaluasi berisi:
-
-- `simulation_id`
-- `created_at`
-- `input_summary`
-- `agronomic_context`
-- `reactive_result`
-- `proactive_result`
-- `comparison`
-- `optimization_meta`
-- `calculation_status`
-- `assumptions`
-
-Response `preview-context` berisi:
-
-- `input_summary`
-- `agronomic_context`
-- `preview`
-- `calculation_status`
-- `assumptions`
-
-Response `summary` berisi:
-
-- `header`
-- `reactive_card`
-- `proactive_card`
-- `recommendation`
-- `calculation_status`
-
-## Error Contract
-
-Backend mengembalikan error terstruktur dalam bentuk:
-
-```json
-{
-  "error": {
-    "code": "validation_error",
-    "message": "Request validation failed.",
-    "field": null,
-    "issues": [
-      {
-        "field": "land_area_are",
-        "message": "Input should be greater than 0",
-        "type": "greater_than"
-      }
-    ]
-  }
-}
-```
-
-Code yang saat ini digunakan:
-
-- `validation_error`: request body tidak valid secara schema.
-- `invalid_reference`: nilai referensi seperti `rice_variety`, `planting_system`, atau `parameter_set_id` tidak ditemukan.
-- `not_found`: resource seperti `simulation_id` tidak ditemukan.
-
-## Bentuk Output
-
-Kontrak output utama sekarang mengikuti satuan berikut:
-
-- area: `are`
-- density: `duck/are`
-- yield: `kg/are` dan `kg total`
-- nutrisi tanah: `kg/are` dan `kg total`
-- harga dan manfaat ekonomi: `Rp`
-
-Response `evaluate` juga membawa:
-
-- context agronomis yang dipakai mesin, seperti `HST_entry`, `HST_heading`, `safe_window_days`, `k_max_per_are`, dan `f_yield`,
-- risk summary terstruktur untuk skenario aktual dan rekomendasi,
-- metadata optimasi, termasuk batas pencarian, jumlah generasi yang dieksekusi, status konvergensi, dan objective terbaik.
-
-Response `summary` ditujukan untuk tampilan kartu dashboard yang ringkas, dengan isi utama:
-
-- identitas simulasi dan konteks input singkat,
-- kartu skenario reaktif,
-- kartu skenario proaktif,
-- delta hasil panen dan manfaat ekonomi,
-- ringkasan transisi risiko.
-
-Backend mengembalikan area dalam `are` serta hasil panen dalam `kg/are` dan `kg total`.
-
-## Setup Lokal
-
-Prasyarat:
-
-- Python 3.11 atau lebih baru
-- `pip`
-
-### 1. Buat virtual environment
+## Menjalankan
 
 ```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
-```
-
-### 2. Install dependency
-
-```powershell
 pip install -r requirements.txt
-```
-
-### 3. Siapkan environment
-
-```powershell
 Copy-Item .env.example .env
-```
-
-### 4. Jalankan server
-
-```powershell
 uvicorn app.main:app --reload
 ```
 
-Alamat default:
+Swagger tersedia di `http://127.0.0.1:8000/docs`.
 
-```text
-http://127.0.0.1:8000
+Konfigurasi utama:
+
+```env
+DATABASE_PATH="data/rice_duck.db"
+JWT_SECRET_KEY="replace-with-a-long-random-secret"
+JWT_ACCESS_TOKEN_MINUTES=120
+PASSWORD_HASH_ITERATIONS=600000
 ```
 
-Swagger UI:
+SQLite dan tabel `users` serta `dss_simulation_histories` dibuat otomatis saat aplikasi dimulai. Tidak ada migration command atau ORM.
 
-```text
-http://127.0.0.1:8000/docs
+## Auth
+
+Register:
+
+```json
+{
+  "name": "Faris",
+  "email": "faris@example.com",
+  "password": "password123"
+}
 ```
 
-### 5. Jalankan test
+Login menggunakan email dan password yang sama. Password disimpan dengan PBKDF2-SHA256 dan salt acak; access token menggunakan JWT HS256. Backend tidak memiliki role, admin, OAuth, refresh token, atau email verification.
+
+## Simulasi
+
+Request `POST /api/v1/dss/simulate`:
+
+```json
+{
+  "duck_count": 28,
+  "land_area_are": 7,
+  "planting_date": "2026-06-01",
+  "rice_variety": "sertani",
+  "planting_system": "jajar_legowo",
+  "duck_age_days": 30
+}
+```
+
+Enam field tersebut adalah satu-satunya input runtime. `rice_variety` dan `planting_system` harus memakai kode dari `GET /api/v1/dss/options`.
+
+Struktur response:
+
+```json
+{
+  "history_id": null,
+  "input": {},
+  "lookup": {},
+  "actual_scenario": {},
+  "recommended_scenario": {},
+  "comparison": {},
+  "risk": {},
+  "economics": {},
+  "ecology": {},
+  "environment": {},
+  "validation": {},
+  "data_readiness": {},
+  "trace": {},
+  "notes": []
+}
+```
+
+## Output dan Status
+
+Output agronomi yang dihitung:
+
+- luas ha, densitas ekor/are dan ekor/ha;
+- durasi, tanggal lepas/tarik, `t_effective`;
+- estimasi survival dan kotoran per ekor;
+- `x_base`, `P_rate`, `x_penalized`, yield kg/ha, kg/are, ton/ha, dan total kg;
+- status risiko kepadatan, fase, pakan, dan peringatan kualitas data.
+
+Output infrastruktur yang dihitung:
+
+- biaya jaring per siklus;
+- biaya kandang per siklus;
+- total biaya infrastruktur.
+
+Maintenance menggunakan placeholder `0` karena tidak tercatat dan selalu diberi catatan bahwa nilai tersebut bukan bukti biaya nihil.
+
+Output bersyarat:
+
+- `delta_rice_value_rp`, `feed_cost_rp`, `duck_net_value_rp`, `net_profit_rp`, dan `delta_profit_rp` bernilai `null` selama harga gabah padi-bebek, baseline yield, atau kuantitas pakan belum lengkap.
+- `V_eco1`, `V_eco2`, dan `V_gulma` berstatus `estimation_only`; total ekologis adalah jumlah ketiga komponen tersebut.
+- N, P2O5, dan K2O tanah bernilai `null` karena koefisien kappa dan uji kotoran lokal belum tersedia.
+- CO2e, GHGI, dan reduksi CH4 bernilai `null` dengan status `disabled` karena data CH4/N2O musiman tidak tersedia.
+
+Status data:
+
+- `ready`: parameter cukup untuk perhitungan yang dinyatakan.
+- `partial`: hanya sebagian komponen tersedia.
+- `estimation_only`: hasil memakai nilai awal/rentang konservatif dan bukan klaim final.
+- `unavailable`: parameter wajib tidak tersedia.
+- `disabled`: modul sengaja tidak dihitung agar tidak menghasilkan klaim tanpa data.
+
+## Parameter Konservatif
+
+- Jajar Legowo memakai `K_max = 4` ekor/are; rentang data 4-8 dan 5-6 hanya skenario uji terbatas.
+- Tegel memakai `K_max = 2.5` ekor/are; rentang data 2-3.
+- Survival `lambda = 0.67` adalah estimasi batas atas dari indikasi 35%-67%, bukan rata-rata tervalidasi.
+- HST masuk memiliki rentang 21-30; heading sekitar 60 dengan rentang 40-65.
+- Aktivitas bebek memakai 10 jam/hari dan baseline model 12 jam/hari.
+- Umur bebek lokal 14-21 hari hanya menjadi konteks risiko dan belum mengubah yield.
+- Biaya penyiangan memakai batas bawah rentang tipikal Rp6.000-Rp25.000/are/siklus; Rp70.000-Rp72.000 dicatat sebagai outlier.
+
+Metadata lengkap parameter tersebut tersedia pada blok `lookup.parameters`.
+
+## Rumus Inti
+
+```text
+A_ha = A_are / 100
+d_are = J / A_are
+d_ha = d_are * 100
+t = HST_heading - HST_masuk
+t_effective = t * daily_grazing_hours / baseline_hours
+N_d = J * lambda
+```
+
+```text
+x(d,t) =
+  (-0.0103*d_ha^2 + 2.6314*d_ha + 7569.4)
+  * exp(-((t-80)^2 / (2*80^2)))
+
+P_rate = 0                                      jika d_are <= K_max
+P_rate = min(P_max, gamma*(d_are-K_max)/K_max) jika d_are > K_max
+
+x_penalized = x(d,t) * (1-P_rate)
+x_final = alpha_local * x_penalized * f_yield
+```
+
+```text
+C_infra =
+  C_jaring/life_jaring
+  + C_kandang/life_kandang
+  + maintenance
+```
+
+Rumus ekonomi, ekologis, hara, dan emisi tetap tersedia dalam engine, tetapi hanya dieksekusi menjadi angka jika parameter wajib tersedia.
+
+## Rekomendasi
+
+Grid search menggunakan jumlah bebek integer:
+
+```text
+J_candidate = ceil(min_density*A_are) ... floor(K_max_conservative*A_are)
+d_candidate_are = J_candidate / A_are
+t_candidate = 1 ... min(HST_heading-HST_masuk, t_max_eff)
+```
+
+Objective aktif saat ini:
+
+```text
+score = normalized_yield - risk_penalty
+```
+
+Profit dan ekologi tidak digunakan dalam ranking karena data belum lengkap. Trace mencatat komponen yang digunakan/dilewati, rentang kandidat, jumlah kandidat, kandidat terbaik, densitas hasil pembagian jumlah bebek terhadap luas, durasi, dan seluruh constraint.
+
+## Pengujian
 
 ```powershell
-pytest
+.venv\Scripts\python -m pytest
 ```
 
-## File Kunci
+Test mencakup rumus agronomi, batas HST, yield contoh 28 bebek/7 are, K_max konservatif, status data ekonomi/hara/emisi, konsistensi grid search, auth, optional history, dan isolasi history antar-user.
 
-- [app/main.py](app/main.py)
-- [app/core/config.py](app/core/config.py)
-- [app/services/simulation_service.py](app/services/simulation_service.py)
-- [app/engines/formula_engine.py](app/engines/formula_engine.py)
-- [app/engines/differential_evolution.py](app/engines/differential_evolution.py)
-- [tests/test_api.py](tests/test_api.py)
+Postman:
 
-## Batas Validasi Ilmiah
+- `postman/Rice_Duck_DSS.postman_collection.json`
+- `postman/Rice_Duck_DSS.postman_environment.json`
 
-Beberapa batas penting yang harus dijaga:
+Import kedua file, pilih environment, jalankan backend, lalu jalankan collection berurutan.
 
-1. Koefisien yield dasar tetap perlu kalibrasi dengan data lokal Indonesia.
-2. Lookup `K_max` dan `f_yield` tetap harus divalidasi terhadap data lapangan.
-3. Parameter harga pasar tidak boleh dianggap universal; harus mengikuti lokasi, musim, dan periode observasi.
-4. Output emisi belum layak dipakai sebagai angka final tanpa konversi fluks musiman dan baseline lokal.
-5. Output finansial tetap harus diposisikan sebagai proyeksi model.
-6. Hasil backend tidak menggantikan validasi agronomi, ekonomi, dan pakar lapangan.
+## Limitasi Akademik
 
-## Pengembangan Lanjutan
-
-Area pengembangan berikut yang relevan:
-
-1. integrasi PostgreSQL atau Supabase,
-2. migration dan repository persistence,
-3. versioning parameter set,
-4. seed data harga lokal dan lookup lapangan,
-5. pengujian formula berbasis skenario referensi penelitian,
-6. modul admin untuk kalibrasi parameter,
-7. ekstensi model emisi saat data pendukung tersedia.
+Yield, survival, kotoran, dan faktor lookup masih perlu kalibrasi lapangan Astungkara Way. Profit tidak final selama data pakan dan baseline ekonomi belum lengkap. Manfaat ekologis tidak boleh dibaca sebagai total final. Emisi tidak dihitung sampai tersedia data CH4 dan N2O musiman yang valid.

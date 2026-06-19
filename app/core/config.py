@@ -9,7 +9,10 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
     host: str = "127.0.0.1"
     port: int = 8000
-    de_random_seed: int = 42
+    database_path: str = "data/rice_duck.db"
+    jwt_secret_key: str = "change-this-secret-in-production"
+    jwt_access_token_minutes: int = 120
+    password_hash_iterations: int = 600_000
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -19,4 +22,3 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-

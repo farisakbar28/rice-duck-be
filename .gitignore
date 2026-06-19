@@ -8,4 +8,5 @@ venv/
 *.pyd
 dist/
 build/
-
+data/*.db
+tests/*.db

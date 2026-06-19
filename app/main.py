@@ -2,22 +2,49 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from app.api.routes.health import router as health_router
 from app.api.router import api_router
 from app.core.config import settings
+from app.core.database import initialize_database
 from app.core.exceptions import AppError
 from app.schemas.common import ErrorResponse
 
 
+OPENAPI_TAGS = [
+    {
+        "name": "health",
+        "description": "Service health check untuk memastikan backend aktif.",
+    },
+    {
+        "name": "auth",
+        "description": "Auth JWT sederhana untuk menyimpan history simulasi per user.",
+    },
+    {
+        "name": "dss",
+        "description": "Dropdown, simulasi, dan history DSS padi-bebek.",
+    },
+]
+
+
 def create_app() -> FastAPI:
+    initialize_database()
     app = FastAPI(
         title=settings.app_name,
+        description=(
+            "Backend Decision Support System padi-bebek berbasis model matematika deterministik.\n\n"
+            "API ini dijaga minimal untuk kebutuhan akademik: auth JWT sederhana, simulasi publik, "
+            "history per user, rekomendasi grid search, dan trace perhitungan."
+        ),
         version=settings.app_version,
         debug=settings.app_debug,
         docs_url="/docs",
         redoc_url="/redoc",
+        openapi_tags=OPENAPI_TAGS,
+        swagger_ui_parameters={"displayRequestDuration": True},
     )
     app.add_exception_handler(AppError, app_error_handler)
     app.add_exception_handler(RequestValidationError, validation_error_handler)
+    app.include_router(health_router, tags=["health"])
     app.include_router(api_router, prefix=settings.api_v1_prefix)
     return app
 

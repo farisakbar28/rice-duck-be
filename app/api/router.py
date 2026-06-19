@@ -1,12 +1,8 @@
 from fastapi import APIRouter
 
-from app.api.routes.health import router as health_router
-from app.api.routes.lookups import router as lookup_router
-from app.api.routes.parameters import router as parameter_router
-from app.api.routes.simulations import router as simulation_router
+from app.api.routes.auth import router as auth_router
+from app.api.routes.dss import router as dss_router
 
 api_router = APIRouter()
-api_router.include_router(health_router, tags=["health"])
-api_router.include_router(lookup_router, prefix="/lookups", tags=["lookups"])
-api_router.include_router(parameter_router, prefix="/parameters", tags=["parameters"])
-api_router.include_router(simulation_router, prefix="/simulations", tags=["simulations"])
+api_router.include_router(auth_router, tags=["auth"])
+api_router.include_router(dss_router, tags=["dss"])
