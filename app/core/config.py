@@ -10,7 +10,8 @@ class Settings(BaseSettings):
     host: str = "127.0.0.1"
     port: int = 8000
     database_path: str = "data/rice_duck.db"
-    jwt_secret_key: str = "change-this-secret-in-production"
+    cors_allowed_origins: str = "*"
+    jwt_secret_key: str = "mSXdI785UBtEkxe1ejL5AqYnt5uD2jEeSDmrD60I3Jw"
     jwt_access_token_minutes: int = 120
     password_hash_iterations: int = 600_000
 
@@ -19,6 +20,16 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+    @property
+    def cors_allowed_origins_list(self) -> list[str]:
+        if self.cors_allowed_origins.strip() == "*":
+            return ["*"]
+        return [
+            origin.strip()
+            for origin in self.cors_allowed_origins.split(",")
+            if origin.strip()
+        ]
 
 
 settings = Settings()

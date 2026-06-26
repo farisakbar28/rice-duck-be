@@ -60,6 +60,11 @@ def compute_penalty_rate(
 
 
 def compute_base_yield_kg_per_ha(density_ha: float, duration_days: int) -> float:
+    """Yield basis literatur (kg/ha note). d_lit_ha = d_aktual_are * 100.
+
+    Rev 2: rumus ini memakai d_lit_ha sebagai catatan konversi rumus literatur.
+    Output utama DSS memakai x_base_kg_are = x_base_kg_ha_note / 100.
+    """
     return (
         (-0.0103 * (density_ha**2)) + (2.6314 * density_ha) + 7569.4
     ) * math.exp(-(((duration_days - 80) ** 2) / (2 * (80**2))))
@@ -72,7 +77,13 @@ def compute_final_yield_kg_per_ha(
     f_yield: float,
     constants: DSSConstants,
 ) -> tuple[float, float, float, float]:
-    density_ha = density_are * 100.0
+    """Compute yield. Returns (x_base_kg_ha_note, penalty_rate, x_penalized_kg_ha_note, x_final_kg_ha_note).
+
+    Rev 2: semua nilai dalam kg/ha adalah catatan (note) untuk rumus literatur.
+    Output utama = x_final_kg_are = x_final_kg_ha_note / 100.
+    d_lit_ha = d_aktual_are * 100 digunakan hanya untuk rumus Xiong/backbone.
+    """
+    density_ha = density_are * 100.0  # d_lit_ha — catatan konversi untuk rumus literatur
     x_base = compute_base_yield_kg_per_ha(density_ha=density_ha, duration_days=duration_days)
     penalty_rate = compute_penalty_rate(
         density_are=density_are,
@@ -85,8 +96,14 @@ def compute_final_yield_kg_per_ha(
 
 
 def convert_yield_units(final_yield_kg_per_ha: float, land_area_are: float) -> tuple[float, float]:
-    kg_per_are = final_yield_kg_per_ha / 100.0
-    estimated_total_kg = kg_per_are * land_area_are
+    """Convert yield dari kg/ha (note) ke kg/are (utama) dan total kg.
+
+    Rev 2: x_final_kg_are = x_final_kg_ha_note / 100 adalah output utama petani.
+    x_final_ton_ha_note = x_final_kg_are / 10 (catatan ton/ha untuk pembanding).
+    estimated_total_kg = x_final_kg_are * A_are.
+    """
+    kg_per_are = final_yield_kg_per_ha / 100.0  # x_final_kg_are = x_final_kg_ha_note / 100
+    estimated_total_kg = kg_per_are * land_area_are  # total = x_final_kg_are * A_are
     return kg_per_are, estimated_total_kg
 
 
@@ -113,3 +130,62 @@ def risk_rank(status: str) -> int:
         "HIGH": 3,
     }
     return order[status]
+
+
+_REY_NOTES = (
+    "REY (Rice Equivalent Yield) memiliki minimal 5 variasi notasi di literatur "
+    "yang secara konsep setara — A17: 'Rice Equivalent Yield', A08: 'REY', "
+    "A19: 'Grain Equivalent Yield (GEY)', A18: 'Rice Equivalent Production', "
+    "B5A06: 'Land Equivalent Ratio-based yield'. "
+    "Implementasi ini mengikuti rumus dari dokumen model matematis (Rev1_Doc): "
+    "REY = Σ(Y_i * P_i) / P_rice."
+)
+
+
+def compute_rey(
+    *,
+    rice_yield_kg: float | None,
+    rice_price_rp_per_kg: float | None,
+    duck_revenue_rp: float | None,
+    rice_reference_price_rp_per_kg: float | None,
+) -> dict:
+    """REY = Σ(Y_i * P_i) / P_rice  (Rev1_Doc)
+
+    Komponen:
+      - Y_rice * P_rice_RD  (nilai produksi padi padi-bebek)
+      - Y_duck_revenue       (pendapatan bebek = N_d * p_duck)
+    Dibagi P_rice_reference untuk konversi ke setara beras.
+
+    Returns dict:
+        rey:           float | None
+        rey_status:    "calculated" | "missing_params"
+        missing_params: list[str]
+        rey_notes:     str  — catatan variasi notasi di literatur
+    """
+    missing: list[str] = []
+    if rice_yield_kg is None:
+        missing.append("rice_yield_kg")
+    if rice_price_rp_per_kg is None:
+        missing.append("rice_price_rp_per_kg")
+    if duck_revenue_rp is None:
+        missing.append("duck_revenue_rp")
+    if rice_reference_price_rp_per_kg is None:
+        missing.append("rice_reference_price_rp_per_kg")
+
+    if missing or (rice_reference_price_rp_per_kg is not None and rice_reference_price_rp_per_kg == 0):
+        return {
+            "rey": None,
+            "rey_status": "missing_params",
+            "missing_params": missing or ["rice_reference_price_rp_per_kg_is_zero"],
+            "rey_notes": _REY_NOTES,
+        }
+
+    # Σ(Y_i * P_i) = nilai padi + pendapatan bebek
+    total_value = (rice_yield_kg * rice_price_rp_per_kg) + duck_revenue_rp  # type: ignore[operator]
+    rey = total_value / rice_reference_price_rp_per_kg  # type: ignore[operator]
+    return {
+        "rey": rey,
+        "rey_status": "calculated",
+        "missing_params": [],
+        "rey_notes": _REY_NOTES,
+    }

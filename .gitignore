@@ -10,3 +10,4 @@ dist/
 build/
 data/*.db
 tests/*.db
+opencode.json

@@ -50,8 +50,11 @@ PLANTING_SYSTEMS = [
         k_max_min_are=4.0,
         k_max_max_are=8.0,
         limited_test_max_are=6.0,
-        k_max_status="estimation",
-        f_yield_status="estimation",
+        k_max_status="local-estimate",       # R4: JANGAN local-calibrated — hanya range dari Field_Data rows 20-21
+        f_yield_status="literature-uncalibrated",  # R4, R13: belum faktor numerik lokal final
+        # R1, R3: Density constraint separation (audit-fixes-post-rev1)
+        recommended_density_min_are=2.0,  # Field_Data row 22: rekomendasi praktis 2-4 ekor/are
+        recommended_density_max_are=4.0,  # Field_Data row 22: rekomendasi praktis 2-4 ekor/are
     ),
     PlantingSystem(
         code="tegel",
@@ -62,8 +65,11 @@ PLANTING_SYSTEMS = [
         k_max_min_are=2.0,
         k_max_max_are=3.0,
         limited_test_max_are=None,
-        k_max_status="estimation",
-        f_yield_status="estimation",
+        k_max_status="local-estimate",       # R4: JANGAN local-calibrated — hanya range dari Field_Data rows 20-21; 2.5 = midpoint/design default dari range 2-3, BUKAN konservatif
+        f_yield_status="literature-uncalibrated",  # R4, R13: belum faktor numerik lokal final
+        # R1, R3: Density constraint separation (audit-fixes-post-rev1)
+        recommended_density_min_are=2.0,  # Field_Data row 22: rekomendasi praktis 2-3 ekor/are
+        recommended_density_max_are=3.0,  # Field_Data row 22: rekomendasi praktis 2-3 ekor/are (BUKAN 2.5)
     ),
 ]
 
@@ -99,11 +105,11 @@ DSS_CONSTANTS = DSSConstants(
     shelter_lifetime_seasons=3,
     infrastructure_maintenance_rp_per_season=0.0,
     additional_cost_rp_per_season=0.0,
-    kappa_n=None,
-    kappa_p=None,
-    kappa_k=None,
-    gwp_ch4=34.0,
-    gwp_n2o=265.0,
+    kappa_n=0.049,  # MATCH_EXACT: workbook referensi Data row 977 "Duck dung N content = 0.049 kg" (A02)
+    kappa_p=0.072,  # MATCH_EXACT: workbook referensi Data row 978 "Duck dung P2O5 content = 0.072 kg" (A02)
+    kappa_k=0.032,  # MATCH_EXACT: workbook referensi Data row 979 "Duck dung K2O content = 0.032 kg" (A02)
+    gwp_ch4=34.0,   # MATCH_EXACT: workbook referensi Data row 855 "GWP CH4 = 34" (A16, IPCC 2014)
+    gwp_n2o=265.0,  # MATCH_EXACT: workbook referensi Data row 855 "GWP N2O = 265" (A16, IPCC 2014)
     seasonal_ch4_rice_duck_kg_per_ha=None,
     seasonal_ch4_conventional_kg_per_ha=None,
     seasonal_n2o_kg_per_ha=None,
@@ -118,16 +124,16 @@ PARAMETER_METADATA = {
         value=0.67,
         unit="ratio",
         source="data_collection",
-        status="estimation",
+        status="local-estimate",  # R4 AC-1, R13: weak/indicative — JANGAN local-calibrated
         minimum=0.35,
         maximum=0.67,
-        note="Contoh indikatif 35%-67%; 0.67 adalah estimasi awal batas atas, bukan rata-rata final.",
+        note="Range 0.35-0.67 dari Field_Data row 29 adalah contoh indikatif; 0.67 estimasi atas, bukan rata-rata final dan bukan local-calibrated. Perlu kalibrasi keras 3-5 siklus.",
     ),
     "hst_masuk": ParameterMetadata(
         value=28,
         unit="HST",
         source="data_collection",
-        status="collected",
+        status="local-estimate",  # R13: range 21-30 HST dari data lokal
         minimum=21,
         maximum=30,
         note="Rentang aman 21-30 HST; 28 HST dipakai sebagai default konservatif pada contoh model.",
@@ -136,7 +142,7 @@ PARAMETER_METADATA = {
         value=60,
         unit="HST",
         source="data_collection",
-        status="estimation",
+        status="local-estimate",  # R13: range 40-65 HST, default sekitar 56-60
         minimum=40,
         maximum=65,
         note="Sekitar 60 HST dan menjadi batas utama penarikan bebek.",
@@ -175,10 +181,10 @@ PARAMETER_METADATA = {
         value=5600,
         unit="Rp/kg gabah",
         source="data_collection",
-        status="estimation",
+        status="local-estimate",   # R13: Rp5.600-5.700/kg periode Maret 2026
         minimum=5600,
         maximum=5700,
-        note="Nilai bawah rentang digunakan secara konservatif; perspektif gabah.",
+        note="Berlaku periode Maret 2026. Nilai bawah rentang digunakan secara konservatif. R-13 AC-4: jangan dipakai sebagai harga 'selalu berlaku'.",
     ),
     "conventional_yield": ParameterMetadata(
         value=None,
@@ -191,7 +197,7 @@ PARAMETER_METADATA = {
         value=28000,
         unit="Rp/duck",
         source="data_collection",
-        status="collected",
+        status="local-estimate",   # R13: Rp25.000-28.000/ekor — range lokal, bukan kalibrasi kuat
         minimum=25000,
         maximum=28000,
         note="Nilai biaya atas digunakan sebagai default konservatif.",
@@ -200,7 +206,7 @@ PARAMETER_METADATA = {
         value=30000,
         unit="Rp/duck",
         source="data_collection",
-        status="partial",
+        status="local-estimate",     # R13: Rp30.000-60.000/ekor — bobot jual belum tersedia
         minimum=30000,
         maximum=60000,
         note="Nilai pendapatan bawah digunakan secara konservatif.",
@@ -210,13 +216,20 @@ PARAMETER_METADATA = {
         unit="kg/duck/day",
         source="data_collection",
         status="unavailable",
-        note="Jumlah pakan tidak dicatat; C_feed dan V_duck tidak boleh menjadi angka final.",
+        note=(
+            "q_feed lokal tidak dicatat (Excel lokal row 48: 'Jumlah pakan tambahan = Belum ada'). "
+            "Fallback referensi Opsi A: 0.10 kg/ekor/hari dari A02 row 975 "
+            "'Average feed consumed per duck per day = 0.1 kg/day' (MATCH_EXACT, literature-uncalibrated). "
+            "Cluster referensi ditemukan: A13 130g/day=0.13, A13 80-110g/day, A16 80g/day=0.08, "
+            "B5A02 ~0.096-0.099 kg/day. "
+            "Nilai 0.12-0.225 kg/ekor/hari TIDAK ditemukan sebagai angka eksplisit di workbook referensi."
+        ),
     ),
     "net_cost": ParameterMetadata(
         value=1350000,
         unit="Rp/200m",
         source="data_collection",
-        status="collected",
+        status="local-estimate",   # R13: Rp1.200.000-1.350.000/200m — range lokal
         minimum=1200000,
         maximum=1350000,
         note="Nilai terbaru Rp1.350.000 digunakan.",
@@ -225,7 +238,7 @@ PARAMETER_METADATA = {
         value=2,
         unit="cycle",
         source="data_collection",
-        status="collected",
+        status="local-estimate",   # R13: amortisasi perlu life cycle lebih lengkap
         minimum=2,
         maximum=3,
         note="Masa pakai terpendek dipakai untuk amortisasi konservatif.",
@@ -234,14 +247,14 @@ PARAMETER_METADATA = {
         value=600000,
         unit="Rp/unit",
         source="data_collection",
-        status="collected",
+        status="local-estimate",   # R13: Rp600.000/unit 2x1m — perlu jumlah unit/life cycle
         note="Kandang ukuran sekitar 2x1 meter.",
     ),
     "shelter_lifetime": ParameterMetadata(
         value=3,
         unit="cycle",
         source="data_collection",
-        status="collected",
+        status="local-estimate",   # R13: perlu life cycle lebih lengkap
         minimum=3,
         maximum=4,
         note="Masa pakai terpendek dipakai untuk amortisasi konservatif.",
@@ -257,17 +270,134 @@ PARAMETER_METADATA = {
         value=6000,
         unit="Rp/are/cycle",
         source="data_collection",
-        status="estimation",
+        status="local-estimate",     # R13: Rp6.000-25.000 tipikal; outlier Rp70.000-72.000 tidak jadi default
         minimum=6000,
         maximum=25000,
         note="Nilai bawah rentang tipikal; Rp70.000-Rp72.000 diperlakukan sebagai outlier.",
+    ),
+    "kappa_feed_save": ParameterMetadata(
+        value=0.66,
+        unit="ratio",
+        source="literature",
+        status="literature-uncalibrated",  # R13: 66% belum validated lokal
+        note=(
+            "0.66 berasal dari teks referensi: 'ducks ... eat pests, rice, weeds to substitute "
+            "part of their feed ... which accounts for around two thirds of their total feed' "
+            "(A03 row 630, workbook referensi sheet Data). Klasifikasi: MATCH_DERIVED_FROM_TEXT. "
+            "Belum divalidasi lokal; Excel lokal row 88 menyatakan 'Angka 66% belum bisa dipastikan'."
+        ),
+    ),
+    "K_max_are": ParameterMetadata(
+        value=None,  # berbeda per sistem tanam
+        unit="ekor/are",
+        source="data_collection",
+        status="local-estimate",  # R13: Jarwo default 4 dari range 4-8; Tegel 2.5 dari range 2-3 sebagai midpoint/design default
+        note="Daya dukung/safety constraint; Jarwo default aman 4.0 dari range 4-8; Tegel default 2.5 sebagai midpoint/design default dari range 2-3, bukan target rekomendasi praktis otomatis.",
+    ),
+    "f_yield": ParameterMetadata(
+        value=None,  # berbeda per sistem tanam
+        unit="multiplier",
+        source="literature",
+        status="literature-uncalibrated",  # R13: belum faktor numerik lokal final
+        note="Faktor pengali yield; belum ada faktor numerik lokal final.",
+    ),
+    "technical_min_density_are": ParameterMetadata(
+        value=1.0,
+        unit="ekor/are",
+        source="model",
+        status="system-design-uncalibrated",  # R1 AC-7, R13: boundary internal grid search
+        note="Boundary internal grid search, bukan rekomendasi praktis.",
+    ),
+    "recommended_density_min_are": ParameterMetadata(
+        value=2.0,
+        unit="ekor/are",
+        source="data_collection",
+        status="local-estimate",  # R1 AC-7, R13: dari Field_Data row 22
+        note="Batas praktis rekomendasi umum dari Field_Data row 22.",
+    ),
+    "recommended_density_max_are": ParameterMetadata(
+        value=None,  # berbeda per sistem tanam: Jarwo 4.0, Tegel 3.0
+        unit="ekor/are",
+        source="data_collection",
+        status="local-estimate",  # R1 AC-7, R13: dari Field_Data row 22
+        note="Batas praktis rekomendasi umum dari Field_Data row 22; Jarwo 4.0, Tegel 3.0.",
+    ),
+    "q_feed_reference_range": ParameterMetadata(
+        value=None,
+        unit="kg/ekor/hari",
+        source="literature",
+        status="literature-uncalibrated",
+        minimum=0.08,
+        maximum=0.13,
+        note=(
+            "Cluster referensi yang ditemukan di workbook (sheet Data): "
+            "A02 row 975: 0.10 kg/day (MATCH_EXACT); "
+            "A13 row 487: 130g/day=0.13 kg/day; "
+            "A13 row 492: 80-110g/day; "
+            "A16 row 535: 80g/day=0.08 kg/day; "
+            "B5A02 row 1389: 689.48g/head/week≈0.0985 kg/day; "
+            "B5A02 row 1395: 670.22g/head/week≈0.0957 kg/day. "
+            "Nilai 0.12-0.225 kg/ekor/hari TIDAK ditemukan eksplisit di workbook. "
+            "Opsi A dipilih: fallback 0.10 dari A02 row 975 (MATCH_EXACT)."
+        ),
+    ),
+    "q_feed_default_0_10": ParameterMetadata(
+        value=0.10,
+        unit="kg/ekor/hari",
+        source="literature",
+        status="literature-uncalibrated",
+        note=(
+            "OPSI A (dipilih): MATCH_EXACT dari workbook referensi sheet Data row 975, "
+            "article A02: 'Average feed consumed per duck per day = 0.1 kg/day'. "
+            "Ini adalah angka eksplisit yang paling traceable dari workbook. "
+            "q_feed lokal belum tersedia. Nilai ini bukan data lokal Astungkara Way."
+        ),
     ),
     "soil_kappa": ParameterMetadata(
         value=None,
         unit="coefficient",
         source="data_collection",
         status="unavailable",
-        note="Uji kotoran bebek lokal belum tersedia; N/P/K tanah tidak dihitung.",
+        note=(
+            "Uji kotoran bebek lokal belum tersedia. "
+            "Nilai referensi literatur (MATCH_EXACT, workbook referensi sheet Data, article A02): "
+            "kappa_N=0.049 (row 977), kappa_P=0.072 (row 978), kappa_K=0.032 (row 979). "
+            "Status literature-uncalibrated; belum divalidasi lokal."
+        ),
+    ),
+    "kappa_n_reference": ParameterMetadata(
+        value=0.049,
+        unit="kg-N / (10 kg kotoran)",
+        source="literature",
+        status="literature-uncalibrated",
+        note=(
+            "MATCH_EXACT: workbook referensi Data row 977, article A02 "
+            "'Duck dung N content = 0.049 kg'. "
+            "Belum dikalibrasi lokal Astungkara Way; belum aktif di perhitungan karena "
+            "uji kotoran lokal belum tersedia."
+        ),
+    ),
+    "kappa_p_reference": ParameterMetadata(
+        value=0.072,
+        unit="kg-P2O5 / (10 kg kotoran)",
+        source="literature",
+        status="literature-uncalibrated",
+        note=(
+            "MATCH_EXACT: workbook referensi Data row 978, article A02 "
+            "'Duck dung P2O5 content = 0.072 kg'. "
+            "Belum dikalibrasi lokal Astungkara Way."
+        ),
+    ),
+    "kappa_k_reference": ParameterMetadata(
+        value=0.032,
+        unit="kg-K2O / (10 kg kotoran)",
+        source="literature",
+        status="literature-uncalibrated",
+        note=(
+            "MATCH_EXACT: workbook referensi Data row 979, article A02 "
+            "'Duck dung K2O content = 0.032 kg'. "
+            "Belum dikalibrasi lokal Astungkara Way."
+        ),
     ),
     "pesticide_reduction": ParameterMetadata(
         value=None,
@@ -281,6 +411,158 @@ PARAMETER_METADATA = {
         unit="kg/ha/season",
         source="data_collection",
         status="unavailable",
-        note="CH4, N2O, dan DO tidak tersedia; modul environment disabled.",
+        note="CH4, N2O, dan DO belum tersedia lokal; modul environment berstatus literature-uncalibrated dengan rumus dari basis literatur akademik.",  # R4 AC-5, R15: environment NEVER disabled
+    ),
+    # ---- METADATA BARU: dung_phase, gwp, system-design, feed_saving ----
+    "dung_phase_1_total_kg": ParameterMetadata(
+        value=4.0,
+        unit="kg/ekor/fase-1 (≤50 hari)",
+        source="literature",
+        status="literature-uncalibrated",
+        note=(
+            "PARTIAL_SOURCE / MODEL_ASSUMPTION. "
+            "Workbook referensi Data row 976 menyebut 10 kg dung per duck untuk >=80 hari. "
+            "Pembagian 4 kg fase-1 (≤50 hari) adalah asumsi model dua-fase DSS; "
+            "tidak ada baris eksplisit di workbook untuk nilai 4 kg pada 50 hari. "
+            "Tidak boleh diklaim sebagai angka eksplisit lokal atau referensi eksak."
+        ),
+    ),
+    "dung_phase_2_daily_kg": ParameterMetadata(
+        value=0.2,
+        unit="kg/ekor/hari (fase-2, >50 hari)",
+        source="literature",
+        status="literature-uncalibrated",
+        note=(
+            "PARTIAL_SOURCE / MODEL_ASSUMPTION. "
+            "Workbook referensi Data row 976: 10 kg per duck untuk >=80 hari. "
+            "Rate 0.2 kg/hari adalah kelanjutan model fase-2 DSS; "
+            "tidak ada baris eksplisit di workbook untuk nilai harian ini. "
+            "Tidak boleh diklaim sebagai angka eksplisit lokal."
+        ),
+    ),
+    "gwp_ch4": ParameterMetadata(
+        value=34.0,
+        unit="CO2-equivalent factor",
+        source="literature",
+        status="literature-uncalibrated",
+        note=(
+            "MATCH_EXACT: workbook referensi Data row 855, article A16: "
+            "'GWP CH4 = 34 (IPCC, 2014)'. "
+            "Formula: GWP = 34*fCH4 + 265*fN2O."
+        ),
+    ),
+    "gwp_n2o": ParameterMetadata(
+        value=265.0,
+        unit="CO2-equivalent factor",
+        source="literature",
+        status="literature-uncalibrated",
+        note=(
+            "MATCH_EXACT: workbook referensi Data row 855, article A16: "
+            "'GWP N2O = 265 (IPCC, 2014)'. "
+            "Formula: GWP = 34*fCH4 + 265*fN2O."
+        ),
+    ),
+    "minimum_density_are": ParameterMetadata(
+        value=1.0,
+        unit="ekor/are",
+        source="model",
+        status="system-design",
+        note=(
+            "SYSTEM_DESIGN. Boundary internal grid search optimizer, bukan rekomendasi praktis. "
+            "Rekomendasi praktis tetap 2-4 ekor/are (Excel lokal row 22)."
+        ),
+    ),
+    "p_max": ParameterMetadata(
+        value=1.0,
+        unit="dimensionless",
+        source="model",
+        status="system-design",
+        note="SYSTEM_DESIGN. Batas maksimum fungsi penalti.",
+    ),
+    "penalty_gamma": ParameterMetadata(
+        value=0.5,
+        unit="dimensionless",
+        source="model",
+        status="system-design",
+        note="SYSTEM_DESIGN. Koefisien penalti desain sistem, bukan data Excel.",
+    ),
+    "alpha_local": ParameterMetadata(
+        value=1.0,
+        unit="dimensionless",
+        source="model",
+        status="model-assumption",
+        note=(
+            "MODEL_ASSUMPTION. Default netral sebelum kalibrasi 3-5 siklus panen lokal. "
+            "Bukan data Excel; digunakan agar rumus berjalan sebelum ada faktor lokal."
+        ),
+    ),
+    "baseline_grazing_hours_system": ParameterMetadata(
+        value=12.0,
+        unit="jam/hari",
+        source="model",
+        status="system-design",
+        note=(
+            "SYSTEM_DESIGN. Baseline operasional untuk menghitung t_effective, "
+            "bukan data lokal. "
+            "Data lokal (Excel row 82): jam aktivitas bebek di sawah ~10 jam/hari."
+        ),
+    ),
+    "infrastructure_maintenance_placeholder": ParameterMetadata(
+        value=0.0,
+        unit="Rp/siklus",
+        source="data_collection",
+        status="unavailable",
+        note=(
+            "PLACEHOLDER_WITH_NOTE. Biaya maintenance belum tercatat (Excel lokal row 56: "
+            "'Tidak ada catatan biaya perawatan tetap'). "
+            "Nilai 0 hanya placeholder agar rumus berjalan; bukan klaim biaya nol."
+        ),
+    ),
+    "additional_cost_placeholder": ParameterMetadata(
+        value=0.0,
+        unit="Rp/siklus",
+        source="data_collection",
+        status="unavailable",
+        note=(
+            "PLACEHOLDER_WITH_NOTE. Biaya tambahan belum tercatat. "
+            "Nilai 0 hanya placeholder; bukan klaim biaya nol."
+        ),
+    ),
+    "t_max_eff_days": ParameterMetadata(
+        value=80,
+        unit="hari",
+        source="literature",
+        status="literature-uncalibrated",
+        note=(
+            "MATCH_RANGE_SELECTED_MAX / FORMULA_CONTEXT. "
+            "Workbook referensi menyebut practical stocking time 50-80 hari; "
+            "rumus yield model memakai t=80 sebagai batas atas parameter Gaussian. "
+            "Klasifikasi: dipilih sebagai batas atas range."
+        ),
+    ),
+    "q_feed_reference_a02": ParameterMetadata(
+        value=0.10,
+        unit="kg/ekor/hari",
+        source="literature",
+        status="literature-uncalibrated",
+        note=(
+            "MATCH_EXACT. Workbook referensi sheet Data row 975, article A02: "
+            "'Average feed consumed per duck per day = 0.1 kg/day'. "
+            "Ini adalah sumber q_feed fallback yang dipilih (Opsi A). "
+            "q_feed_source=literature-reference-a02, q_feed_match_type=MATCH_EXACT, "
+            "q_feed_source_file='Kumpulan Variabel, Rumus, dan Data dari Artikel Referensi.xlsx', "
+            "q_feed_source_sheet='Data', q_feed_source_row=975."
+        ),
+    ),
+    "feed_natural_saving_rate_ref": ParameterMetadata(
+        value=0.66,
+        unit="ratio",
+        source="literature",
+        status="literature-uncalibrated",
+        note=(
+            "MATCH_DERIVED_FROM_TEXT. Workbook referensi Data row 630, article A03: "
+            "'ducks eat pests, rice, weeds ... which accounts for around two thirds of their total feed'. "
+            "Dua pertiga ≈ 2/3 ≈ 0.66. Belum tervalidasi lokal (Excel lokal row 88: 'Belum bisa dipastikan')."
+        ),
     ),
 }

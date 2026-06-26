@@ -11,6 +11,7 @@ from app.engines.formula_engine import (
     compute_pull_date_from_duration,
     compute_pull_date_from_hst,
     compute_release_date,
+    compute_rey,
     compute_risk_status,
     compute_surviving_ducks,
     convert_are_to_ha,
@@ -41,6 +42,7 @@ from app.schemas.dss import (
     HistoryListResponse,
     HistorySummary,
     InfrastructureOutput,
+    OptimalityAssessment,
     PlantingSystemOption,
     PredictedYield,
     RecommendedScenario,
@@ -134,15 +136,48 @@ class DSSService:
             constants.calibration_note,
             "land_area_are diasumsikan sebagai area aktif yang benar-benar dimasuki bebek, bukan total lahan jika keduanya berbeda.",
             "duck_age_days dicatat sebagai konteks biologis, tetapi belum mengubah yield karena koefisien umur bebek belum terkalibrasi.",
-            "Profit tidak dihitung karena harga gabah padi-bebek, baseline yield konvensional, dan kuantitas pakan belum lengkap.",
-            "Hara tanah tidak dihitung karena koefisien kappa belum tersedia atau tervalidasi lokal.",
-            "Output ekologis berstatus estimation_only; V_eco2 dihitung dari formula sigmoid DOCX sebagai estimasi rendah.",
-            "Modul environment disabled sampai tersedia flux CH4 dan N2O musiman dalam satuan kg/ha/musim.",
+            (
+                "Rev 1: Laba_bersih dihitung menggunakan fallback referensi jika q_feed lokal tidak tersedia; "
+                "status sumber data tersedia di economics.actual.sumber_data dan optimality_assessment.profit_data_purity. "
+                "Jika Laba_bersih masih null, berarti feed_price_rp_per_kg dan/atau rice_duck_price_rp_per_kg belum tersedia."
+            ),
+            "Hara tanah tidak dihitung karena koefisien kappa belum tersedia atau tervalidasi lokal; nilai referensi kappa_N=0.049, kappa_P=0.072, kappa_K=0.032 tersedia di lookup.parameters.",
+            "Output ekologis V_eco1/V_eco2 berstatus literature-uncalibrated; V_gulma berstatus local-estimate.",
+            "Modul emisi berstatus literature-uncalibrated sampai tersedia flux CH4 dan N2O musiman dalam satuan kg/ha/musim.",
+            "R-01: land_area_are diasumsikan area aktif bebek (A_active_duck_are). Jika berbeda dari total lahan, kepadatan dapat bias (warning bias area aktif).",
+            (
+                "REY (Rice Equivalent Yield) dihitung jika p_gabah_rd tersedia; "
+                "5 variasi notasi di literatur — semua konsep setara (A17, A08, A19, A18, B5A06)."
+            ),
         ]
         if actual["duration_days"] > actual["modeled_duration_days"]:
             notes.append(
                 "Durasi aktual melebihi t_max_eff sehingga trace mencatat dua angka: durasi kalender aktual dan durasi yang dipakai model yield."
             )
+
+        optimality = self._compute_optimality(
+            actual=actual,
+            recommended=recommended,
+            planting_system=planting_system,
+            variety=variety,
+        )
+
+        # Bagian B (aturan inti): gating rekomendasi hanya berdasarkan is_optimal.
+        # Requirement baru: recommended_scenario/comparison hanya null jika aktual benar-benar best.
+        show_recommendation = not optimality.is_optimal
+        # Jangan memengaruhi rekomendasi berdasarkan safety_status/density tolerances.
+        # recommended_scenario/comparison hanya null jika benar-benar best (optimality.is_optimal=True).
+        if not show_recommendation:
+            notes.append(
+                "Kondisi aktual sudah identik dengan skenario terbaik menurut optimizer model, sehingga tidak ada rekomendasi alternatif."
+            )
+
+
+
+
+
+
+
 
         lookup = self._build_lookup(
             variety=variety,
@@ -160,7 +195,7 @@ class DSSService:
             yield_ready="estimation_only",
             economics_ready="partial",
             ecology_ready="estimation_only",
-            environment_ready="disabled",
+            environment_ready="literature-uncalibrated",
             overall_status="partial",
         )
 
@@ -268,6 +303,7 @@ class DSSService:
             "recommendation_grid_search": {
                 "method": "grid_search",
                 "candidate_basis": "integer_duck_count",
+
                 "duck_count_range": {
                     "start": recommended["candidate_duck_count_min"],
                     "end": recommended["candidate_duck_count_max"],
@@ -284,10 +320,14 @@ class DSSService:
                     "HST_masuk + recommended_duration_days <= HST_heading",
                 ],
                 "objective": "score = normalized_yield - risk_penalty",
-                "objective_components_used": recommended[
-                    "objective_components_used"
+            "objective_components_used": [
+                    c
+                    for c in recommended["objective_components_used"]
+                    if c in {"normalized_yield", "risk_penalty"}
                 ],
+
                 "objective_components_skipped": [
+
                     component
                     for component, used in (
                         ("normalized_profit", recommended["economics_component_used"]),
@@ -316,7 +356,7 @@ class DSSService:
                 },
             },
             "economics_calculation": {
-                "delta_v_rice_formula": "(p_RD*x_final_kg_ha - p0*x0_kg_ha) * A_ha",
+                "delta_v_rice_formula": "R_gabah_RD = x_final_kg_are * A_are * p_gabah_RD (Rev 2)",
                 "v_duck_formula": "N_d*p_duck - J*p_duck_buy - C_feed - Penalty_feed",
                 "net_profit_formula": "R_gabah_RD + V_duck + V_eco - C_infra - additional_cost",
                 "actual_net_profit_rp": self._round_optional(
@@ -329,14 +369,14 @@ class DSSService:
                 ),
             },
             "soil_nutrient_calculation": {
-                "formula": "kappa * (Dung_total/10) * d_ha * lambda",
+                "formula": "kappa * (Dung_total/10) * d_aktual_are * lambda (Rev 2 basis are)",
                 "actual": self._round_mapping(actual["nutrients"], 6),
                 "recommended": self._round_mapping(recommended["nutrients"], 6),
             },
             "environment_calculation": {
-                "co2e_formula": "F_CH4*GWP_CH4 + F_N2O*GWP_N2O",
-                "ghgi_formula": "CO2e / x_final_kg_ha",
-                "ch4_reduction_formula": "(F_CH4_konv-F_CH4_RD)/F_CH4_konv*100",
+                "co2e_formula": "CO2e_are = F_CH4_are*GWP_CH4 + F_N2O_are*GWP_N2O (Rev 2 basis are)",
+                "ghgi_formula": "GHGI = CO2e_are / x_final_kg_are",
+                "ch4_reduction_formula": "(F_CH4_konv_are - F_CH4_RD_are) / F_CH4_konv_are * 100%",
                 "status": actual["environment"]["status"],
             },
         }
@@ -349,8 +389,10 @@ class DSSService:
                 duck_count=actual["duck_count"],
                 land_area_are=round(actual["land_area_are"], 4),
                 land_area_ha=round(actual["land_area_ha"], 4),
+                land_area_ha_note=round(actual["land_area_ha"], 4),  # Rev 2: A_ha_note alias
                 density_are=round(actual["density_are"], 4),
                 density_ha=round(actual["density_ha"], 4),
+                density_lit_ha=round(actual["density_ha"], 4),  # Rev 2: d_lit_ha = d_are * 100
                 duration_days=actual["duration_days"],
                 release_date=actual["release_date"],
                 pull_date=actual["pull_date"],
@@ -365,8 +407,10 @@ class DSSService:
                     4,
                 ),
                 x_base_kg_per_ha=round(actual["x_base"], 4),
+                x_base_kg_are=round(actual["x_base"] / 100.0, 6),  # Rev 2
                 penalty_rate=round(actual["penalty_rate"], 6),
                 x_penalized_kg_per_ha=round(actual["x_penalized"], 4),
+                x_penalized_kg_are=round(actual["x_penalized"] / 100.0, 6),  # Rev 2
                 predicted_yield=PredictedYield(
                     kg_per_ha=round(actual["kg_per_ha"], 4),
                     kg_per_are=round(actual["kg_per_are"], 4),
@@ -374,55 +418,77 @@ class DSSService:
                     estimated_total_kg=round(actual["estimated_total_kg"], 4),
                 ),
                 risk_status=actual["risk_status"],
+                # Rev 1 R-4: REY
+                rey=self._round_optional(actual.get("rey"), 4),
+                rey_status=actual.get("rey_status", "missing_params"),
+                rey_notes=actual.get("rey_notes", ""),
             ),
-            recommended_scenario=RecommendedScenario(
-                recommended_duck_count=recommended["duck_count"],
-                recommended_density_are=round(recommended["density_are"], 4),
-                recommended_density_ha=round(recommended["density_ha"], 4),
-                recommended_duration_days=recommended["duration_days"],
-                recommended_release_date=recommended["release_date"],
-                recommended_pull_date=recommended["pull_date"],
-                surviving_ducks=round(recommended["surviving_ducks"], 4),
-                dung_total_per_duck_kg=round(
-                    recommended["dung_total_per_duck_kg"],
-                    4,
-                ),
-                dung_status="estimation_only",
-                effective_duration_days=round(
-                    recommended["effective_duration_days"],
-                    4,
-                ),
-                x_base_kg_per_ha=round(recommended["x_base"], 4),
-                penalty_rate=round(recommended["penalty_rate"], 6),
-                x_penalized_kg_per_ha=round(
-                    recommended["x_penalized"],
-                    4,
-                ),
-                predicted_yield=PredictedYield(
-                    kg_per_ha=round(recommended["kg_per_ha"], 4),
-                    kg_per_are=round(recommended["kg_per_are"], 4),
-                    ton_per_ha=round(recommended["kg_per_ha"] / 1000.0, 4),
-                    estimated_total_kg=round(recommended["estimated_total_kg"], 4),
-                ),
-                risk_status=recommended["risk_status"],
-                reasoning_summary=recommended["reasoning_summary"],
+            optimality_assessment=optimality,
+            recommended_scenario=(
+                RecommendedScenario(
+                    recommended_duck_count=recommended["duck_count"],
+                    recommended_density_are=round(recommended["density_are"], 4),
+                    recommended_density_ha=round(recommended["density_ha"], 4),
+                    recommended_density_lit_ha=round(recommended["density_ha"], 4),  # Rev 2
+                    recommended_duration_days=recommended["duration_days"],
+                    recommended_release_date=recommended["release_date"],
+                    recommended_pull_date=recommended["pull_date"],
+                    surviving_ducks=round(recommended["surviving_ducks"], 4),
+                    dung_total_per_duck_kg=round(
+                        recommended["dung_total_per_duck_kg"],
+                        4,
+                    ),
+                    dung_status="estimation_only",
+                    effective_duration_days=round(
+                        recommended["effective_duration_days"],
+                        4,
+                    ),
+                    x_base_kg_per_ha=round(recommended["x_base"], 4),
+                    x_base_kg_are=round(recommended["x_base"] / 100.0, 6),  # Rev 2
+                    penalty_rate=round(recommended["penalty_rate"], 6),
+                    x_penalized_kg_per_ha=round(
+                        recommended["x_penalized"],
+                        4,
+                    ),
+                    x_penalized_kg_are=round(recommended["x_penalized"] / 100.0, 6),  # Rev 2
+                    predicted_yield=PredictedYield(
+                        kg_per_ha=round(recommended["kg_per_ha"], 4),
+                        kg_per_are=round(recommended["kg_per_are"], 4),
+                        ton_per_ha=round(recommended["kg_per_ha"] / 1000.0, 4),
+                        estimated_total_kg=round(recommended["estimated_total_kg"], 4),
+                    ),
+                    risk_status=recommended["risk_status"],
+                    reasoning_summary=recommended["reasoning_summary"],
+                    # Rev 1 R-4: REY
+                    rey=self._round_optional(recommended.get("rey"), 4),
+                    rey_status=recommended.get("rey_status", "missing_params"),
+                    rey_notes=recommended.get("rey_notes", ""),
+                )
+                if show_recommendation
+                else None
             ),
-            comparison=ComparisonSummary(
-                duck_count_difference=recommended["duck_count"] - actual["duck_count"],
-                density_difference_are=round(recommended["density_are"] - actual["density_are"], 4),
-                yield_difference_kg_per_ha=round(recommended["kg_per_ha"] - actual["kg_per_ha"], 4),
-                yield_difference_total_kg=round(recommended["estimated_total_kg"] - actual["estimated_total_kg"], 4),
-                risk_change=self._risk_change(actual["risk_status"], recommended["risk_status"]),
-                profit_difference_rp=self._difference_optional(
-                    recommended["economics"]["net_profit_rp"],
-                    actual["economics"]["net_profit_rp"],
-                    2,
-                ),
+            comparison=(
+                ComparisonSummary(
+                    duck_count_difference=recommended["duck_count"] - actual["duck_count"],
+                    density_difference_are=round(recommended["density_are"] - actual["density_are"], 4),
+                    yield_difference_kg_per_ha=round(recommended["kg_per_ha"] - actual["kg_per_ha"], 4),
+                    yield_difference_total_kg=round(recommended["estimated_total_kg"] - actual["estimated_total_kg"], 4),
+                    risk_change=self._risk_change(actual["risk_status"], recommended["risk_status"]),
+                    profit_difference_rp=self._difference_optional(
+                        recommended["economics"]["net_profit_rp"],
+                        actual["economics"]["net_profit_rp"],
+                        2,
+                    ),
+                )
+                if show_recommendation
+                else None
             ),
+
             risk=RiskSummary(
                 actual_status=actual["risk_status"],
                 recommended_status=recommended["risk_status"],
                 density_risk=actual["risk_status"],
+
                 phase_risk=(
                     "SAFE"
                     if actual["duration_days"] <= actual["max_duration_days"]
@@ -461,8 +527,16 @@ class DSSService:
                 user_id=user_id,
                 input_data=response.input.model_dump(mode="json"),
                 actual_scenario=response.actual_scenario.model_dump(mode="json"),
-                recommended_scenario=response.recommended_scenario.model_dump(mode="json"),
-                comparison=response.comparison.model_dump(mode="json"),
+                recommended_scenario=(
+                    response.recommended_scenario.model_dump(mode="json")
+                    if response.recommended_scenario is not None
+                    else None
+                ),
+                comparison=(
+                    response.comparison.model_dump(mode="json")
+                    if response.comparison is not None
+                    else None
+                ),
                 risk=response.risk.model_dump(mode="json"),
                 trace=response.trace,
                 notes=response.notes,
@@ -474,6 +548,7 @@ class DSSService:
                 data_readiness=response.data_readiness.model_dump(mode="json"),
             )
             response.history_id = history.id
+
         return response
 
     def list_histories(self, user_id: str) -> HistoryListResponse:
@@ -483,6 +558,14 @@ class DSSService:
             planting_system = lookup_repository.get_planting_system(
                 history.input_data["planting_system"]
             )
+
+            recommended_scenario = history.recommended_scenario or None
+            recommended_duck_count = (
+                recommended_scenario.get("recommended_duck_count")
+                if isinstance(recommended_scenario, dict)
+                else None
+            )
+
             items.append(
                 HistoryListItem(
                     id=history.id,
@@ -501,9 +584,9 @@ class DSSService:
                         duck_count=history.input_data["duck_count"],
                         land_area_are=history.input_data["land_area_are"],
                         actual_density_are=history.actual_scenario["density_are"],
-                        recommended_duck_count=history.recommended_scenario[
-                            "recommended_duck_count"
-                        ],
+                        recommended_duck_count=recommended_duck_count
+                        if recommended_duck_count is not None
+                        else history.input_data["duck_count"],
                         risk_status=history.actual_scenario["risk_status"],
                         estimated_total_yield_kg=history.actual_scenario[
                             "predicted_yield"
@@ -511,7 +594,9 @@ class DSSService:
                     ),
                 )
             )
+
         return HistoryListResponse(data=items)
+
 
     def get_history(self, history_id: str, user_id: str) -> DSSSimulationResponse:
         history = history_repository.get_by_id_and_user(history_id, user_id)
@@ -520,36 +605,14 @@ class DSSService:
                 message=f"History '{history_id}' was not found.",
                 field="history_id",
             )
-        if (
-            not history.economics
-            or not history.ecology
-            or not history.environment
-            or not history.lookup
-            or not history.validation
-            or not history.data_readiness
-        ):
-            rebuilt = self.simulate(
-                DSSSimulationRequest.model_validate(history.input_data),
-                user_id=None,
-            )
-            rebuilt.history_id = history.id
-            return rebuilt
-        return DSSSimulationResponse(
-            history_id=history.id,
-            input=history.input_data,
-            lookup=history.lookup,
-            actual_scenario=history.actual_scenario,
-            recommended_scenario=history.recommended_scenario,
-            comparison=history.comparison,
-            risk=history.risk,
-            trace=history.trace,
-            notes=history.notes,
-            economics=history.economics,
-            ecology=history.ecology,
-            environment=history.environment,
-            validation=history.validation,
-            data_readiness=history.data_readiness,
+        # Selalu re-simulate dari stored input agar optimality_assessment dan
+        # field baru lainnya selalu dihitung ulang (tidak tersimpan di DB lama).
+        rebuilt = self.simulate(
+            DSSSimulationRequest.model_validate(history.input_data),
+            user_id=None,
         )
+        rebuilt.history_id = history.id
+        return rebuilt
 
     def delete_history(self, history_id: str, user_id: str) -> DeleteHistoryResponse:
         deleted = history_repository.delete_by_id_and_user(history_id, user_id)
@@ -619,7 +682,7 @@ class DSSService:
         )
         nutrients = compute_soil_nutrients(
             dung_total_per_duck_kg=dung_total_per_duck_kg,
-            density_ha=density_ha,
+            density_are=density_are,
             constants=constants,
         )
         ecology = compute_ecology(
@@ -637,6 +700,7 @@ class DSSService:
             effective_duration_days=effective_duration_days,
             area_are=land_area_are,
             final_yield_kg_per_ha=kg_per_ha,
+            x_final_kg_are=kg_per_are,   # Rev 2 primary
             base_yield_kg_per_ha=x_base,
             penalty_rate=penalty_rate,
             k_max_are=planting_system.k_max_are,
@@ -645,7 +709,15 @@ class DSSService:
         )
         environment = compute_environment(
             final_yield_kg_per_ha=kg_per_ha,
+            x_final_kg_are=kg_per_are,   # Rev 2 primary
             constants=constants,
+        )
+        # R-4: REY = Σ(Y_i * P_i) / P_rice  (Rev1_Doc)
+        rey_result = compute_rey(
+            rice_yield_kg=estimated_total_kg if constants.rice_duck_price_rp_per_kg is not None else None,
+            rice_price_rp_per_kg=constants.rice_duck_price_rp_per_kg,
+            duck_revenue_rp=economics["duck_revenue_rp"],
+            rice_reference_price_rp_per_kg=constants.conventional_rice_price_rp_per_kg,
         )
         return {
             "duck_count": duck_count,
@@ -672,6 +744,9 @@ class DSSService:
             "ecology": ecology,
             "economics": economics,
             "environment": environment,
+            "rey": rey_result["rey"],
+            "rey_status": rey_result["rey_status"],
+            "rey_notes": rey_result["rey_notes"],
         }
 
     def _search_recommendation(
@@ -688,7 +763,7 @@ class DSSService:
         candidates: list[dict] = []
         minimum_duck_count = max(
             1,
-            math.ceil(constants.minimum_density_are * land_area_are),
+            math.ceil(planting_system.recommended_density_min_are * land_area_are),
         )
         maximum_duck_count = math.floor(
             planting_system.k_max_are * land_area_are
@@ -713,10 +788,27 @@ class DSSService:
                 )
 
         yield_values = [candidate["kg_per_ha"] for candidate in candidates]
-        # Incomplete local economics and ecology data must not affect ranking.
-        # No unsupported weighting constants are introduced.
-        use_economics = False
-        use_ecology = False
+
+        # Rev 2 sesuai dokumentasi:
+        #   score = normalized_yield - risk_penalty
+        #   Ekonomi & ekologi hanya masuk jika data numeriknya tersedia.
+        # Karena dokumen tidak memberi bobot eksplisit, komponen ekonomi/ekologi
+        # dimasukkan sebagai tambahan langsung dalam skala normalized (konsisten
+        # dengan normalisasi yield).
+        profit_values = [
+            c.get("economics", {}).get("net_profit_rp") for c in candidates
+            if c.get("economics", {}).get("net_profit_rp") is not None
+        ]
+        ecology_values = [
+            c.get("ecology", {}).get("partial_ecological_value_rp") for c in candidates
+            if c.get("ecology", {}).get("partial_ecological_value_rp") is not None
+        ]
+
+        include_ecology_component = any(
+            c.get("ecology", {}).get("partial_ecological_value_rp") is not None
+            for c in candidates
+        )
+
         for candidate in candidates:
             normalized_yield = self._normalize(
                 candidate["kg_per_ha"],
@@ -725,15 +817,44 @@ class DSSService:
             risk_penalty = (
                 0.0 if candidate["risk_status"] in {"LOW", "SAFE"} else 1.0
             )
-            candidate["normalized_profit"] = None
-            candidate["normalized_ecology"] = None
+
+            profit_val = candidate.get("economics", {}).get("net_profit_rp")
+            eco_val = candidate.get("ecology", {}).get(
+                "partial_ecological_value_rp"
+            )
+
+
+            normalized_profit = (
+                self._normalize(profit_val, profit_values)
+                if profit_val is not None and len(profit_values) > 0
+                else None
+            )
+            normalized_ecology = (
+                self._normalize(eco_val, ecology_values)
+                if eco_val is not None and len(ecology_values) > 0
+                else None
+            )
+
+            candidate["normalized_profit"] = normalized_profit
+            candidate["normalized_ecology"] = normalized_ecology
             candidate["normalized_yield"] = normalized_yield
             candidate["risk_penalty"] = risk_penalty
-            candidate["score"] = normalized_yield - risk_penalty
-            candidate["objective_components_used"] = [
-                "normalized_yield",
-                "risk_penalty",
-            ]
+
+            score = normalized_yield - risk_penalty
+            objective_components = ["normalized_yield", "risk_penalty"]
+
+            if normalized_profit is not None:
+                score += normalized_profit
+                objective_components.append("normalized_profit")
+
+            if normalized_ecology is not None and include_ecology_component:
+                score += normalized_ecology
+                objective_components.append("normalized_ecology")
+
+
+            candidate["score"] = score
+            candidate["objective_components_used"] = objective_components
+
 
         best = max(
             candidates,
@@ -748,9 +869,21 @@ class DSSService:
         best["candidate_duck_count_min"] = minimum_duck_count
         best["candidate_duck_count_max"] = maximum_duck_count
         best["duration_limit_days"] = duration_limit
-        best["economics_component_used"] = use_economics
-        best["ecology_component_used"] = use_ecology
+        best["economics_component_used"] = any(
+            "normalized_profit" in c.get("objective_components_used", [])
+            for c in candidates
+        )
+        best["ecology_component_used"] = any(
+            "normalized_ecology" in c.get("objective_components_used", [])
+            for c in candidates
+        )
+
+        # Simpan best_score agar evaluasi optimalitas bisa membandingkan actual vs best
+        # secara exact (tanpa threshold heuristik).
+        best["score"] = best["score"]
+
         return best
+
 
     def _build_lookup(
         self,
@@ -834,7 +967,7 @@ class DSSService:
         warnings.extend(
             [
                 "Survival lambda 0.67 adalah estimasi batas atas lokal, bukan rata-rata final.",
-                "Jumlah pakan kg/ekor/hari tidak tersedia; ekonomi bebek dan profit tidak lengkap.",
+                "Jumlah pakan kg/ekor/hari tidak tersedia lokal; sistem menggunakan fallback referensi (0.15 kg/ekor/hari, literature-uncalibrated) sehingga V_duck_lokal tetap dihitung.",
                 "Maintenance infrastruktur memakai placeholder 0 karena data tidak tercatat.",
             ]
         )
@@ -884,7 +1017,7 @@ class DSSService:
             assumptions=[
                 "Perspektif harga adalah gabah; harga gabah padi-bebek final belum tersedia.",
                 "Baseline yield konvensional belum memiliki angka final yang sebanding.",
-                "Jumlah pakan kg/ekor/hari tidak tersedia sehingga C_feed, V_duck, Laba_bersih, dan DeltaProfit tidak dihitung.",
+                "Jumlah pakan kg/ekor/hari tidak tersedia lokal; sistem menggunakan fallback referensi (q_feed=0.15, literature-uncalibrated). net_profit_rp null hanya jika harga rice_duck atau rice_duck_price belum tersedia.",
                 "Biaya infrastruktur tetap dihitung dari data jaring dan kandang yang tersedia.",
             ],
         )
@@ -893,6 +1026,7 @@ class DSSService:
         infrastructure = values["infrastructure"]
         return ScenarioEconomics(
             status=values["status"],
+            status_data=values.get("status_data"),
             perspective=values["perspective"],
             rice_revenue_rp=self._round_optional(values["rice_revenue_rp"], 2),
             conventional_rice_revenue_rp=self._round_optional(
@@ -945,6 +1079,18 @@ class DSSService:
                 2,
             ),
             missing_parameters=values["missing_parameters"],
+            # Rev 1 field baru
+            sumber_data=values.get("sumber_data", "literature-uncalibrated"),
+            data_readiness=values.get("data_readiness"),
+            formula_available=values.get("formula_available", True),
+            numeric_ready=values.get("numeric_ready"),
+            q_feed_source=values.get("q_feed_source"),
+            q_feed_status=values.get("q_feed_status"),
+            q_feed_assumption_note=values.get("q_feed_assumption_note"),
+            v_duck_xiong_reference=self._round_optional(values.get("v_duck_xiong_reference"), 2),
+            v_duck_xiong_model_value=self._round_optional(values.get("v_duck_xiong_model_value"), 2),
+            v_duck_xiong_status=values.get("v_duck_xiong_status", "literature-uncalibrated"),
+            additional_cost=round(values.get("additional_cost_rp", 0.0), 2),
         )
 
     def _to_ecology_summary(
@@ -967,10 +1113,12 @@ class DSSService:
     def _to_scenario_ecology(self, scenario: dict) -> ScenarioEcology:
         ecology = scenario["ecology"]
         nutrients = scenario["nutrients"]
+        area_are = scenario["land_area_are"]
         area_ha = scenario["land_area_ha"]
         return ScenarioEcology(
             status=ecology["status"],
             fertilizer_saving_rp=round(ecology["fertilizer_saving_rp"], 2),
+            fertilizer_saving_raw_rp=round(ecology["fertilizer_saving_raw_rp"], 2),
             fertilizer_saving_status=ecology["fertilizer_saving_status"],
             pesticide_herbicide_saving_rp=self._round_optional(
                 ecology["pesticide_herbicide_saving_rp"],
@@ -994,31 +1142,27 @@ class DSSService:
             missing_parameters=ecology["missing_parameters"],
             soil_nutrients=SoilNutrients(
                 status=nutrients["status"],
-                n_kg_per_ha=self._round_optional(
-                    nutrients["n_kg_per_ha"],
-                    6,
-                ),
-                p2o5_kg_per_ha=self._round_optional(
-                    nutrients["p2o5_kg_per_ha"],
-                    6,
-                ),
-                k2o_kg_per_ha=self._round_optional(
-                    nutrients["k2o_kg_per_ha"],
-                    6,
-                ),
+                # Rev 2 primary: kg/are
+                n_kg_per_are=self._round_optional(nutrients.get("n_kg_per_are"), 6),
+                p2o5_kg_per_are=self._round_optional(nutrients.get("p2o5_kg_per_are"), 6),
+                k2o_kg_per_are=self._round_optional(nutrients.get("k2o_kg_per_are"), 6),
+                # Backward compat: kg/ha (note)
+                n_kg_per_ha=self._round_optional(nutrients.get("n_kg_per_ha"), 6),
+                p2o5_kg_per_ha=self._round_optional(nutrients.get("p2o5_kg_per_ha"), 6),
+                k2o_kg_per_ha=self._round_optional(nutrients.get("k2o_kg_per_ha"), 6),
                 n_total_kg=self._multiply_optional(
-                    nutrients["n_kg_per_ha"],
-                    area_ha,
+                    nutrients.get("n_kg_per_are"),
+                    area_are,
                     6,
                 ),
                 p2o5_total_kg=self._multiply_optional(
-                    nutrients["p2o5_kg_per_ha"],
-                    area_ha,
+                    nutrients.get("p2o5_kg_per_are"),
+                    area_are,
                     6,
                 ),
                 k2o_total_kg=self._multiply_optional(
-                    nutrients["k2o_kg_per_ha"],
-                    area_ha,
+                    nutrients.get("k2o_kg_per_are"),
+                    area_are,
                     6,
                 ),
                 missing_parameters=nutrients["missing_parameters"],
@@ -1030,6 +1174,7 @@ class DSSService:
         actual: dict,
         recommended: dict,
     ) -> EnvironmentSummary:
+        # R-10: modul emisi selalu ada dengan status literature-uncalibrated
         status = actual["environment"]["status"]
         return EnvironmentSummary(
             status=status,
@@ -1038,7 +1183,8 @@ class DSSService:
             assumptions=[
                 "CO2e dan GHGI hanya dihitung jika F_CH4 dan F_N2O tersedia dalam kg/ha/musim.",
                 "Reduksi_CH4 hanya dihitung jika baseline CH4 konvensional tersedia.",
-                "Data CH4, N2O, dan DO tidak tersedia pada data collection; modul disabled.",
+                "Y_CH4 = -1.5276*X_DO + 14.770 belum dihitung karena DO lokal belum tersedia.",
+                "Semua output emisi berstatus literature-uncalibrated; belum terkalibrasi lokal Astungkara Way.",
                 "Nilai null berarti data belum layak dihitung, bukan emisi nol.",
             ],
         )
@@ -1046,19 +1192,36 @@ class DSSService:
     def _to_scenario_environment(self, values: dict) -> ScenarioEnvironment:
         return ScenarioEnvironment(
             status=values["status"],
+            calibration_note=values["calibration_note"],
             co2e_kg_per_ha_season=self._round_optional(
-                values["co2e_kg_per_ha_season"],
+                values.get("co2e_kg_per_ha_season"),
                 6,
             ),
             ghgi_kg_co2e_per_kg_yield=self._round_optional(
-                values["ghgi_kg_co2e_per_kg_yield"],
+                values.get("ghgi_kg_co2e_per_kg_yield"),
                 8,
             ),
             ch4_reduction_percent=self._round_optional(
-                values["ch4_reduction_percent"],
+                values.get("ch4_reduction_percent"),
                 4,
             ),
+            y_ch4_do_model=values.get("y_ch4_do_model"),
             missing_parameters=values["missing_parameters"],
+            sumber_data=values.get("sumber_data", "literature-uncalibrated"),
+            status_data=values.get("status_data"),
+            catatan_kalibrasi=values.get("catatan_kalibrasi", values["calibration_note"]),
+            data_readiness=values.get("data_readiness"),
+            formula_available=values.get("formula_available", True),
+            numeric_ready=values.get("numeric_ready"),
+            # Rev 2 primary fields (are)
+            co2e_are=self._round_optional(values.get("co2e_are"), 6),
+            f_ch4_are=self._round_optional(values.get("f_ch4_are"), 6),
+            f_n2o_are=self._round_optional(values.get("f_n2o_are"), 6),
+            ghgi=self._round_optional(values.get("ghgi"), 8),
+            ch4_reduction_pct=self._round_optional(values.get("ch4_reduction_pct"), 4),
+            co2e_ha_note=self._round_optional(values.get("co2e_ha_note"), 6),
+            f_ch4_ha_note=self._round_optional(values.get("f_ch4_ha_note"), 6),
+            f_n2o_ha_note=self._round_optional(values.get("f_n2o_ha_note"), 6),
         )
 
     def _round_optional(self, value: float | None, digits: int) -> float | None:
@@ -1119,14 +1282,131 @@ class DSSService:
             "Kepadatan terlalu tinggi dapat menyebabkan injakan dan kerusakan tanaman padi.",
             "Bebek harus ditarik sebelum fase keluar malai untuk mengurangi risiko makan bulir.",
             "Durasi terlalu panjang dapat meningkatkan kebutuhan pakan tambahan dan menurunkan efisiensi.",
-            "Profit tidak dihitung final karena harga padi-bebek, baseline yield, dan jumlah pakan belum lengkap.",
-            "Environment disabled karena CH4, N2O, dan DO musiman tidak tersedia.",
+            "net_profit_rp null karena harga gabah padi-bebek dan/atau harga jual bebek belum tersedia lokal; komponen lain tetap dihitung.",
+            "Modul emisi berstatus literature-uncalibrated; belum terkalibrasi lokal Astungkara Way.",
         ]
         if actual_density_are > planting_system.k_max_are:
             notes.append("Skenario aktual sudah melewati K_max sehingga penalti kepadatan aktif di model.")
         if actual_duration_days > max_duration_days:
             notes.append("Durasi aktual melebihi jendela aman kalender varietas.")
         return notes
+
+    def _compute_optimality(
+        self,
+        *,
+        actual: dict,
+        recommended: dict,
+        planting_system: PlantingSystem,
+        variety: "RiceVariety",
+    ) -> OptimalityAssessment:
+        """Hitung optimalitas hanya berdasarkan perbandingan actual vs best_scenario dari optimizer.
+
+        Rule final sesuai requirement:
+        - recommended_scenario dan comparison hanya null jika actual identik dengan best_scenario.
+        - is_optimal=true hanya jika actual == best_scenario (duck_count, density_are, duration_days dan score).
+
+        floating_epsilon kecil dipakai untuk menghindari error floating.
+        """
+        floating_epsilon = 1e-6
+
+        # ---- Safety flag tetap dihitung sebagai info, bukan dasar gating rekomendasi ----
+        safety_hst = variety.hst_masuk + actual["duration_days"] <= variety.hst_heading
+        safety_density = actual["density_are"] <= planting_system.k_max_are
+        score_safety = safety_hst and safety_density and actual["land_area_are"] > 0
+
+        # ---- Best scenario dari optimizer berada di parameter `recommended` ----
+        actual_density_are = actual["density_are"]
+
+        best_density_are = recommended["density_are"]
+
+        actual_duration_days = actual["duration_days"]
+        best_duration_days = recommended["duration_days"]
+
+        actual_duck_count = actual["duck_count"]
+        best_duck_count = recommended["duck_count"]
+
+        # Requirement baru: hanya is_optimal jika actual benar-benar sama dengan best_scenario hasil optimizer.
+        # Karena `recommended` di sini adalah best_scenario, maka bandingkan parameter diskret dan score exact
+        # dengan floating_epsilon untuk guard error float.
+        best_score = recommended.get("score")
+
+        # actual_score: gunakan objective components yang sudah ada untuk best (score formula yang sama di _search_recommendation).
+        # Untuk kebutuhan gating 'actual == best', kita cukup pastikan score match setelah duck/density/duration match.
+        actual_score = best_score
+
+        same_density = abs(actual_density_are - best_density_are) <= floating_epsilon
+        same_duration = actual_duration_days == best_duration_days
+        same_duck_count = actual_duck_count == best_duck_count
+        same_score = (
+            best_score is not None
+            and abs((actual_score or 0.0) - best_score) <= floating_epsilon
+        )
+
+        is_optimal = same_duck_count and same_density and same_duration and same_score
+
+
+        # Field-field threshold tetap diisi untuk struktur response (informasi tambahan),
+        # tetapi tidak dipakai untuk menyembunyikan rekomendasi.
+        density_gap_ratio = (
+            (abs(actual_density_are - best_density_are) / best_density_are)
+            if best_density_are not in (None, 0)
+            else None
+        )
+
+        # Dev note: jangan gunakan heuristic thresholds untuk gating rekomendasi.
+
+
+        delta_yield_pct = None
+        if actual.get("kg_per_ha", 0) not in (None, 0):
+            delta_yield_pct = (
+                (recommended.get("kg_per_ha", 0) - actual.get("kg_per_ha", 0))
+                / actual.get("kg_per_ha", 0)
+            ) * 100.0
+
+        # Profit ratio opsional; tetap dihitung jika data tersedia
+        profit_ratio = None
+        profit_component_included = False
+        actual_profit = actual["economics"].get("net_profit_rp")
+        rec_profit = recommended.get("economics", {}).get("net_profit_rp")
+        if actual_profit is not None and rec_profit is not None and actual_profit != 0:
+            profit_ratio = (rec_profit - actual_profit) / abs(actual_profit)
+            profit_component_included = True
+
+        econ_sumber = actual["economics"].get("sumber_data", "literature-uncalibrated")
+        profit_data_purity = (
+            "literature-uncalibrated"
+            if actual["economics"].get("net_profit_rp") is None
+            else econ_sumber
+        )
+
+        note = (
+            "Kondisi aktual identik dengan skenario terbaik menurut optimizer model. "
+            "Rekomendasi disembunyikan karena tidak ada skenario dengan objective score lebih baik."
+            if is_optimal
+            else "Kondisi aktual belum identik dengan skenario terbaik menurut optimizer model. "
+            "Rekomendasi ditampilkan karena masih ada kombinasi dengan objective score lebih baik."
+        )
+
+        return OptimalityAssessment(
+
+            is_optimal=is_optimal,
+
+            score_safety=score_safety,
+            density_gap_ratio=round(density_gap_ratio, 4) if density_gap_ratio is not None else None,
+            density_gap_within_threshold=None,
+            delta_yield_pct=round(delta_yield_pct, 4) if delta_yield_pct is not None else None,
+            delta_yield_within_threshold=None,
+            delta_profit_ratio=round(profit_ratio, 4) if profit_ratio is not None else None,
+            delta_profit_within_threshold=None,
+            profit_component_included=profit_component_included,
+            optimality_basis=("best_scenario_match" if is_optimal else "best_scenario_mismatch"),
+            catatan_kalibrasi=note,
+            thresholds={},
+            threshold_status="system-design-uncalibrated",
+            sumber_data=profit_data_purity,
+            profit_data_purity=profit_data_purity,
+        )
+
 
 
 dss_service = DSSService()

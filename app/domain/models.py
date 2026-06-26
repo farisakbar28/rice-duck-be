@@ -30,6 +30,11 @@ class PlantingSystem:
     limited_test_max_are: float | None = None
     k_max_status: str = "estimation"
     f_yield_status: str = "estimation"
+    # R1: Density constraint separation (audit-fixes-post-rev1)
+    # recommended_density_min_are: batas bawah rekomendasi praktis (2.0 untuk kedua sistem)
+    # recommended_density_max_are: batas atas rekomendasi praktis (4.0 Jarwo, 3.0 Tegel)
+    recommended_density_min_are: float = 2.0
+    recommended_density_max_are: float = 4.0
 
 
 @dataclass(frozen=True)
@@ -74,6 +79,26 @@ class DSSConstants:
     seasonal_ch4_conventional_kg_per_ha: float | None
     seasonal_n2o_kg_per_ha: float | None
     calibration_note: str
+    # R-13 AC-4: metadata periode waktu untuk parameter harga yang terbatas waktu
+    valid_period_conventional_rice_price: str = "Maret 2026"
+    # Referensi nilai q_feed dari literatur (Lit_DB fallback) — Rev1_Doc §5.6
+    # feed_requirement_kg_per_duck_day_reference digunakan sebagai fallback saat
+    # feed_requirement_kg_per_duck_day (lokal) = None.
+    #
+    # OPSI A (dipilih): 0.10 kg/ekor/hari dari A02 row 975:
+    #   "Average feed consumed per duck per day = 0.1 kg/day" (MATCH_EXACT).
+    #   Sumber: Kumpulan Variabel... .xlsx, sheet Data, row 975, article A02.
+    #   Status: literature-uncalibrated.
+    #   Cluster referensi lain yang ditemukan di workbook (tidak ada yang > 0.13 sebagai angka
+    #   per duck/day siap pakai): A13 130g/day=0.13, A13 80-110g/day, A16 80g/day=0.08,
+    #   B5A02 689.48g/head/week≈0.099, B5A02 670.22g/head/week≈0.096.
+    #   Nilai 0.12–0.225 TIDAK ditemukan sebagai angka eksplisit siap pakai di workbook referensi.
+    #   q_feed lokal: belum tersedia (Excel lokal: "Jumlah pakan tambahan = Belum ada").
+    feed_requirement_kg_per_duck_day_reference: float = 0.10
+    # feed_natural_saving_rate_reference: 0.66 dari teks referensi "two thirds ≈ 2/3 ≈ 0.66"
+    # (A03 row 630, Kumpulan Variabel... .xlsx, sheet Data). Klasifikasi: MATCH_DERIVED_FROM_TEXT.
+    # Status: literature-uncalibrated. Belum tervalidasi lokal (Excel lokal row 88: "Belum bisa dipastikan").
+    feed_natural_saving_rate_reference: float = 0.66
 
 
 @dataclass(frozen=True)

@@ -56,6 +56,30 @@ def test_health_check() -> None:
     assert response.json() == {"status": "ok", "service": "rice-duck-dss-backend"}
 
 
+def test_cors_allows_any_origin() -> None:
+    response = client.get(
+        "/api/v1/dss/options",
+        headers={"Origin": "http://frontend.example"},
+    )
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "*"
+
+
+def test_cors_preflight_allows_authorization_header() -> None:
+    response = client.options(
+        "/api/v1/dss/simulate",
+        headers={
+            "Origin": "http://frontend.example",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "authorization,content-type",
+        },
+    )
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "*"
+    assert "authorization" in response.headers["access-control-allow-headers"].lower()
+    assert "content-type" in response.headers["access-control-allow-headers"].lower()
+
+
 def test_dss_options_are_public() -> None:
     response = client.get("/api/v1/dss/options")
     assert response.status_code == 200
@@ -143,21 +167,22 @@ def test_public_simulation_does_not_save_history() -> None:
     body = response.json()
     assert body["economics"]["status"] == "partial"
     assert body["economics"]["actual"]["net_profit_rp"] is None
-    assert body["ecology"]["actual"]["soil_nutrients"]["status"] == "unavailable"
-    assert body["ecology"]["actual"]["pesticide_herbicide_saving_status"] == "estimation_only"
+    # Kappa values are now available (0.049, 0.072, 0.032) so status is estimation_only
+    assert body["ecology"]["actual"]["soil_nutrients"]["status"] == "estimation_only"
+    assert body["ecology"]["actual"]["pesticide_herbicide_saving_status"] == "literature-uncalibrated"
     assert body["ecology"]["actual"]["pesticide_herbicide_saving_rp"] is not None
-    assert body["environment"]["status"] == "disabled"
+    assert body["environment"]["status"] == "literature-uncalibrated"
     assert body["environment"]["actual"]["co2e_kg_per_ha_season"] is None
     assert body["data_readiness"] == {
         "agronomy_ready": "ready",
         "yield_ready": "estimation_only",
         "economics_ready": "partial",
         "ecology_ready": "estimation_only",
-        "environment_ready": "disabled",
+        "environment_ready": "literature-uncalibrated",
         "overall_status": "partial",
     }
     assert body["lookup"]["parameters"]["survival_lambda"]["source"] == "data_collection"
-    assert body["lookup"]["parameters"]["survival_lambda"]["status"] == "estimation"
+    assert body["lookup"]["parameters"]["survival_lambda"]["status"] == "local-estimate"
     assert body["validation"]["input_valid"] is True
     assert any(
         "14-21" in warning for warning in body["validation"]["warnings"]
@@ -169,12 +194,9 @@ def test_public_simulation_does_not_save_history() -> None:
     trace = body["trace"]["recommendation_grid_search"]
     recommended = body["recommended_scenario"]
     assert trace["candidate_basis"] == "integer_duck_count"
-    assert trace["best_duck_count"] == recommended["recommended_duck_count"]
-    assert trace["best_candidate_density_are"] == recommended["recommended_density_are"]
-    assert round(
-        recommended["recommended_duck_count"] / body["input"]["land_area_are"],
-        4,
-    ) == recommended["recommended_density_are"]
+    assert recommended is None
+    assert body["optimality_assessment"]["is_optimal"] is True
+
     assert trace["best_duration_days"] <= 80
     assert 28 + trace["best_duration_days"] <= 60
     assert trace["objective_components_used"] == [
@@ -219,6 +241,7 @@ def test_simulation_is_saved_as_user_history() -> None:
     assert histories[0]["summary"]["rice_variety"] == "Sertani / Seratih"
 
 
+
 def test_history_detail_and_delete() -> None:
     _, headers = register_and_login()
     simulate_response = client.post(
@@ -236,8 +259,9 @@ def test_history_detail_and_delete() -> None:
     assert detail_response.json()["history_id"] == history_id
     assert detail_response.json()["trace"]["yield_model"]["x_final"] == 6116.3981
     assert detail_response.json()["economics"]["actual"]["net_profit_rp"] is None
-    assert detail_response.json()["ecology"]["actual"]["soil_nutrients"]["n_kg_per_ha"] is None
-    assert detail_response.json()["environment"]["status"] == "disabled"
+    # Kappa values are now available, so nutrients are calculated (not None)
+    assert detail_response.json()["ecology"]["actual"]["soil_nutrients"]["n_kg_per_ha"] is not None
+    assert detail_response.json()["environment"]["status"] == "literature-uncalibrated"
 
     delete_response = client.delete(
         f"/api/v1/dss/histories/{history_id}",
