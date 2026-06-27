@@ -59,17 +59,16 @@ PLANTING_SYSTEMS = [
     PlantingSystem(
         code="tegel",
         label="Tegel / Konvensional",
-        k_max_are=2.5,
+        k_max_are=3.0,
         f_yield=1.0,
-        note="Ruang gerak lebih sempit sehingga risiko injakan tanaman lebih tinggi.",
+        note="Ruang gerak lebih sempit sehingga risiko injakan tanaman lebih tinggi. Rentang lokal 2-3 ekor/are dengan batas praktis 3 ekor/are.",
         k_max_min_are=2.0,
         k_max_max_are=3.0,
         limited_test_max_are=None,
-        k_max_status="local-estimate",       # R4: JANGAN local-calibrated — hanya range dari Field_Data rows 20-21; 2.5 = midpoint/design default dari range 2-3, BUKAN konservatif
-        f_yield_status="literature-uncalibrated",  # R4, R13: belum faktor numerik lokal final
-        # R1, R3: Density constraint separation (audit-fixes-post-rev1)
-        recommended_density_min_are=2.0,  # Field_Data row 22: rekomendasi praktis 2-3 ekor/are
-        recommended_density_max_are=3.0,  # Field_Data row 22: rekomendasi praktis 2-3 ekor/are (BUKAN 2.5)
+        k_max_status="local-estimate",
+        f_yield_status="literature-uncalibrated",
+        recommended_density_min_are=2.0,
+        recommended_density_max_are=3.0,
     ),
 ]
 
@@ -94,6 +93,10 @@ DSS_CONSTANTS = DSSConstants(
     conventional_yield_kg_per_ha=None,
     duck_sale_price_rp_per_duck=30000.0,
     duck_buy_price_rp_per_duck=28000.0,
+    duck_target_out_max_days=60,
+    duck_buy_price_fallback_min_rp=25000.0,
+    duck_buy_price_fallback_max_rp=28000.0,
+    duck_buy_price_fallback_mid_rp=26500.0,
     feed_price_rp_per_kg=None,
     nitrogen_price_rp_per_kg=2400.0,
     phosphate_price_rp_per_kg=2400.0,
@@ -151,10 +154,10 @@ PARAMETER_METADATA = {
         value=None,
         unit="day",
         source="data_collection",
-        status="collected",
+        status="local-estimate",
         minimum=14,
-        maximum=21,
-        note="Dipakai sebagai konteks risiko, belum menjadi koefisien yield.",
+        maximum=30,
+        note="Catatan: dipakai untuk U_status, p_duck_buy_age, t_age_max, t_maks_rekomendasi, tanggal_tarik, dan Q_output. Tidak langsung mengubah yield, pakan, survival, kotoran, N/P/K, V_eco, bobot jual, atau emisi.",
     ),
     "daily_duck_grazing_hours": ParameterMetadata(
         value=10,
@@ -291,8 +294,8 @@ PARAMETER_METADATA = {
         value=None,  # berbeda per sistem tanam
         unit="ekor/are",
         source="data_collection",
-        status="local-estimate",  # R13: Jarwo default 4 dari range 4-8; Tegel 2.5 dari range 2-3 sebagai midpoint/design default
-        note="Daya dukung/safety constraint; Jarwo default aman 4.0 dari range 4-8; Tegel default 2.5 sebagai midpoint/design default dari range 2-3, bukan target rekomendasi praktis otomatis.",
+        status="local-estimate",
+        note="Daya dukung/safety constraint; Jarwo default aman 4.0 dari range 4-8; Tegel memakai rentang lokal 2-3 dengan batas praktis 3.0.",
     ),
     "f_yield": ParameterMetadata(
         value=None,  # berbeda per sistem tanam

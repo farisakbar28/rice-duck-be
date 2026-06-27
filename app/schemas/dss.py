@@ -48,6 +48,7 @@ class DSSSimulationRequest(BaseModel):
                 "rice_variety": "sertani",
                 "planting_system": "jajar_legowo",
                 "duck_age_days": 30,
+                "duck_buy_price_rp_per_duck": 26500,
             }
         }
     )
@@ -58,6 +59,7 @@ class DSSSimulationRequest(BaseModel):
     rice_variety: str = Field(min_length=1)
     planting_system: str = Field(min_length=1)
     duck_age_days: int = Field(gt=0)
+    duck_buy_price_rp_per_duck: float | None = Field(default=None, gt=0)
 
 
 class DSSInput(BaseModel):
@@ -67,6 +69,7 @@ class DSSInput(BaseModel):
     rice_variety: str
     planting_system: str
     duck_age_days: int
+    duck_buy_price_rp_per_duck: float | None = None
 
 
 class PredictedYield(BaseModel):
@@ -74,6 +77,32 @@ class PredictedYield(BaseModel):
     kg_per_are: float
     ton_per_ha: float
     estimated_total_kg: float
+
+
+class DuckAgeAssessment(BaseModel):
+    duck_age_days: int
+    u_status: str
+    c_age: float
+    p_duck_buy_age_rp: float | None
+    p_duck_buy_age_source: str
+    p_duck_buy_age_status: str
+    requires_actual_duck_buy_price: bool
+    note: str
+
+
+class DurationConstraintSummary(BaseModel):
+    t_max_eff_days: int
+    hst_phase_limit_days: int
+    t_age_max_days: int
+    t_maks_rekomendasi_days: int
+    u_target_out_max_days: int
+
+
+class QualityOutput(BaseModel):
+    q_output: str
+    score: float
+    components: dict[str, float]
+    notes: list[str]
 
 
 class ActualScenario(BaseModel):
@@ -87,6 +116,8 @@ class ActualScenario(BaseModel):
     duration_days: int
     release_date: date
     pull_date: date
+    t_age_max_days: int | None = None
+    t_maks_rekomendasi_days: int | None = None
     surviving_ducks: float
     dung_total_per_duck_kg: float
     dung_status: str
@@ -112,6 +143,8 @@ class RecommendedScenario(BaseModel):
     recommended_duration_days: int
     recommended_release_date: date
     recommended_pull_date: date
+    t_age_max_days: int | None = None
+    t_maks_rekomendasi_days: int | None = None
     surviving_ducks: float
     dung_total_per_duck_kg: float
     dung_status: str
@@ -167,7 +200,11 @@ class ScenarioEconomics(BaseModel):
     conventional_rice_revenue_rp: float | None
     delta_rice_value_rp: float | None
     duck_revenue_rp: float
-    duck_purchase_cost_rp: float
+    duck_purchase_cost_rp: float | None
+    duck_purchase_price_rp_per_duck: float | None = None
+    duck_purchase_price_source: str | None = None
+    duck_purchase_price_status: str | None = None
+    duck_purchase_price_requires_actual: bool = False
     feed_cost_rp: float | None
     feed_cost_status: str
     duck_net_value_rp: float | None
@@ -359,6 +396,9 @@ class DSSSimulationResponse(BaseModel):
     history_id: str | None
     input: DSSInput
     lookup: dict
+    duck_age_assessment: DuckAgeAssessment
+    duration_constraints: DurationConstraintSummary
+    quality_output: QualityOutput
     actual_scenario: ActualScenario
     optimality_assessment: OptimalityAssessment
     recommended_scenario: RecommendedScenario | None

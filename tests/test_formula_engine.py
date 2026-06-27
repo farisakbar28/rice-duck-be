@@ -1,18 +1,25 @@
 from datetime import date
 from dataclasses import replace
 
+import app.data.seed as seed_data
+import app.repositories.lookup_repository as lookup_data
 from app.data.seed import DSS_CONSTANTS
 from app.engines.formula_engine import (
     compute_actual_duration_days,
     compute_density,
     compute_dung_total,
+    compute_duck_age_status,
     compute_effective_duration,
     compute_final_yield_kg_per_ha,
+    compute_p_duck_buy_age,
     compute_penalty_rate,
     compute_pull_date_from_hst,
+    compute_quality_output,
     compute_release_date,
     compute_risk_status,
     compute_surviving_ducks,
+    compute_t_age_max,
+    compute_t_maks_rekomendasi,
     convert_are_to_ha,
     convert_yield_units,
 )
@@ -23,6 +30,8 @@ from app.engines.impact_engine import (
     compute_soil_nutrients,
     compute_v_eco2,
 )
+from app.schemas.dss import DSSSimulationRequest
+from app.services.simulation_service import dss_service
 
 
 def test_convert_are_to_ha() -> None:
@@ -82,9 +91,92 @@ def test_convert_yield_units() -> None:
 
 def test_compute_risk_status() -> None:
     assert compute_risk_status(2, 4, 32, 32) == "LOW"
+    assert compute_risk_status(3.2, 4, 32, 32) == "SAFE"
     assert compute_risk_status(4, 4, 32, 32) == "SAFE"
     assert compute_risk_status(4.5, 4, 32, 32) == "WARNING"
     assert compute_risk_status(5.1, 4, 32, 32) == "HIGH"
+
+
+def test_duck_age_status_rev4() -> None:
+    assert compute_duck_age_status(10)["u_status"] == "belum disarankan"
+    assert compute_duck_age_status(18)["u_status"] == "muda/perlu pengawasan"
+    assert compute_duck_age_status(25)["u_status"] == "siap lokal"
+    assert compute_duck_age_status(35)["u_status"] == "lebih tua/perlu durasi konservatif"
+
+
+def test_duck_buy_price_age_rev4() -> None:
+    fallback = compute_p_duck_buy_age(18, None, DSS_CONSTANTS)
+    assert fallback["price_rp"] == 26500.0
+    assert fallback["requires_actual_price"] is False
+    older = compute_p_duck_buy_age(35, None, DSS_CONSTANTS)
+    assert older["price_rp"] is None
+    assert older["requires_actual_price"] is True
+    actual = compute_p_duck_buy_age(35, 30000.0, DSS_CONSTANTS)
+    assert actual["price_rp"] == 30000.0
+
+
+def test_duck_age_duration_constraints_rev4() -> None:
+    assert compute_t_age_max(10, 32, 60) == 32
+    assert compute_t_age_max(35, 32, 60) == 25
+    assert compute_t_maks_rekomendasi(80, 28, 60, 25) == 25
+
+
+def test_quality_output_rev4() -> None:
+    quality = compute_quality_output(
+        c_area=1.0,
+        c_calendar=1.0,
+        c_age=0.40,
+        c_price=0.40,
+        c_baseline=0.60,
+    )
+    assert quality["q_output"] == "Low"
+
+
+def test_duck_age_18_profit_changes_only_via_duck_buy_price() -> None:
+    ecology = compute_ecology(
+        density_are=4,
+        duration_days=32,
+        area_are=7,
+        k_max_are=4,
+        constants=DSS_CONSTANTS,
+    )
+    economics_low_buy = compute_economics(
+        duck_count=28,
+        surviving_ducks=18.76,
+        density_are=4,
+        duration_days=32,
+        effective_duration_days=compute_effective_duration(32, DSS_CONSTANTS),
+        area_are=7,
+        final_yield_kg_per_ha=6116.398095752443,
+        x_final_kg_are=61.16398095752443,
+        base_yield_kg_per_ha=5825.141043573754,
+        penalty_rate=0,
+        k_max_are=4,
+        partial_ecological_value_rp=ecology["partial_ecological_value_rp"],
+        duck_buy_price_rp_per_duck=26500,
+        constants=replace(DSS_CONSTANTS, rice_duck_price_rp_per_kg=6000, feed_price_rp_per_kg=5000),
+    )
+    economics_high_buy = compute_economics(
+        duck_count=28,
+        surviving_ducks=18.76,
+        density_are=4,
+        duration_days=32,
+        effective_duration_days=compute_effective_duration(32, DSS_CONSTANTS),
+        area_are=7,
+        final_yield_kg_per_ha=6116.398095752443,
+        x_final_kg_are=61.16398095752443,
+        base_yield_kg_per_ha=5825.141043573754,
+        penalty_rate=0,
+        k_max_are=4,
+        partial_ecological_value_rp=ecology["partial_ecological_value_rp"],
+        duck_buy_price_rp_per_duck=30000,
+        constants=replace(DSS_CONSTANTS, rice_duck_price_rp_per_kg=6000, feed_price_rp_per_kg=5000),
+    )
+    assert economics_low_buy["feed_cost_rp"] == economics_high_buy["feed_cost_rp"]
+    assert economics_low_buy["rice_revenue_rp"] == economics_high_buy["rice_revenue_rp"]
+    assert economics_low_buy["duck_revenue_rp"] == economics_high_buy["duck_revenue_rp"]
+    assert economics_low_buy["duck_purchase_cost_rp"] != economics_high_buy["duck_purchase_cost_rp"]
+    assert economics_low_buy["net_profit_rp"] != economics_high_buy["net_profit_rp"]
 
 
 def test_compute_soil_nutrients() -> None:
@@ -222,20 +314,19 @@ def test_penalty_outputs_for_over_capacity_scenario() -> None:
     assert economics["penalty_feed_rp"] is None
 
 
-def test_environment_is_optional_without_seasonal_flux() -> None:
+def test_environment_is_limitation_without_seasonal_flux() -> None:
     environment = compute_environment(
         final_yield_kg_per_ha=6000,
         constants=DSS_CONSTANTS,
     )
-    # R-10: status sekarang literature-uncalibrated (bukan disabled), modul tetap ada
-    assert environment["status"] == "literature-uncalibrated"
+    assert environment["status"] == "limitation"
     assert environment["co2e_kg_per_ha_season"] is None
     assert environment["ghgi_kg_co2e_per_kg_yield"] is None
     assert environment["ch4_reduction_percent"] is None
-    assert "calibration_note" in environment
+    assert environment["numeric_ready"] is False
 
 
-def test_environment_calculation_when_flux_is_available() -> None:
+def test_environment_stays_limitation_even_when_flux_is_available() -> None:
     constants = replace(
         DSS_CONSTANTS,
         seasonal_ch4_rice_duck_kg_per_ha=10,
@@ -246,20 +337,12 @@ def test_environment_calculation_when_flux_is_available() -> None:
         final_yield_kg_per_ha=6050,
         constants=constants,
     )
-    # R-10: status tetap literature-uncalibrated meskipun data ada
-    assert environment["status"] == "literature-uncalibrated"
-    # Rev 2: f_ch4_are = 10/100 = 0.1; f_n2o_are = 1/100 = 0.01
-    assert abs(environment["f_ch4_are"] - 0.1) < 0.0001
-    assert abs(environment["f_n2o_are"] - 0.01) < 0.0001
-    # Rev 2: co2e_are = 0.1*34 + 0.01*265 = 3.4 + 2.65 = 6.05
-    assert abs(environment["co2e_are"] - 6.05) < 0.0001
-    # co2e_kg_per_ha_season = co2e_ha_note = co2e_are * 100 = 605
-    assert abs(environment["co2e_kg_per_ha_season"] - 605) < 0.01
-    # Rev 2: GHGI = co2e_are / x_final_kg_are = 6.05 / (6050/100) = 6.05/60.5
-    assert abs(environment["ghgi"] - (6.05 / 60.5)) < 0.0001
-    # Rev 2: ch4_reduction = (0.2 - 0.1) / 0.2 * 100 = 50%
-    assert abs(environment["ch4_reduction_pct"] - 50) < 0.01
-    assert "calibration_note" in environment
+    assert environment["status"] == "limitation"
+    assert environment["f_ch4_are"] is None
+    assert environment["f_n2o_are"] is None
+    assert environment["co2e_are"] is None
+    assert environment["ghgi"] is None
+    assert environment["numeric_ready"] is False
 
 
 # ============================================================
@@ -355,6 +438,7 @@ def test_compute_economics_fallback_qfeed() -> None:
         penalty_rate=0.0,
         k_max_are=4.0,
         partial_ecological_value_rp=50000.0,
+        duck_buy_price_rp_per_duck=26500.0,
         constants=constants_with_feed_price,
     )
     # Dengan fallback q_feed, feed_cost_rp harus ada
@@ -419,17 +503,15 @@ def test_v_duck_xiong_nonzero() -> None:
 
 
 # --- TC-ENV-1: sumber_data di environment selalu "literature-uncalibrated" ---
-def test_environment_sumber_data_always_literature_uncalibrated() -> None:
-    """R-3 AC-3: sumber_data di environment = 'literature-uncalibrated'."""
+def test_environment_sumber_data_limitation() -> None:
     env = compute_environment(
         final_yield_kg_per_ha=6000.0,
         constants=DSS_CONSTANTS,
     )
-    assert env["sumber_data"] == "literature-uncalibrated"
+    assert env["sumber_data"] == "limitation"
 
 
-def test_environment_sumber_data_present_when_flux_available() -> None:
-    """R-3 AC-3: sumber_data ada meski flux tersedia."""
+def test_environment_stays_limitation_when_flux_available() -> None:
     constants_with_flux = replace(
         DSS_CONSTANTS,
         seasonal_ch4_rice_duck_kg_per_ha=200.0,
@@ -440,8 +522,8 @@ def test_environment_sumber_data_present_when_flux_available() -> None:
         final_yield_kg_per_ha=6000.0,
         constants=constants_with_flux,
     )
-    assert env["sumber_data"] == "literature-uncalibrated"
-    assert env["co2e_kg_per_ha_season"] is not None
+    assert env["sumber_data"] == "limitation"
+    assert env["co2e_kg_per_ha_season"] is None
 
 
 # --- TC-SEED-1: k_max_status sudah local-calibrated ---
@@ -542,7 +624,8 @@ def test_scenario_economics_has_sumber_data_field() -> None:
         net_profit_rp_per_are=None,
         missing_parameters=["rice_duck_price_rp_per_kg"],
         sumber_data="literature-uncalibrated",
-        v_duck_xiong_rp=None,
+        v_duck_xiong_reference=None,
+        v_duck_xiong_model_value=None,
         v_duck_xiong_status="literature-uncalibrated",
         additional_cost=0.0,
     )
@@ -687,37 +770,23 @@ def test_rev2_economics_rice_revenue_are_basis() -> None:
 
 
 # --- TC-REV2-ENV-1: CO2e_are = F_CH4_are*GWP_CH4 + F_N2O_are*GWP_N2O ---
-def test_rev2_environment_are_basis() -> None:
-    """Rev 2 §5.8: CO2e_are basis are; f_ch4_are = f_ch4_ha/100."""
+def test_rev4_environment_limitation_even_with_flux() -> None:
     from dataclasses import replace
     constants_with_flux = replace(
         DSS_CONSTANTS,
-        seasonal_ch4_rice_duck_kg_per_ha=200.0,   # kg/ha/musim
+        seasonal_ch4_rice_duck_kg_per_ha=200.0,
         seasonal_ch4_conventional_kg_per_ha=400.0,
         seasonal_n2o_kg_per_ha=2.0,
     )
     env = compute_environment(
         final_yield_kg_per_ha=6116.4,
-        x_final_kg_are=61.164,  # = 6116.4 / 100
+        x_final_kg_are=61.164,
         constants=constants_with_flux,
     )
-    # f_ch4_are = 200/100 = 2.0
-    assert abs(env["f_ch4_are"] - 2.0) < 0.0001
-    # f_n2o_are = 2.0/100 = 0.02
-    assert abs(env["f_n2o_are"] - 0.02) < 0.0001
-    # CO2e_are = 2.0*34 + 0.02*265 = 68 + 5.3 = 73.3
-    assert abs(env["co2e_are"] - 73.3) < 0.01
-    # co2e_ha_note = co2e_are * 100 = 7330
-    assert abs(env["co2e_ha_note"] - 7330.0) < 1.0
-    # GHGI = co2e_are / x_final_kg_are = 73.3 / 61.164
-    expected_ghgi = 73.3 / 61.164
-    assert abs(env["ghgi"] - expected_ghgi) < 0.001
-    # Reduksi_CH4: (400/100 - 200/100) / (400/100) * 100 = (4-2)/4 * 100 = 50%
-    assert abs(env["ch4_reduction_pct"] - 50.0) < 0.01
-    # Environment status tidak pernah disabled
-    assert env["status"] == "literature-uncalibrated"
-    assert env["formula_available"] is True
-    assert env["numeric_ready"] is True
+    assert env["status"] == "limitation"
+    assert env["formula_available"] is False
+    assert env["numeric_ready"] is False
+    assert env["co2e_are"] is None
 
 
 # --- TC-REV2-EKOL-1: V_eco1 memakai d_aktual_are * A_are ---
@@ -845,7 +914,7 @@ def test_q_feed_economics_uses_0_10_not_0_15() -> None:
     """Feed cost dihitung dengan 0.10 (Opsi A), bukan 0.15."""
     constants_with_price = replace(
         DSS_CONSTANTS,
-        feed_price_rp_per_kg=1000.0,   # Rp1000/kg untuk memudahkan verifikasi
+        feed_price_rp_per_kg=1000.0,
         rice_duck_price_rp_per_kg=5800.0,
     )
     result_econ = compute_economics(
@@ -853,21 +922,171 @@ def test_q_feed_economics_uses_0_10_not_0_15() -> None:
         surviving_ducks=6.7,
         density_are=2.0,
         duration_days=32,
-        effective_duration_days=32 * 10 / 12,  # ≈ 26.67
+        effective_duration_days=32 * 10 / 12,
         area_are=5.0,
         final_yield_kg_per_ha=5800.0,
         base_yield_kg_per_ha=5900.0,
         penalty_rate=0.0,
         k_max_are=4.0,
         partial_ecological_value_rp=10000.0,
+        duck_buy_price_rp_per_duck=26500.0,
         constants=constants_with_price,
     )
-    # feed_req = 0.10, feed_save = 0.66, t_eff ≈ 26.67, duck_count=10, price=1000
-    # base_feed = 10 * 0.10 * 26.67 * 1000 * (1-0.66) = 10 * 0.10 * 26.67 * 1000 * 0.34
-    # ≈ 9067.8
     expected_base = 10 * 0.10 * (32 * 10 / 12) * 1000.0 * (1 - 0.66)
     assert result_econ["feed_cost_rp"] is not None
     assert abs(result_econ["feed_cost_rp"] - expected_base) < 10.0, (
         f"feed_cost_rp {result_econ['feed_cost_rp']} != expected {expected_base} "
         f"(verifying 0.10 is used, not 0.15)"
     )
+
+
+def test_age_does_not_change_non_price_components_when_other_inputs_same() -> None:
+    constants_with_prices = replace(
+        DSS_CONSTANTS,
+        rice_duck_price_rp_per_kg=6000.0,
+        conventional_yield_kg_per_ha=5000.0,
+        feed_price_rp_per_kg=1000.0,
+    )
+    duck_count = 10
+    density_are = 2.0
+    duration_days = 32
+    area_are = 5.0
+    k_max_are = 4.0
+    surviving_ducks = compute_surviving_ducks(duck_count, constants_with_prices.survival_lambda)
+    effective_duration_days = compute_effective_duration(duration_days, constants_with_prices)
+    dung_total = compute_dung_total(duration_days, constants_with_prices)
+    nutrients = compute_soil_nutrients(
+        dung_total_per_duck_kg=dung_total,
+        density_are=density_are,
+        constants=constants_with_prices,
+    )
+    ecology = compute_ecology(
+        density_are=density_are,
+        duration_days=duration_days,
+        area_are=area_are,
+        k_max_are=k_max_are,
+        constants=constants_with_prices,
+    )
+    x_base, penalty_rate, x_penalized, x_final = compute_final_yield_kg_per_ha(
+        density_are=density_are,
+        duration_days=duration_days,
+        k_max_are=k_max_are,
+        f_yield=1.05,
+        constants=constants_with_prices,
+    )
+    _, _, x_penalized_repeat, x_final_repeat = compute_final_yield_kg_per_ha(
+        density_are=density_are,
+        duration_days=duration_days,
+        k_max_are=k_max_are,
+        f_yield=1.05,
+        constants=constants_with_prices,
+    )
+
+    age_18 = compute_duck_age_status(18)
+    age_35 = compute_duck_age_status(35)
+    assert age_18["u_status"] != age_35["u_status"]
+
+    econ_18 = compute_economics(
+        duck_count=duck_count,
+        surviving_ducks=surviving_ducks,
+        density_are=density_are,
+        duration_days=duration_days,
+        effective_duration_days=effective_duration_days,
+        area_are=area_are,
+        final_yield_kg_per_ha=x_final,
+        base_yield_kg_per_ha=x_base,
+        penalty_rate=penalty_rate,
+        k_max_are=k_max_are,
+        partial_ecological_value_rp=ecology["partial_ecological_value_rp"],
+        duck_buy_price_rp_per_duck=26500.0,
+        constants=constants_with_prices,
+    )
+    econ_35 = compute_economics(
+        duck_count=duck_count,
+        surviving_ducks=surviving_ducks,
+        density_are=density_are,
+        duration_days=duration_days,
+        effective_duration_days=effective_duration_days,
+        area_are=area_are,
+        final_yield_kg_per_ha=x_final,
+        base_yield_kg_per_ha=x_base,
+        penalty_rate=penalty_rate,
+        k_max_are=k_max_are,
+        partial_ecological_value_rp=ecology["partial_ecological_value_rp"],
+        duck_buy_price_rp_per_duck=30000.0,
+        constants=constants_with_prices,
+    )
+    environment_18 = compute_environment(
+        final_yield_kg_per_ha=x_final,
+        x_final_kg_are=x_final / 100.0,
+        constants=constants_with_prices,
+    )
+    environment_35 = compute_environment(
+        final_yield_kg_per_ha=x_final,
+        x_final_kg_are=x_final / 100.0,
+        constants=constants_with_prices,
+    )
+
+    assert x_penalized == x_penalized_repeat
+    assert x_final == x_final_repeat
+    assert surviving_ducks == duck_count * constants_with_prices.survival_lambda
+    assert abs(econ_18["feed_cost_rp"] - econ_35["feed_cost_rp"]) < 0.0001
+    assert econ_18["rice_revenue_rp"] == econ_35["rice_revenue_rp"]
+    assert econ_18["duck_revenue_rp"] == econ_35["duck_revenue_rp"]
+    assert econ_18["duck_purchase_cost_rp"] != econ_35["duck_purchase_cost_rp"]
+    assert nutrients["n_kg_per_are"] is not None
+    assert nutrients["p2o5_kg_per_are"] is not None
+    assert nutrients["k2o_kg_per_are"] is not None
+    assert ecology["partial_ecological_value_rp"] > 0
+    assert environment_18 == environment_35
+    assert environment_18["status"] == "limitation"
+
+
+def test_service_actual_scenario_keeps_non_price_outputs_age_invariant() -> None:
+    original_seed_constants = seed_data.DSS_CONSTANTS
+    original_lookup_constants = lookup_data.DSS_CONSTANTS
+    patched_constants = replace(
+        original_seed_constants,
+        feed_price_rp_per_kg=1000.0,
+        rice_duck_price_rp_per_kg=6000.0,
+        conventional_yield_kg_per_ha=5000.0,
+    )
+    seed_data.DSS_CONSTANTS = patched_constants
+    lookup_data.DSS_CONSTANTS = patched_constants
+    try:
+        payload_18 = DSSSimulationRequest(
+            duck_count=28,
+            land_area_are=7,
+            planting_date=date(2026, 6, 1),
+            rice_variety="sertani",
+            planting_system="jajar_legowo",
+            duck_age_days=18,
+            duck_buy_price_rp_per_duck=30000.0,
+        )
+        payload_35 = DSSSimulationRequest(
+            duck_count=28,
+            land_area_are=7,
+            planting_date=date(2026, 6, 1),
+            rice_variety="sertani",
+            planting_system="jajar_legowo",
+            duck_age_days=35,
+            duck_buy_price_rp_per_duck=30000.0,
+        )
+
+        response_18 = dss_service.simulate(payload_18)
+        response_35 = dss_service.simulate(payload_35)
+
+        assert response_18.duck_age_assessment.u_status != response_35.duck_age_assessment.u_status
+        assert response_18.duration_constraints.t_maks_rekomendasi_days != response_35.duration_constraints.t_maks_rekomendasi_days
+        assert response_18.actual_scenario.duration_days != response_35.actual_scenario.duration_days
+        assert response_18.actual_scenario.predicted_yield.kg_per_ha == response_35.actual_scenario.predicted_yield.kg_per_ha
+        assert response_18.actual_scenario.surviving_ducks == response_35.actual_scenario.surviving_ducks
+        assert response_18.actual_scenario.dung_total_per_duck_kg == response_35.actual_scenario.dung_total_per_duck_kg
+        assert response_18.ecology.actual.soil_nutrients == response_35.ecology.actual.soil_nutrients
+        assert response_18.ecology.actual.partial_ecological_value_rp == response_35.ecology.actual.partial_ecological_value_rp
+        assert response_18.economics.actual.feed_cost_rp == response_35.economics.actual.feed_cost_rp
+        assert response_18.economics.actual.feed_cost_rp is not None
+        assert response_18.environment.actual == response_35.environment.actual
+    finally:
+        seed_data.DSS_CONSTANTS = original_seed_constants
+        lookup_data.DSS_CONSTANTS = original_lookup_constants

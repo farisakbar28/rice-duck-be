@@ -59,6 +59,10 @@ class DSSConstants:
     conventional_yield_kg_per_ha: float | None
     duck_sale_price_rp_per_duck: float
     duck_buy_price_rp_per_duck: float
+    duck_target_out_max_days: int
+    duck_buy_price_fallback_min_rp: float
+    duck_buy_price_fallback_max_rp: float
+    duck_buy_price_fallback_mid_rp: float
     feed_price_rp_per_kg: float | None
     nitrogen_price_rp_per_kg: float
     phosphate_price_rp_per_kg: float

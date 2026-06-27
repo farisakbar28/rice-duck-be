@@ -1,5 +1,9 @@
+from dataclasses import replace
+
 from fastapi.testclient import TestClient
 
+import app.data.seed as seed_data
+import app.repositories.lookup_repository as lookup_data
 from app.core.database import get_connection
 from app.main import app
 
@@ -89,7 +93,7 @@ def test_dss_options_are_public() -> None:
     tegel = next(
         item for item in body["planting_systems"] if item["code"] == "tegel"
     )
-    assert tegel["k_max_are"] == 2.5
+    assert tegel["k_max_are"] == 3.0
     assert tegel["k_max_range_are"] == {"min": 2, "max": 3}
 
 
@@ -171,25 +175,25 @@ def test_public_simulation_does_not_save_history() -> None:
     assert body["ecology"]["actual"]["soil_nutrients"]["status"] == "estimation_only"
     assert body["ecology"]["actual"]["pesticide_herbicide_saving_status"] == "literature-uncalibrated"
     assert body["ecology"]["actual"]["pesticide_herbicide_saving_rp"] is not None
-    assert body["environment"]["status"] == "literature-uncalibrated"
+    assert body["environment"]["status"] == "limitation"
     assert body["environment"]["actual"]["co2e_kg_per_ha_season"] is None
     assert body["data_readiness"] == {
         "agronomy_ready": "ready",
         "yield_ready": "estimation_only",
         "economics_ready": "partial",
         "ecology_ready": "estimation_only",
-        "environment_ready": "literature-uncalibrated",
+        "environment_ready": "limitation",
         "overall_status": "partial",
     }
     assert body["lookup"]["parameters"]["survival_lambda"]["source"] == "data_collection"
     assert body["lookup"]["parameters"]["survival_lambda"]["status"] == "local-estimate"
     assert body["validation"]["input_valid"] is True
-    assert any(
-        "14-21" in warning for warning in body["validation"]["warnings"]
-    )
-    
+    assert body["duck_age_assessment"]["u_status"] == "siap lokal"
+    assert body["duration_constraints"]["t_age_max_days"] == 30
+    assert body["quality_output"]["q_output"] in {"High", "Medium", "Low"}
+
     dung_calc = body["trace"]["dung_calculation"]
-    assert dung_calc["dung_total_kg_per_ha"] == 686.08
+    assert dung_calc["dung_total_kg_per_ha"] == 643.2
 
     trace = body["trace"]["recommendation_grid_search"]
     recommended = body["recommended_scenario"]
@@ -202,6 +206,7 @@ def test_public_simulation_does_not_save_history() -> None:
     assert trace["objective_components_used"] == [
         "normalized_yield",
         "risk_penalty",
+        "normalized_ecology",
     ]
 
 
@@ -225,10 +230,10 @@ def test_simulation_is_saved_as_user_history() -> None:
     body = response.json()
     assert body["history_id"]
     assert body["actual_scenario"]["density_are"] == 4.0
-    assert body["actual_scenario"]["duration_days"] == 32
+    assert body["actual_scenario"]["duration_days"] == 30
     assert body["actual_scenario"]["surviving_ducks"] == 18.76
-    assert body["actual_scenario"]["predicted_yield"]["kg_per_ha"] == 6116.3981
-    assert body["actual_scenario"]["predicted_yield"]["estimated_total_kg"] == 428.1479
+    assert body["actual_scenario"]["predicted_yield"]["kg_per_ha"] == 6023.4542
+    assert body["actual_scenario"]["predicted_yield"]["estimated_total_kg"] == 421.6418
     assert body["actual_scenario"]["risk_status"] == "SAFE"
     assert body["trace"]["yield_model"]["density_basis"] == "d_ha"
 
@@ -257,11 +262,11 @@ def test_history_detail_and_delete() -> None:
     )
     assert detail_response.status_code == 200
     assert detail_response.json()["history_id"] == history_id
-    assert detail_response.json()["trace"]["yield_model"]["x_final"] == 6116.3981
+    assert detail_response.json()["trace"]["yield_model"]["x_final"] == 6023.4542
     assert detail_response.json()["economics"]["actual"]["net_profit_rp"] is None
     # Kappa values are now available, so nutrients are calculated (not None)
     assert detail_response.json()["ecology"]["actual"]["soil_nutrients"]["n_kg_per_ha"] is not None
-    assert detail_response.json()["environment"]["status"] == "literature-uncalibrated"
+    assert detail_response.json()["environment"]["status"] == "limitation"
 
     delete_response = client.delete(
         f"/api/v1/dss/histories/{history_id}",
@@ -343,3 +348,96 @@ def test_simulation_validation_error() -> None:
         issue["field"] == "land_area_are"
         for issue in response.json()["error"]["issues"]
     )
+
+
+def test_duck_age_10_lowers_quality_and_requires_actual_price() -> None:
+    payload = dict(SIMULATION_PAYLOAD)
+    payload["duck_age_days"] = 10
+    response = client.post("/api/v1/dss/simulate", json=payload)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["duck_age_assessment"]["u_status"] == "belum disarankan"
+    assert body["quality_output"]["q_output"] == "Low"
+    assert body["duration_constraints"]["t_age_max_days"] == 32
+    assert "duck_buy_price_rp_per_duck" in body["economics"]["actual"]["missing_parameters"]
+    assert body["economics"]["actual"]["duck_purchase_cost_rp"] is None
+
+
+def test_duck_age_35_shortens_recommended_duration() -> None:
+    payload = dict(SIMULATION_PAYLOAD)
+    payload["duck_age_days"] = 35
+    payload["duck_buy_price_rp_per_duck"] = 30000
+    response = client.post("/api/v1/dss/simulate", json=payload)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["duck_age_assessment"]["u_status"] == "lebih tua/perlu durasi konservatif"
+    assert body["duration_constraints"]["t_age_max_days"] == 25
+    assert body["duration_constraints"]["t_maks_rekomendasi_days"] == 25
+    if body["recommended_scenario"] is not None:
+        assert body["recommended_scenario"]["recommended_duration_days"] <= 25
+
+
+def test_duck_age_changes_only_rev4_age_outputs_not_yield_feed_survival_npk_ecology_or_environment() -> None:
+    original_seed_constants = seed_data.DSS_CONSTANTS
+    original_lookup_constants = lookup_data.DSS_CONSTANTS
+    patched_constants = replace(
+        original_seed_constants,
+        feed_price_rp_per_kg=1000.0,
+        rice_duck_price_rp_per_kg=6000.0,
+        conventional_yield_kg_per_ha=5000.0,
+    )
+    seed_data.DSS_CONSTANTS = patched_constants
+    lookup_data.DSS_CONSTANTS = patched_constants
+    try:
+        payload_18 = dict(SIMULATION_PAYLOAD)
+        payload_18["duck_age_days"] = 18
+        payload_18["duck_buy_price_rp_per_duck"] = 30000
+
+        payload_35 = dict(SIMULATION_PAYLOAD)
+        payload_35["duck_age_days"] = 35
+        payload_35["duck_buy_price_rp_per_duck"] = 30000
+
+        response_18 = client.post("/api/v1/dss/simulate", json=payload_18)
+        response_35 = client.post("/api/v1/dss/simulate", json=payload_35)
+        assert response_18.status_code == 200
+        assert response_35.status_code == 200
+
+        body_18 = response_18.json()
+        body_35 = response_35.json()
+
+        assert body_18["duck_age_assessment"]["u_status"] == "muda/perlu pengawasan"
+        assert body_35["duck_age_assessment"]["u_status"] == "lebih tua/perlu durasi konservatif"
+        assert body_18["duration_constraints"]["t_age_max_days"] == 32
+        assert body_35["duration_constraints"]["t_age_max_days"] == 25
+        assert body_18["duration_constraints"]["t_maks_rekomendasi_days"] == 32
+        assert body_35["duration_constraints"]["t_maks_rekomendasi_days"] == 25
+        assert body_18["actual_scenario"]["duration_days"] == 32
+        assert body_35["actual_scenario"]["duration_days"] == 25
+        assert body_18["actual_scenario"]["predicted_yield"]["kg_per_ha"] == body_35["actual_scenario"]["predicted_yield"]["kg_per_ha"]
+        assert body_18["actual_scenario"]["surviving_ducks"] == body_35["actual_scenario"]["surviving_ducks"]
+        assert body_18["actual_scenario"]["dung_total_per_duck_kg"] == body_35["actual_scenario"]["dung_total_per_duck_kg"]
+        assert body_18["ecology"]["actual"]["soil_nutrients"] == body_35["ecology"]["actual"]["soil_nutrients"]
+        assert body_18["ecology"]["actual"]["partial_ecological_value_rp"] == body_35["ecology"]["actual"]["partial_ecological_value_rp"]
+        assert body_18["economics"]["actual"]["q_feed_source"] == "literature-reference-a02"
+        assert body_35["economics"]["actual"]["q_feed_source"] == "literature-reference-a02"
+        assert body_18["economics"]["actual"]["feed_cost_rp"] == body_35["economics"]["actual"]["feed_cost_rp"]
+        assert body_18["economics"]["actual"]["feed_cost_rp"] is not None
+        assert body_18["economics"]["actual"]["duck_purchase_cost_rp"] == body_35["economics"]["actual"]["duck_purchase_cost_rp"]
+        assert body_18["environment"]["status"] == "limitation"
+        assert body_35["environment"]["status"] == "limitation"
+        assert body_18["environment"]["actual"] == body_35["environment"]["actual"]
+    finally:
+        seed_data.DSS_CONSTANTS = original_seed_constants
+        lookup_data.DSS_CONSTANTS = original_lookup_constants
+
+
+
+def test_duck_age_25_marks_ready_local() -> None:
+    payload = dict(SIMULATION_PAYLOAD)
+    payload["duck_age_days"] = 25
+    response = client.post("/api/v1/dss/simulate", json=payload)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["duck_age_assessment"]["u_status"] == "siap lokal"
+    assert body["duration_constraints"]["t_age_max_days"] == 32
+    assert body["quality_output"]["q_output"] in {"High", "Medium"}

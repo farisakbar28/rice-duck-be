@@ -30,6 +30,111 @@ def compute_pull_date_from_duration(planting_date: date, hst_masuk: int, duratio
     return planting_date + timedelta(days=hst_masuk + duration_days)
 
 
+def compute_duck_age_status(duck_age_days: int) -> dict:
+    if duck_age_days < 14:
+        return {
+            "u_status": "belum disarankan",
+            "c_age": 0.40,
+            "note": "Umur bebek belum disarankan untuk masuk sawah.",
+        }
+    if duck_age_days < 21:
+        return {
+            "u_status": "muda/perlu pengawasan",
+            "c_age": 0.70,
+            "note": "Umur bebek masih muda dan perlu pengawasan lebih ketat.",
+        }
+    if duck_age_days <= 30:
+        return {
+            "u_status": "siap lokal",
+            "c_age": 1.00,
+            "note": "Umur bebek berada pada rentang kesiapan lokal 21-30 hari.",
+        }
+    return {
+        "u_status": "lebih tua/perlu durasi konservatif",
+        "c_age": 0.75,
+        "note": "Umur bebek lebih tua sehingga durasi rekomendasi dibuat lebih konservatif.",
+    }
+
+
+def compute_p_duck_buy_age(
+    duck_age_days: int,
+    actual_buy_price_rp: float | None,
+    constants: DSSConstants,
+) -> dict:
+    if actual_buy_price_rp is not None:
+        return {
+            "price_rp": actual_buy_price_rp,
+            "source": "user-input",
+            "status": "local-input",
+            "requires_actual_price": False,
+            "note": "Harga beli aktual user diprioritaskan.",
+        }
+    if 14 <= duck_age_days <= 30:
+        return {
+            "price_rp": constants.duck_buy_price_fallback_mid_rp,
+            "source": "data-collection-fallback",
+            "status": "local-estimate",
+            "requires_actual_price": False,
+            "note": (
+                f"Fallback lokal umur 14-30 hari memakai nilai tengah "
+                f"Rp{constants.duck_buy_price_fallback_mid_rp:,.0f}/ekor dari rentang "
+                f"Rp{constants.duck_buy_price_fallback_min_rp:,.0f}-Rp{constants.duck_buy_price_fallback_max_rp:,.0f}."
+            ),
+        }
+    return {
+        "price_rp": None,
+        "source": "required-user-input",
+        "status": "missing-actual-price",
+        "requires_actual_price": True,
+        "note": "Di luar umur 14-30 hari, harga beli aktual wajib diminta agar profit tidak bias.",
+    }
+
+
+def compute_t_age_max(
+    duck_age_days: int,
+    t_lokal_max: int,
+    duck_target_out_max_days: int,
+) -> int:
+    return max(0, min(t_lokal_max, duck_target_out_max_days - duck_age_days))
+
+
+def compute_t_maks_rekomendasi(
+    t_max_eff_days: int,
+    hst_masuk: int,
+    hst_heading: int,
+    t_age_max: int,
+) -> int:
+    return max(0, min(t_max_eff_days, hst_heading - hst_masuk, t_age_max))
+
+
+def compute_quality_output(
+    *,
+    c_area: float,
+    c_calendar: float,
+    c_age: float,
+    c_price: float,
+    c_baseline: float,
+) -> dict:
+    score = min(c_area, c_calendar, c_age, c_price, c_baseline)
+    if score >= 0.85:
+        q_output = "High"
+    elif score >= 0.65:
+        q_output = "Medium"
+    else:
+        q_output = "Low"
+    return {
+        "q_output": q_output,
+        "score": score,
+        "components": {
+            "C_area": c_area,
+            "C_calendar": c_calendar,
+            "C_age": c_age,
+            "C_price": c_price,
+            "C_baseline": c_baseline,
+        },
+    }
+
+
 def compute_surviving_ducks(duck_count: int, survival_lambda: float) -> float:
     return duck_count * survival_lambda
 
@@ -117,7 +222,7 @@ def compute_risk_status(
         return "HIGH"
     if density_are > k_max_are:
         return "WARNING"
-    if density_are > (0.8 * k_max_are):
+    if density_are >= (0.8 * k_max_are):
         return "SAFE"
     return "LOW"
 

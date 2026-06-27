@@ -6,14 +6,19 @@ from app.engines.formula_engine import (
     compute_actual_duration_days,
     compute_density,
     compute_dung_total,
+    compute_duck_age_status,
     compute_effective_duration,
     compute_final_yield_kg_per_ha,
+    compute_p_duck_buy_age,
     compute_pull_date_from_duration,
     compute_pull_date_from_hst,
+    compute_quality_output,
     compute_release_date,
     compute_rey,
     compute_risk_status,
     compute_surviving_ducks,
+    compute_t_age_max,
+    compute_t_maks_rekomendasi,
     convert_are_to_ha,
     convert_yield_units,
     risk_rank,
@@ -35,6 +40,8 @@ from app.schemas.dss import (
     DSSSimulationRequest,
     DSSSimulationResponse,
     DataReadinessSummary,
+    DuckAgeAssessment,
+    DurationConstraintSummary,
     EcologySummary,
     EconomicsSummary,
     EnvironmentSummary,
@@ -45,6 +52,7 @@ from app.schemas.dss import (
     OptimalityAssessment,
     PlantingSystemOption,
     PredictedYield,
+    QualityOutput,
     RecommendedScenario,
     RiceVarietyOption,
     RiskSummary,
@@ -107,6 +115,32 @@ class DSSService:
         planting_system = self._find_planting_system(payload.planting_system)
         constants = lookup_repository.get_constants()
 
+        duck_age = compute_duck_age_status(payload.duck_age_days)
+        duck_buy_price = compute_p_duck_buy_age(
+            payload.duck_age_days,
+            payload.duck_buy_price_rp_per_duck,
+            constants,
+        )
+        hst_phase_limit_days = compute_actual_duration_days(variety.hst_masuk, variety.hst_heading)
+        t_age_max = compute_t_age_max(
+            payload.duck_age_days,
+            hst_phase_limit_days,
+            constants.duck_target_out_max_days,
+        )
+        t_maks_rekomendasi = compute_t_maks_rekomendasi(
+            constants.t_max_eff_days,
+            variety.hst_masuk,
+            variety.hst_heading,
+            t_age_max,
+        )
+        quality_raw = compute_quality_output(
+            c_area=1.0 if payload.land_area_are > 0 else 0.0,
+            c_calendar=1.0 if t_maks_rekomendasi > 0 else 0.4,
+            c_age=duck_age["c_age"],
+            c_price=(1.0 if payload.duck_buy_price_rp_per_duck is not None else (0.8 if not duck_buy_price["requires_actual_price"] else 0.4)),
+            c_baseline=1.0 if constants.conventional_yield_kg_per_ha is not None else 0.6,
+        )
+
         actual = self._evaluate_scenario(
             duck_count=payload.duck_count,
             land_area_are=payload.land_area_are,
@@ -114,8 +148,16 @@ class DSSService:
             variety=variety,
             planting_system=planting_system,
             constants=constants,
-            duration_days=compute_actual_duration_days(variety.hst_masuk, variety.hst_heading),
-            use_heading_pull_date=True,
+            duration_days=t_maks_rekomendasi,
+            modeled_duration_days_override=min(
+                constants.t_max_eff_days,
+                hst_phase_limit_days,
+            ),
+            use_heading_pull_date=False,
+            duck_age_days=payload.duck_age_days,
+            duck_buy_price=duck_buy_price,
+            t_age_max=t_age_max,
+            t_maks_rekomendasi=t_maks_rekomendasi,
         )
         recommended = self._search_recommendation(
             actual=actual,
@@ -124,6 +166,10 @@ class DSSService:
             variety=variety,
             planting_system=planting_system,
             constants=constants,
+            duck_age_days=payload.duck_age_days,
+            duck_buy_price=duck_buy_price,
+            t_age_max=t_age_max,
+            t_maks_rekomendasi=t_maks_rekomendasi,
         )
 
         recommended["reasoning_summary"] = self._build_reasoning(
@@ -135,15 +181,16 @@ class DSSService:
             "Model ini adalah deterministic mathematical model, bukan machine learning dan bukan IoT.",
             constants.calibration_note,
             "land_area_are diasumsikan sebagai area aktif yang benar-benar dimasuki bebek, bukan total lahan jika keduanya berbeda.",
-            "duck_age_days dicatat sebagai konteks biologis, tetapi belum mengubah yield karena koefisien umur bebek belum terkalibrasi.",
+            "Catatan: duck_age_days aktif untuk U_status, p_duck_buy_age, t_age_max, t_maks_rekomendasi, tanggal_tarik, dan quality output; tidak langsung mengubah yield, q_feed, survival, dung, N/P/K, V_eco, bobot jual, atau emisi.",
+            "Catatan: Laba_bersih dan DeltaProfit hanya menerima pengaruh umur bebek melalui p_duck_buy_age di dalam C_duck_buy. Umur bebek tidak mengubah C_feed, yield, survival lambda, Dung_total, N/P/K, V_eco, bobot jual, atau emisi.",
             (
                 "Rev 1: Laba_bersih dihitung menggunakan fallback referensi jika q_feed lokal tidak tersedia; "
                 "status sumber data tersedia di economics.actual.sumber_data dan optimality_assessment.profit_data_purity. "
                 "Jika Laba_bersih masih null, berarti feed_price_rp_per_kg dan/atau rice_duck_price_rp_per_kg belum tersedia."
             ),
-            "Hara tanah tidak dihitung karena koefisien kappa belum tersedia atau tervalidasi lokal; nilai referensi kappa_N=0.049, kappa_P=0.072, kappa_K=0.032 tersedia di lookup.parameters.",
+            "Hara tanah dihitung sebagai estimation-only berbasis koefisien referensi kappa_N=0.049, kappa_P=0.072, kappa_K=0.032 yang belum dikalibrasi lokal Astungkara Way.",
             "Output ekologis V_eco1/V_eco2 berstatus literature-uncalibrated; V_gulma berstatus local-estimate.",
-            "Modul emisi berstatus literature-uncalibrated sampai tersedia flux CH4 dan N2O musiman dalam satuan kg/ha/musim.",
+            "Modul emisi tetap limitation penelitian; tidak menjadi output numerik aktif dan tidak masuk objective.",
             "R-01: land_area_are diasumsikan area aktif bebek (A_active_duck_are). Jika berbeda dari total lahan, kepadatan dapat bias (warning bias area aktif).",
             (
                 "REY (Rice Equivalent Yield) dihitung jika p_gabah_rd tersedia; "
@@ -195,7 +242,7 @@ class DSSService:
             yield_ready="estimation_only",
             economics_ready="partial",
             ecology_ready="estimation_only",
-            environment_ready="literature-uncalibrated",
+            environment_ready="limitation",
             overall_status="partial",
         )
 
@@ -253,9 +300,13 @@ class DSSService:
                 },
             },
             "duration_calculation": {
-                "formula": "t_aktual = HST_heading - HST_masuk",
+                "formula": "t_rekomendasi <= min(t_max_eff, HST_heading - HST_masuk, t_age_max)",
                 "hst_masuk": variety.hst_masuk,
                 "hst_heading": variety.hst_heading,
+                "hst_phase_limit_days": hst_phase_limit_days,
+                "t_max_eff_days": constants.t_max_eff_days,
+                "t_age_max_days": t_age_max,
+                "t_maks_rekomendasi_days": t_maks_rekomendasi,
                 "duration_days": actual["duration_days"],
                 "duration_used_in_yield_model": actual["modeled_duration_days"],
                 "t_effective_days": round(actual["effective_duration_days"], 4),
@@ -263,7 +314,7 @@ class DSSService:
             },
             "timeline_calculation": {
                 "release_date_formula": "release_date = planting_date + HST_masuk",
-                "pull_date_formula_actual": "pull_date = planting_date + HST_heading",
+                "pull_date_formula_actual": "pull_date = planting_date + HST_masuk + actual_duration_days",
                 "pull_date_formula_recommended": "pull_date = planting_date + HST_masuk + recommended_duration_days",
                 "planting_date": payload.planting_date.isoformat(),
                 "actual_release_date": actual["release_date"].isoformat(),
@@ -316,15 +367,11 @@ class DSSService:
                 },
                 "constraints": [
                     "recommended_density_are <= K_max_are",
-                    "recommended_duration_days <= t_max_eff",
+                    "recommended_duration_days <= t_maks_rekomendasi",
                     "HST_masuk + recommended_duration_days <= HST_heading",
                 ],
-                "objective": "score = normalized_yield - risk_penalty",
-            "objective_components_used": [
-                    c
-                    for c in recommended["objective_components_used"]
-                    if c in {"normalized_yield", "risk_penalty"}
-                ],
+                "objective": "score = normalized_yield + normalized_ecology + normalized_profit_if_ready - risk_penalty",
+                "objective_components_used": recommended["objective_components_used"],
 
                 "objective_components_skipped": [
 
@@ -385,6 +432,32 @@ class DSSService:
             history_id=None,
             input=DSSInput(**payload.model_dump()),
             lookup=lookup,
+            duck_age_assessment=DuckAgeAssessment(
+                duck_age_days=payload.duck_age_days,
+                u_status=duck_age["u_status"],
+                c_age=duck_age["c_age"],
+                p_duck_buy_age_rp=self._round_optional(duck_buy_price["price_rp"], 2),
+                p_duck_buy_age_source=duck_buy_price["source"],
+                p_duck_buy_age_status=duck_buy_price["status"],
+                requires_actual_duck_buy_price=duck_buy_price["requires_actual_price"],
+                note=duck_age["note"],
+            ),
+            duration_constraints=DurationConstraintSummary(
+                t_max_eff_days=constants.t_max_eff_days,
+                hst_phase_limit_days=hst_phase_limit_days,
+                t_age_max_days=t_age_max,
+                t_maks_rekomendasi_days=t_maks_rekomendasi,
+                u_target_out_max_days=constants.duck_target_out_max_days,
+            ),
+            quality_output=QualityOutput(
+                q_output=quality_raw["q_output"],
+                score=round(quality_raw["score"], 4),
+                components={key: round(val, 4) for key, val in quality_raw["components"].items()},
+                notes=[
+                    duck_buy_price["note"],
+                    "Q_output hanya quality gate, bukan objective function.",
+                ],
+            ),
             actual_scenario=ActualScenario(
                 duck_count=actual["duck_count"],
                 land_area_are=round(actual["land_area_are"], 4),
@@ -396,6 +469,8 @@ class DSSService:
                 duration_days=actual["duration_days"],
                 release_date=actual["release_date"],
                 pull_date=actual["pull_date"],
+                t_age_max_days=actual.get("t_age_max_days"),
+                t_maks_rekomendasi_days=actual.get("t_maks_rekomendasi_days"),
                 surviving_ducks=round(actual["surviving_ducks"], 4),
                 dung_total_per_duck_kg=round(
                     actual["dung_total_per_duck_kg"],
@@ -433,6 +508,8 @@ class DSSService:
                     recommended_duration_days=recommended["duration_days"],
                     recommended_release_date=recommended["release_date"],
                     recommended_pull_date=recommended["pull_date"],
+                    t_age_max_days=recommended.get("t_age_max_days"),
+                    t_maks_rekomendasi_days=recommended.get("t_maks_rekomendasi_days"),
                     surviving_ducks=round(recommended["surviving_ducks"], 4),
                     dung_total_per_duck_kg=round(
                         recommended["dung_total_per_duck_kg"],
@@ -645,17 +722,27 @@ class DSSService:
         planting_system: PlantingSystem,
         constants: DSSConstants,
         duration_days: int,
+        modeled_duration_days_override: int | None = None,
         use_heading_pull_date: bool,
+        duck_age_days: int,
+        duck_buy_price: dict,
+        t_age_max: int,
+        t_maks_rekomendasi: int,
     ) -> dict:
         land_area_ha = convert_are_to_ha(land_area_are)
         density_are, density_ha = compute_density(duck_count, land_area_are)
-        max_duration_days = compute_actual_duration_days(variety.hst_masuk, variety.hst_heading)
-        modeled_duration_days = min(duration_days, constants.t_max_eff_days)
+        max_duration_days = t_maks_rekomendasi
+        calendar_duration_days = duration_days
+        modeled_duration_days = (
+            modeled_duration_days_override
+            if modeled_duration_days_override is not None
+            else min(duration_days, t_maks_rekomendasi)
+        )
         release_date = compute_release_date(planting_date, variety.hst_masuk)
         pull_date = (
-            compute_pull_date_from_hst(planting_date, variety.hst_heading)
+            compute_pull_date_from_hst(planting_date, variety.hst_masuk + calendar_duration_days)
             if use_heading_pull_date
-            else compute_pull_date_from_duration(planting_date, variety.hst_masuk, duration_days)
+            else compute_pull_date_from_duration(planting_date, variety.hst_masuk, calendar_duration_days)
         )
         surviving_ducks = compute_surviving_ducks(duck_count, constants.survival_lambda)
         dung_total_per_duck_kg = compute_dung_total(modeled_duration_days, constants)
@@ -677,7 +764,7 @@ class DSSService:
         risk_status = compute_risk_status(
             density_are=density_are,
             k_max_are=planting_system.k_max_are,
-            duration_days=duration_days,
+            duration_days=calendar_duration_days,
             max_duration_days=max_duration_days,
         )
         nutrients = compute_soil_nutrients(
@@ -700,11 +787,15 @@ class DSSService:
             effective_duration_days=effective_duration_days,
             area_are=land_area_are,
             final_yield_kg_per_ha=kg_per_ha,
-            x_final_kg_are=kg_per_are,   # Rev 2 primary
+            x_final_kg_are=kg_per_are,
             base_yield_kg_per_ha=x_base,
             penalty_rate=penalty_rate,
             k_max_are=planting_system.k_max_are,
             partial_ecological_value_rp=ecology["partial_ecological_value_rp"],
+            duck_buy_price_rp_per_duck=duck_buy_price["price_rp"],
+            duck_buy_price_source=duck_buy_price["source"],
+            duck_buy_price_status=duck_buy_price["status"],
+            duck_buy_price_requires_actual=duck_buy_price["requires_actual_price"],
             constants=constants,
         )
         environment = compute_environment(
@@ -725,9 +816,11 @@ class DSSService:
             "land_area_ha": land_area_ha,
             "density_are": density_are,
             "density_ha": density_ha,
-            "duration_days": duration_days,
+            "duration_days": calendar_duration_days,
             "modeled_duration_days": modeled_duration_days,
             "max_duration_days": max_duration_days,
+            "t_age_max_days": t_age_max,
+            "t_maks_rekomendasi_days": t_maks_rekomendasi,
             "release_date": release_date,
             "pull_date": pull_date,
             "surviving_ducks": surviving_ducks,
@@ -758,8 +851,12 @@ class DSSService:
         variety: RiceVariety,
         planting_system: PlantingSystem,
         constants: DSSConstants,
+        duck_age_days: int,
+        duck_buy_price: dict,
+        t_age_max: int,
+        t_maks_rekomendasi: int,
     ) -> dict:
-        duration_limit = min(actual["max_duration_days"], constants.t_max_eff_days)
+        duration_limit = t_maks_rekomendasi
         candidates: list[dict] = []
         minimum_duck_count = max(
             1,
@@ -783,11 +880,17 @@ class DSSService:
                         planting_system=planting_system,
                         constants=constants,
                         duration_days=duration_days,
+                        modeled_duration_days_override=None,
                         use_heading_pull_date=False,
+                        duck_age_days=duck_age_days,
+                        duck_buy_price=duck_buy_price,
+                        t_age_max=t_age_max,
+                        t_maks_rekomendasi=t_maks_rekomendasi,
                     )
                 )
 
-        yield_values = [candidate["kg_per_ha"] for candidate in candidates]
+        scoring_population = candidates + [actual]
+        yield_values = [candidate["kg_per_ha"] for candidate in scoring_population]
 
         # Rev 2 sesuai dokumentasi:
         #   score = normalized_yield - risk_penalty
@@ -796,17 +899,17 @@ class DSSService:
         # dimasukkan sebagai tambahan langsung dalam skala normalized (konsisten
         # dengan normalisasi yield).
         profit_values = [
-            c.get("economics", {}).get("net_profit_rp") for c in candidates
+            c.get("economics", {}).get("net_profit_rp") for c in scoring_population
             if c.get("economics", {}).get("net_profit_rp") is not None
         ]
         ecology_values = [
-            c.get("ecology", {}).get("partial_ecological_value_rp") for c in candidates
+            c.get("ecology", {}).get("partial_ecological_value_rp") for c in scoring_population
             if c.get("ecology", {}).get("partial_ecological_value_rp") is not None
         ]
 
         include_ecology_component = any(
             c.get("ecology", {}).get("partial_ecological_value_rp") is not None
-            for c in candidates
+            for c in scoring_population
         )
 
         for candidate in candidates:
@@ -855,6 +958,30 @@ class DSSService:
             candidate["score"] = score
             candidate["objective_components_used"] = objective_components
 
+        actual["normalized_yield"] = self._normalize(actual["kg_per_ha"], yield_values)
+        actual_profit = actual.get("economics", {}).get("net_profit_rp")
+        actual_ecology = actual.get("ecology", {}).get("partial_ecological_value_rp")
+        actual["normalized_profit"] = (
+            self._normalize(actual_profit, profit_values)
+            if actual_profit is not None and len(profit_values) > 0
+            else None
+        )
+        actual["normalized_ecology"] = (
+            self._normalize(actual_ecology, ecology_values)
+            if actual_ecology is not None and len(ecology_values) > 0
+            else None
+        )
+        actual["risk_penalty"] = 0.0 if actual["risk_status"] in {"LOW", "SAFE"} else 1.0
+        actual_score = actual["normalized_yield"] - actual["risk_penalty"]
+        actual_components = ["normalized_yield", "risk_penalty"]
+        if actual["normalized_profit"] is not None:
+            actual_score += actual["normalized_profit"]
+            actual_components.append("normalized_profit")
+        if actual["normalized_ecology"] is not None and include_ecology_component:
+            actual_score += actual["normalized_ecology"]
+            actual_components.append("normalized_ecology")
+        actual["score"] = actual_score
+        actual["objective_components_used"] = actual_components
 
         best = max(
             candidates,
@@ -959,15 +1086,14 @@ class DSSService:
             violations.append("actual_duration_passes_heading")
         if actual["duration_days"] > constants.t_max_eff_days:
             violations.append("actual_duration_exceeds_t_max_eff")
-        if not 14 <= payload.duck_age_days <= 21:
+        if payload.duck_age_days < 14 or payload.duck_age_days > 30:
             warnings.append(
-                "duck_age_days berada di luar rentang lokal 14-21 hari; "
-                "nilai hanya menjadi konteks risiko dan tidak mengubah yield."
+                "duck_age_days berada di luar rentang lokal 14-30 hari; meminta harga beli aktual dan memberi quality output lebih rendah."
             )
         warnings.extend(
             [
                 "Survival lambda 0.67 adalah estimasi batas atas lokal, bukan rata-rata final.",
-                "Jumlah pakan kg/ekor/hari tidak tersedia lokal; sistem menggunakan fallback referensi (0.15 kg/ekor/hari, literature-uncalibrated) sehingga V_duck_lokal tetap dihitung.",
+                "Jumlah pakan kg/ekor/hari tidak tersedia lokal; sistem menggunakan fallback referensi 0.10 kg/ekor/hari (literature-uncalibrated) dan nilai ini tidak berubah oleh umur bebek.",
                 "Maintenance infrastruktur memakai placeholder 0 karena data tidak tercatat.",
             ]
         )
@@ -1017,7 +1143,7 @@ class DSSService:
             assumptions=[
                 "Perspektif harga adalah gabah; harga gabah padi-bebek final belum tersedia.",
                 "Baseline yield konvensional belum memiliki angka final yang sebanding.",
-                "Jumlah pakan kg/ekor/hari tidak tersedia lokal; sistem menggunakan fallback referensi (q_feed=0.15, literature-uncalibrated). net_profit_rp null hanya jika harga rice_duck atau rice_duck_price belum tersedia.",
+                "Jumlah pakan kg/ekor/hari tidak tersedia lokal; sistem menggunakan fallback referensi q_feed=0.10 (literature-uncalibrated). net_profit_rp null jika harga gabah padi-bebek, harga pakan, atau harga beli bebek aktual yang wajib belum tersedia.",
                 "Biaya infrastruktur tetap dihitung dari data jaring dan kandang yang tersedia.",
             ],
         )
@@ -1038,7 +1164,11 @@ class DSSService:
                 2,
             ),
             duck_revenue_rp=round(values["duck_revenue_rp"], 2),
-            duck_purchase_cost_rp=round(values["duck_purchase_cost_rp"], 2),
+            duck_purchase_cost_rp=self._round_optional(values["duck_purchase_cost_rp"], 2),
+            duck_purchase_price_rp_per_duck=self._round_optional(values.get("duck_purchase_price_rp_per_duck"), 2),
+            duck_purchase_price_source=values.get("duck_purchase_price_source"),
+            duck_purchase_price_status=values.get("duck_purchase_price_status"),
+            duck_purchase_price_requires_actual=values.get("duck_purchase_price_requires_actual", False),
             feed_cost_rp=self._round_optional(values["feed_cost_rp"], 2),
             feed_cost_status=values["feed_cost_status"],
             duck_net_value_rp=self._round_optional(
@@ -1174,18 +1304,16 @@ class DSSService:
         actual: dict,
         recommended: dict,
     ) -> EnvironmentSummary:
-        # R-10: modul emisi selalu ada dengan status literature-uncalibrated
+        # Rev 4: modul emisi tetap ada sebagai limitation-only.
         status = actual["environment"]["status"]
         return EnvironmentSummary(
             status=status,
             actual=self._to_scenario_environment(actual["environment"]),
             recommended=self._to_scenario_environment(recommended["environment"]),
             assumptions=[
-                "CO2e dan GHGI hanya dihitung jika F_CH4 dan F_N2O tersedia dalam kg/ha/musim.",
-                "Reduksi_CH4 hanya dihitung jika baseline CH4 konvensional tersedia.",
-                "Y_CH4 = -1.5276*X_DO + 14.770 belum dihitung karena DO lokal belum tersedia.",
-                "Semua output emisi berstatus literature-uncalibrated; belum terkalibrasi lokal Astungkara Way.",
-                "Nilai null berarti data belum layak dihitung, bukan emisi nol.",
+                "Catatan: environment/emission menjadi limitation penelitian, bukan output numerik aktif.",
+                "CO2e, GHGI, Reduksi_CH4, dan DO-to-CH4 tidak masuk objective function.",
+                "Nilai null berarti modul sengaja tidak diaktifkan pada runtime, bukan emisi nol.",
             ],
         )
 
@@ -1283,7 +1411,7 @@ class DSSService:
             "Bebek harus ditarik sebelum fase keluar malai untuk mengurangi risiko makan bulir.",
             "Durasi terlalu panjang dapat meningkatkan kebutuhan pakan tambahan dan menurunkan efisiensi.",
             "net_profit_rp null karena harga gabah padi-bebek dan/atau harga jual bebek belum tersedia lokal; komponen lain tetap dihitung.",
-            "Modul emisi berstatus literature-uncalibrated; belum terkalibrasi lokal Astungkara Way.",
+            "Modul emisi tetap limitation penelitian; belum diaktifkan sebagai output numerik backend.",
         ]
         if actual_density_are > planting_system.k_max_are:
             notes.append("Skenario aktual sudah melewati K_max sehingga penalti kepadatan aktif di model.")
@@ -1329,10 +1457,7 @@ class DSSService:
         # Karena `recommended` di sini adalah best_scenario, maka bandingkan parameter diskret dan score exact
         # dengan floating_epsilon untuk guard error float.
         best_score = recommended.get("score")
-
-        # actual_score: gunakan objective components yang sudah ada untuk best (score formula yang sama di _search_recommendation).
-        # Untuk kebutuhan gating 'actual == best', kita cukup pastikan score match setelah duck/density/duration match.
-        actual_score = best_score
+        actual_score = actual.get("score")
 
         same_density = abs(actual_density_are - best_density_are) <= floating_epsilon
         same_duration = actual_duration_days == best_duration_days

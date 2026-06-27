@@ -317,13 +317,17 @@ def compute_economics(
     duration_days: int,
     effective_duration_days: float,
     area_are: float,
-    final_yield_kg_per_ha: float,   # x_final_kg_ha_note — catatan literatur, bukan primary
-    x_final_kg_are: float | None = None,  # Rev 2 primary: x_final_kg_are = final_yield_kg_per_ha / 100
-    base_yield_kg_per_ha: float,    # x_base_kg_ha_note — catatan literatur
-    x0_kg_are: float | None = None,  # Rev 2: conventional yield dalam kg/are
+    final_yield_kg_per_ha: float,
+    x_final_kg_are: float | None = None,
+    base_yield_kg_per_ha: float,
+    x0_kg_are: float | None = None,
     penalty_rate: float,
     k_max_are: float,
     partial_ecological_value_rp: float,
+    duck_buy_price_rp_per_duck: float | None = None,
+    duck_buy_price_source: str = "default-constant",
+    duck_buy_price_status: str = "local-estimate",
+    duck_buy_price_requires_actual: bool = False,
     constants: DSSConstants,
 ) -> dict:
     """Hitung ekonomi padi dan bebek. Rev 2 §5.6.
@@ -378,11 +382,16 @@ def compute_economics(
     )
 
     duck_revenue = surviving_ducks * constants.duck_sale_price_rp_per_duck
-    duck_purchase_cost = duck_count * constants.duck_buy_price_rp_per_duck
+    resolved_duck_buy_price = duck_buy_price_rp_per_duck
+    duck_purchase_cost = (
+        duck_count * resolved_duck_buy_price
+        if resolved_duck_buy_price is not None
+        else None
+    )
 
     # V_duck_lokal = N_d * p_duck - C_duck_buy - C_feed
     duck_net_value = None
-    if feed["base_feed_cost_rp"] is not None:
+    if feed["base_feed_cost_rp"] is not None and duck_purchase_cost is not None:
         duck_net_value = (
             duck_revenue
             - duck_purchase_cost
@@ -450,6 +459,8 @@ def compute_economics(
         missing.append("rice_duck_price_rp_per_kg")
     if constants.conventional_yield_kg_per_ha is None:
         missing.append("conventional_yield_kg_per_ha")
+    if duck_purchase_cost is None:
+        missing.append("duck_buy_price_rp_per_duck")
     missing.extend(feed["missing_parameters"])
 
     formula_available = True
@@ -471,6 +482,10 @@ def compute_economics(
         "delta_rice_value_rp": delta_rice_value,
         "duck_revenue_rp": duck_revenue,
         "duck_purchase_cost_rp": duck_purchase_cost,
+        "duck_purchase_price_rp_per_duck": resolved_duck_buy_price,
+        "duck_purchase_price_source": duck_buy_price_source,
+        "duck_purchase_price_status": duck_buy_price_status,
+        "duck_purchase_price_requires_actual": duck_buy_price_requires_actual,
         "feed_cost_rp": feed["base_feed_cost_rp"],
         "feed_cost_status": feed["status"],
         "penalty_feed_rp": feed["penalty_feed_rp"],
@@ -502,112 +517,37 @@ def compute_environment(
     x_final_kg_are: float | None = None,
     constants: DSSConstants,
 ) -> dict:
-    """Hitung emisi dan lingkungan. Rev 2 §5.8.
-
-    Rev 2: satuan utama adalah kg/are/musim.
-    CO2e_are = F_CH4_are * GWP_CH4 + F_N2O_are * GWP_N2O
-    F_CH4_are = F_CH4_ha / 100 (jika sumber masih kg/ha/musim)
-    GHGI = CO2e_are / x_final_kg_are
-    Reduksi_CH4 = (F_CH4_konv_are - F_CH4_RD_are) / F_CH4_konv_are * 100%
-    Y_CH4 = -1.5276 * X_DO + 14.770  (X_DO belum tersedia)
-
-    Field ha boleh ada sebagai note: co2e_ha_note = co2e_are * 100
-    Environment TIDAK PERNAH disabled — status = literature-uncalibrated.
-    """
-    ch4_rd_ha = constants.seasonal_ch4_rice_duck_kg_per_ha
-    ch4_conventional_ha = constants.seasonal_ch4_conventional_kg_per_ha
-    n2o_ha = constants.seasonal_n2o_kg_per_ha
-
-    # Rev 2: x_final_kg_are primary; fallback dari ha note
-    if x_final_kg_are is None:
-        x_final_kg_are = final_yield_kg_per_ha / 100.0
-
-    if ch4_rd_ha is None or n2o_ha is None:
-        return {
-            "status": "literature-uncalibrated",
-            "sumber_data": "literature-uncalibrated",
-            "status_data": "partial",
-            "data_readiness": "missing",
-            "formula_available": True,
-            "numeric_ready": False,
-            "calibration_note": (
-                "Modul emisi belum terkalibrasi lokal oleh Astungkara Way. "
-                "F_CH4, F_N2O, dan DO musiman belum tersedia. "
-                "Output null bukan berarti emisi nol — data belum cukup untuk klaim."
-            ),
-            "catatan_kalibrasi": (
-                "Modul emisi belum terkalibrasi lokal oleh Astungkara Way. "
-                "F_CH4, F_N2O, dan DO musiman belum tersedia. "
-                "Output null bukan berarti emisi nol — data belum cukup untuk klaim."
-            ),
-            # Rev 2 primary fields (are):
-            "f_ch4_are": None,
-            "f_n2o_are": None,
-            "co2e_are": None,
-            "ghgi": None,
-            "ch4_reduction_pct": None,
-            "y_ch4_do_model": None,
-            # Backward compat (ha note):
-            "co2e_kg_per_ha_season": None,
-            "co2e_ha_note": None,
-            "f_ch4_ha_note": None,
-            "f_n2o_ha_note": None,
-            "ghgi_kg_co2e_per_kg_yield": None,
-            "ch4_reduction_percent": None,
-            "missing_parameters": ["f_ch4_kg_per_ha_season", "f_n2o_kg_per_ha_season"],
-        }
-
-    # Rev 2: konversi dari kg/ha/musim ke kg/are/musim dengan /100
-    f_ch4_are = ch4_rd_ha / 100.0
-    f_n2o_are = n2o_ha / 100.0
-    f_ch4_konv_are = ch4_conventional_ha / 100.0 if ch4_conventional_ha is not None else None
-
-    # Rev 2 CO2e_are = F_CH4_are * GWP_CH4 + F_N2O_are * GWP_N2O
-    co2e_are = (f_ch4_are * constants.gwp_ch4) + (f_n2o_are * constants.gwp_n2o)
-    co2e_ha_note = co2e_are * 100.0  # catatan ha
-
-    # Rev 2 GHGI = CO2e_are / x_final_kg_are
-    ghgi = co2e_are / x_final_kg_are if x_final_kg_are > 0 else None
-
-    # Rev 2 Reduksi_CH4 = (F_CH4_konv_are - F_CH4_RD_are) / F_CH4_konv_are * 100%
-    ch4_reduction = None
-    if f_ch4_konv_are is not None and f_ch4_konv_are > 0:
-        ch4_reduction = (
-            (f_ch4_konv_are - f_ch4_are) / f_ch4_konv_are
-        ) * 100.0
-
-    missing = [] if ch4_conventional_ha is not None else ["f_ch4_conventional_kg_per_ha_season"]
-
+    """Catatan: environment/emission jadi limitation, bukan output numerik aktif."""
     return {
-        "status": "literature-uncalibrated",
-        "sumber_data": "literature-uncalibrated",
-        "status_data": "literature-uncalibrated",
-        "data_readiness": "partial" if ch4_conventional_ha is None else "complete",
-        "formula_available": True,
-        "numeric_ready": True,
+        "status": "limitation",
+        "sumber_data": "limitation",
+        "status_data": "limitation",
+        "data_readiness": "limitation",
+        "formula_available": False,
+        "numeric_ready": False,
         "calibration_note": (
-            "CO2e dan GHGI dihitung dari data flux yang tersedia, tetapi "
-            "belum terkalibrasi lokal oleh Astungkara Way. "
-            "Satuan utama Rev 2: kg CO2e/are/musim."
+            "Catatan: CO2e, GHGI, Reduksi_CH4, dan DO-to-CH4 tidak dihitung sebagai output numerik aktif. "
+            "Data F_CH4, F_N2O, baseline emisi konvensional, dan DO tidak tersedia dari mitra."
         ),
         "catatan_kalibrasi": (
-            "CO2e dan GHGI dihitung dari data flux yang tersedia, tetapi "
-            "belum terkalibrasi lokal oleh Astungkara Way. "
-            "Satuan utama Rev 2: kg CO2e/are/musim."
+            "Environment/emission tetap limitation penelitian dan tidak masuk objective function."
         ),
-        # Rev 2 primary fields (are):
-        "f_ch4_are": f_ch4_are,
-        "f_n2o_are": f_n2o_are,
-        "co2e_are": co2e_are,
-        "ghgi": ghgi,
-        "ch4_reduction_pct": ch4_reduction,
-        "y_ch4_do_model": None,  # Y_CH4 = -1.5276*X_DO + 14.770 — X_DO belum tersedia lokal
-        # Backward compat note (ha):
-        "co2e_kg_per_ha_season": co2e_ha_note,   # co2e_ha_note alias
-        "co2e_ha_note": co2e_ha_note,
-        "f_ch4_ha_note": ch4_rd_ha,
-        "f_n2o_ha_note": n2o_ha,
-        "ghgi_kg_co2e_per_kg_yield": ghgi,       # alias backward compat
-        "ch4_reduction_percent": ch4_reduction,   # alias backward compat
-        "missing_parameters": missing,
+        "f_ch4_are": None,
+        "f_n2o_are": None,
+        "co2e_are": None,
+        "ghgi": None,
+        "ch4_reduction_pct": None,
+        "y_ch4_do_model": None,
+        "co2e_kg_per_ha_season": None,
+        "co2e_ha_note": None,
+        "f_ch4_ha_note": None,
+        "f_n2o_ha_note": None,
+        "ghgi_kg_co2e_per_kg_yield": None,
+        "ch4_reduction_percent": None,
+        "missing_parameters": [
+            "f_ch4_kg_per_ha_season",
+            "f_n2o_kg_per_ha_season",
+            "f_ch4_conventional_kg_per_ha_season",
+            "x_do",
+        ],
     }

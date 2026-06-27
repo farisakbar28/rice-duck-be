@@ -34,12 +34,13 @@ gulma, dan pemupukan alami. DSS membantu petani memutuskan:
 - Kapan bebek dilepas dan ditarik kembali
 - Estimasi yield padi yang dihasilkan
 - Perkiraan keuntungan bersih per musim
-- Dampak ekologis dan emisi yang diharapkan
+- Dampak ekologis yang diharapkan
+- Kualitas rekomendasi (Q_output) berdasarkan kelengkapan data Rev 4
 
 **Arsitektur sistem:**
 
 - Backend: Python 3.12 + FastAPI + SQLite
-- Model: persamaan matematika deterministik dari dokumen model Rev 2
+- Model: persamaan matematika deterministik dari dokumen model Rev 4
 - Rekomendasi: grid search atas kombinasi jumlah bebek × durasi penempatan
 - Auth: JWT sederhana untuk menyimpan history simulasi per user
 
@@ -56,7 +57,8 @@ Semua input dikirim ke endpoint `POST /api/v1/dss/simulate`:
 | `planting_date`   | date (YYYY-MM-DD) | Tanggal tanam padi                                                     |
 | `rice_variety`    | string            | Kode varietas padi (`sertani` atau `inpari`)                           |
 | `planting_system` | string            | Sistem tanam (`jajar_legowo` atau `tegel`)                             |
-| `duck_age_days`   | integer > 0       | Umur bebek saat dilepas (konteks biologis, belum aktif di rumus yield) |
+| `duck_age_days`   | integer > 0       | Umur bebek saat masuk sawah; aktif untuk U_status, p_duck_buy_age, batas durasi, tanggal tarik, dan quality output |
+| `duck_buy_price_rp_per_duck` | float > 0, optional | Harga beli aktual bebek. Diprioritaskan; diwajibkan untuk profit saat umur di luar 14–30 hari |
 
 > **Penting — satuan lahan:** `land_area_are` diasumsikan adalah **area aktif yang benar-benar
 > dimasuki bebek**, bukan total lahan jika keduanya berbeda. Jika pakai total lahan,
@@ -87,15 +89,24 @@ INPUT (duck_count, land_area_are, planting_date, variety, system, duck_age_days)
   ▼
 [AGRONOMI]
   ├─ Kepadatan: d_are = duck_count / land_area_are
-  ├─ Durasi aktual: t = HST_heading - HST_masuk
   ├─ Tanggal lepas: planting_date + HST_masuk
-  └─ Tanggal tarik: planting_date + HST_heading
+  ├─ Batas fase padi: HST_heading - HST_masuk
+  ├─ Batas umur bebek: t_age_max = max(0, min(t_lokal_max, U_target_out_max - U_bebek))
+  ├─ Durasi rekomendasi: t_maks_rekomendasi = min(t_max_eff, HST_heading - HST_masuk, t_age_max)
+  └─ Tanggal tarik: planting_date + HST_masuk + t
   │
   ▼
 [BIOLOGI BEBEK]
   ├─ Survival: N_d = duck_count × λ (λ=0.67, local-estimate)
   ├─ Kotoran per bebek: Dung(t) — rumus dua fase
   └─ Durasi efektif: t_eff = t × (10 jam / 12 jam baseline)
+  │
+  ▼
+[UMUR BEBEK REV 4]
+  ├─ U_status = lookup(U_bebek)
+  ├─ p_duck_buy_age = harga aktual user atau fallback lokal umur 14–30 hari
+  ├─ Q_output = min(C_area, C_calendar, C_age, C_price, C_baseline)
+  └─ Catatan: umur tidak langsung mengubah yield, q_feed, survival, Dung, N/P/K, V_eco, bobot jual, atau emisi
   │
   ▼
 [YIELD PADI]
@@ -109,15 +120,16 @@ INPUT (duck_count, land_area_are, planting_date, variety, system, duck_age_days)
 [EKONOMI]                               [EKOLOGI & EMISI]
   ├─ Pendapatan padi (jika harga ada)     ├─ Nilai penghematan pupuk (V_eco1)
   ├─ Pendapatan bebek: N_d × p_duck       ├─ Penghematan pestisida (V_eco2)
-  ├─ Biaya pakan (fallback literatur)     ├─ Penghematan biaya gulma (V_gulma)
-  ├─ Biaya infrastruktur (amortisasi)     ├─ Hara tanah: N/P/K dari kotoran bebek
-  └─ Laba bersih (parsial)                └─ Emisi CO2e (lit-uncalibrated)
+  ├─ C_duck_buy = J × p_duck_buy_age      ├─ Penghematan biaya gulma (V_gulma)
+  ├─ Biaya pakan (fallback 0.10)          ├─ Hara tanah: N/P/K dari kotoran bebek
+  └─ Laba bersih (parsial)                └─ Emisi = limitation, bukan output numerik aktif Rev 4
   │
   ▼
 [GRID SEARCH REKOMENDASI]
   Cari kombinasi (duck_count, durasi) yang menghasilkan score terbaik:
-  score = normalized_yield - risk_penalty
-  dengan constraint: d_are ≤ K_max_are, durasi ≤ HST_heading - HST_masuk
+  score = normalized_yield + normalized_ecology + normalized_profit_if_ready - risk_penalty
+  dengan constraint: d_are ≤ K_max_are, durasi ≤ t_maks_rekomendasi
+  catatan: profit hanya masuk objective jika numeric-ready; environment tidak masuk objective Rev 4
   │
   ▼
 [EVALUASI OPTIMALITAS]
