@@ -4,30 +4,17 @@ from app.domain.models import DSSConstants
 
 
 def compute_v_eco2(density_ha: float, area_ha: float) -> float:
-    """V_eco2: estimasi penghematan pestisida/herbisida. Rev 2 §5.7.
-
-    Rev 2: threshold d_aktual_are > 3 (ekuivalen d_lit_ha > 300).
-    Fungsi menerima d_lit_ha dan A_ha_note (catatan konversi rumus literatur).
-
-    Jika d_aktual_are > 3 (d_lit_ha > 300):
-        V_eco2 = (400 / (1 + exp(-0.036626 * d_lit_ha)) - 3.327) * A_ha_note
-    Jika d_aktual_are <= 3 (d_lit_ha <= 300):
-        interpolasi linear dari 0 sampai nilai d_aktual_are=3 (d_lit_ha=300).
-
-    Pastikan operator adalah pembagian (400/(...)), bukan pangkat (400^(...)).
+    """V_eco2: estimasi penghematan pestisida. Rev Final.
+    
+    Formula: max(0, (400 / (1 + exp(-0.036626 * d_lit_ha)) - 3.327) * (A_are / 100))
     """
-    # threshold: d_aktual_are > 3 = d_lit_ha > 300 (Rev 2 R-09)
-    threshold_ha = 300.0  # = d_are threshold 3.0 * 100
-    value_at_threshold = (
-        (400.0 / (1.0 + math.exp(-0.036626 * threshold_ha))) - 3.327
-    ) * area_ha
-    if density_ha > threshold_ha:
-        return (
-            (400.0 / (1.0 + math.exp(-0.036626 * density_ha))) - 3.327
-        ) * area_ha
     if density_ha <= 0:
         return 0.0
-    return value_at_threshold * (density_ha / threshold_ha)
+
+    v_eco2_raw = (
+        (400.0 / (1.0 + math.exp(-0.036626 * density_ha))) - 3.327
+    ) * area_ha
+    return max(0.0, v_eco2_raw)
 
 
 def compute_infrastructure(constants: DSSConstants) -> dict:
@@ -39,16 +26,12 @@ def compute_infrastructure(constants: DSSConstants) -> dict:
         "status": "estimation",
         "net_cost_per_cycle_rp": net_per_cycle,
         "shelter_cost_per_cycle_rp": shelter_per_cycle,
-        "maintenance_cost_rp": constants.infrastructure_maintenance_rp_per_season,
+        "maintenance_cost_rp": 0.0,
         "total_infrastructure_cost_rp": (
             net_per_cycle
             + shelter_per_cycle
-            + constants.infrastructure_maintenance_rp_per_season
         ),
-        "note": (
-            "Maintenance uses 0 only as an unavailable-data placeholder; "
-            "it is not evidence that maintenance is free."
-        ),
+        "note": "Maintenance cost dianulir/tidak dicatat.",
     }
 
 
@@ -154,77 +137,17 @@ def compute_feed_costs(
         feed_save = constants.feed_natural_saving_rate_reference
         using_reference_fallback = True
 
-    missing = []
-    if feed_price is None:
-        missing.append("feed_price_rp_per_kg")
-
-    if missing:
-        return {
-            "status": "unavailable",
-            "feed_cost_source": "unavailable",
-            "base_feed_cost_rp": None,
-            "density_penalty_rp": None,
-            "duration_penalty_rp": None,
-            "penalty_feed_rp": None,
-            "missing_parameters": missing,
-            "q_feed_source": q_feed_source,
-            "q_feed_status": q_feed_status,
-            "q_feed_assumption_note": q_feed_assumption_note,
-        }
-
-    # Sekarang feed_req dan feed_save pasti ada (lokal atau referensi)
-    base_feed_cost = (
-        duck_count
-        * feed_req
-        * effective_duration_days
-        * feed_price  # type: ignore[operator]
-        * (1.0 - feed_save)
-    )
-
-    # Status feed berdasarkan sumber data
-    if using_reference_fallback:
-        feed_status = "literature-uncalibrated"
-    elif constants.feed_requirement_kg_per_duck_day is not None:
-        feed_status = "local-calibrated"
-    else:
-        feed_status = "literature-uncalibrated"
-
-    penalty_missing = []
-    if constants.feed_greedy_kg_per_duck_day is None:
-        penalty_missing.append("feed_greedy_kg_per_duck_day")
-        density_penalty = None
-        duration_penalty = None
-        penalty_feed = None
-    else:
-        density_ha = density_are * 100.0
-        k_max_ha = k_max_are * 100.0
-        density_penalty = (
-            max(0.0, density_ha - k_max_ha)
-            * constants.feed_greedy_kg_per_duck_day
-            * duration_days
-            * feed_price  # type: ignore[operator]
-            * area_ha
-        )
-        duration_penalty = (
-            density_ha
-            * constants.feed_greedy_kg_per_duck_day
-            * max(0, duration_days - constants.local_feed_warning_phase_days)
-            * feed_price  # type: ignore[operator]
-            * area_ha
-        )
-        penalty_feed = density_penalty + duration_penalty
-
     return {
-        "status": feed_status if not penalty_missing else feed_status,
-        "feed_cost_source": "literature-uncalibrated" if using_reference_fallback else "local",
-        "base_feed_cost_rp": base_feed_cost,
-        "density_penalty_rp": density_penalty,
-        "duration_penalty_rp": duration_penalty,
-        "penalty_feed_rp": penalty_feed if penalty_feed is not None else 0.0,
-        "missing_parameters": penalty_missing,
-        "q_feed_source": q_feed_source,
-        "q_feed_status": q_feed_status,
-        "q_feed_assumption_note": q_feed_assumption_note,
+        "status": "hard_override_zero",
+        "feed_cost_source": "system-design",
+        "base_feed_cost_rp": 0.0,
+        "density_penalty_rp": 0.0,
+        "duration_penalty_rp": 0.0,
+        "penalty_feed_rp": 0.0,
+        "missing_parameters": [],
+        "q_feed_source": "literature-reference-a02",
+        "q_feed_status": "literature-uncalibrated",
+        "q_feed_assumption_note": "q_feed=0.10 kg/ekor/hari hanya output edukasi fisik; C_feed=0 hard override sesuai model final.",
     }
 
 
@@ -360,7 +283,10 @@ def compute_economics(
 
     # Rev 2 §5.6: R_gabah_RD = x_final_kg_are * A_are * p_gabah_RD
     rice_revenue = None
-    if constants.rice_duck_price_rp_per_kg is not None:
+    if (
+        constants.rice_duck_price_rp_per_kg is not None
+        and x_final_kg_are is not None
+    ):
         rice_revenue = (
             x_final_kg_are
             * area_are
@@ -369,7 +295,10 @@ def compute_economics(
 
     # Rev 2 §5.6: R_gabah_K = x0_kg_are * A_are * p_gabah_konv
     conventional_rice_revenue = None
-    if x0_kg_are is not None:
+    if (
+        x0_kg_are is not None
+        and constants.conventional_rice_price_rp_per_kg is not None
+    ):
         conventional_rice_revenue = (
             x0_kg_are
             * area_are
@@ -389,14 +318,12 @@ def compute_economics(
         else None
     )
 
-    # V_duck_lokal = N_d * p_duck - C_duck_buy - C_feed
+    # V_duck_lokal = N_d * p_duck - C_duck_buy (C_feed = 0)
     duck_net_value = None
-    if feed["base_feed_cost_rp"] is not None and duck_purchase_cost is not None:
+    if duck_purchase_cost is not None:
         duck_net_value = (
             duck_revenue
             - duck_purchase_cost
-            - feed["base_feed_cost_rp"]
-            - (feed["penalty_feed_rp"] or 0.0)
         )
 
     # penalty_yield: nilai kehilangan akibat penalti

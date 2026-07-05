@@ -61,32 +61,12 @@ def compute_p_duck_buy_age(
     actual_buy_price_rp: float | None,
     constants: DSSConstants,
 ) -> dict:
-    if actual_buy_price_rp is not None:
-        return {
-            "price_rp": actual_buy_price_rp,
-            "source": "user-input",
-            "status": "local-input",
-            "requires_actual_price": False,
-            "note": "Harga beli aktual user diprioritaskan.",
-        }
-    if 14 <= duck_age_days <= 30:
-        return {
-            "price_rp": constants.duck_buy_price_fallback_mid_rp,
-            "source": "data-collection-fallback",
-            "status": "local-estimate",
-            "requires_actual_price": False,
-            "note": (
-                f"Fallback lokal umur 14-30 hari memakai nilai tengah "
-                f"Rp{constants.duck_buy_price_fallback_mid_rp:,.0f}/ekor dari rentang "
-                f"Rp{constants.duck_buy_price_fallback_min_rp:,.0f}-Rp{constants.duck_buy_price_fallback_max_rp:,.0f}."
-            ),
-        }
     return {
-        "price_rp": None,
-        "source": "required-user-input",
-        "status": "missing-actual-price",
-        "requires_actual_price": True,
-        "note": "Di luar umur 14-30 hari, harga beli aktual wajib diminta agar profit tidak bias.",
+        "price_rp": constants.duck_buy_price_rp_per_duck,
+        "source": "latest-date-file-rekap",
+        "status": "local-calibrated",
+        "requires_actual_price": False,
+        "note": "Harga beli memakai transaksi paling mutakhir sesuai dokumen model (Eksekusi Ekonomi Berbasis Waktu).",
     }
 
 

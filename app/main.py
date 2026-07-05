@@ -88,7 +88,7 @@ async def validation_error_handler(_: Request, exc: RequestValidationError) -> J
             "issues": issues,
         }
     )
-    return JSONResponse(status_code=422, content=payload.model_dump(mode="json"))
+    return JSONResponse(status_code=400, content=payload.model_dump(mode="json"))
 
 
 app = create_app()

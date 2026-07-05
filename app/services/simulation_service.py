@@ -133,6 +133,13 @@ class DSSService:
             variety.hst_heading,
             t_age_max,
         )
+        if t_maks_rekomendasi <= 0:
+            raise AppError(
+                code="quality_gate_failed",
+                message="Umur bebek (duck_age_days) terlalu tua sehingga tidak ada durasi aktif (t_maks_rekomendasi <= 0) yang valid sebelum padi berbunga.",
+                status_code=400,
+                field="duck_age_days"
+            )
         quality_raw = compute_quality_output(
             c_area=1.0 if payload.land_area_are > 0 else 0.0,
             c_calendar=1.0 if t_maks_rekomendasi > 0 else 0.4,
@@ -217,6 +224,14 @@ class DSSService:
         if not show_recommendation:
             notes.append(
                 "Kondisi aktual sudah identik dengan skenario terbaik menurut optimizer model, sehingga tidak ada rekomendasi alternatif."
+            )
+
+        if not recommended["candidate_count"]:
+            raise AppError(
+                code="quality_gate_failed",
+                message="Kepadatan kandidat grid search gagal dieksekusi, kemungkinan karena luas lahan (land_area_are) terlalu sempit untuk kepadatan bebek minimum yang aman.",
+                status_code=400,
+                field="land_area_are"
             )
 
 
@@ -428,6 +443,12 @@ class DSSService:
             },
         }
 
+        trace["environment_calculation"] = {
+            "status": "limitation",
+            "formula_active": False,
+            "reason": "F_CH4, F_N2O, F_CH4_konv, F_N2O_konv, X_DO unavailable; no numeric CO2e/GHGI/CH4 reduction output."
+        }
+
         response = DSSSimulationResponse(
             history_id=None,
             input=DSSInput(**payload.model_dump()),
@@ -599,6 +620,7 @@ class DSSService:
             validation=validation,
             data_readiness=data_readiness,
         )
+
         if user_id is not None:
             history = history_repository.create(
                 user_id=user_id,
@@ -982,6 +1004,19 @@ class DSSService:
             actual_components.append("normalized_ecology")
         actual["score"] = actual_score
         actual["objective_components_used"] = actual_components
+
+        if not candidates:
+            # Fallback safe value when candidates list is empty due to small land area constraints
+            return {
+                "score": actual["score"],
+                "objective_components_used": actual["objective_components_used"],
+                "candidate_count": 0,
+                "candidate_duck_count_min": minimum_duck_count,
+                "candidate_duck_count_max": maximum_duck_count,
+                "duration_limit_days": duration_limit,
+                "economics_component_used": False,
+                "ecology_component_used": False,
+            }
 
         best = max(
             candidates,

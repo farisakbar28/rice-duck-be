@@ -55,7 +55,7 @@ class DSSConstants:
     feed_natural_saving_rate: float | None
     feed_greedy_kg_per_duck_day: float | None
     rice_duck_price_rp_per_kg: float | None
-    conventional_rice_price_rp_per_kg: float
+    conventional_rice_price_rp_per_kg: float | None
     conventional_yield_kg_per_ha: float | None
     duck_sale_price_rp_per_duck: float
     duck_buy_price_rp_per_duck: float
