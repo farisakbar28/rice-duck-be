@@ -67,7 +67,6 @@ def compute_soil_nutrients(
             "missing_parameters": ["kappa_n", "kappa_p", "kappa_k"],
         }
 
-    # Rev 2: basis are — d_aktual_are * lambda (bukan d_ha * lambda)
     scale_are = (
         (dung_total_per_duck_kg / 10.0)
         * density_are
@@ -79,14 +78,14 @@ def compute_soil_nutrients(
 
     return {
         "status": "estimation_only",
-        # Rev 2 primary output: kg/are
+
         "n_kg_per_are": n_are,
         "p2o5_kg_per_are": p_are,
         "k2o_kg_per_are": k_are,
-        # Backward compat note: kg/ha = kg/are * 100
-        "n_kg_per_ha": n_are * 100.0,   # N_tanah_ha_note
-        "p2o5_kg_per_ha": p_are * 100.0,  # P_tanah_ha_note
-        "k2o_kg_per_ha": k_are * 100.0,   # K_tanah_ha_note
+
+        "n_kg_per_ha": n_are * 100.0,
+        "p2o5_kg_per_ha": p_are * 100.0,
+        "k2o_kg_per_ha": k_are * 100.0,
         "missing_parameters": [],
     }
 
@@ -101,9 +100,9 @@ def compute_feed_costs(
     k_max_are: float,
     constants: DSSConstants,
 ) -> dict:
-    # R-1 / R-9 (Rev1_Doc §5.6): fallback ke referensi Lit_DB jika q_feed lokal None
-    # Nilai referensi: A02 'Average feed consumed per duck per day' = 0.10 kg/ekor/hari,
-    # saving_rate=0.66
+
+
+
     feed_req = constants.feed_requirement_kg_per_duck_day
 
     feed_save = constants.feed_natural_saving_rate
@@ -165,26 +164,26 @@ def compute_ecology(
     V_eco2 Rev 2: sigmoid formula pakai d_lit_ha dan A_ha_note (catatan literatur)
     V_gulma Rev 2: C_gulma * A_are * r_gulma; r_gulma = min(1, d_aktual_are / K_max_are)
     """
-    density_ha = density_are * 100.0   # d_lit_ha — catatan konversi rumus literatur
-    area_ha = area_are / 100.0         # A_ha_note — catatan konversi rumus literatur
+    density_ha = density_are * 100.0
+    area_ha = area_are / 100.0
     fertilizer_price_factor = (
         (0.107 * constants.nitrogen_price_rp_per_kg)
         + (0.424 * constants.phosphate_price_rp_per_kg)
         + (0.058 * constants.potassium_price_rp_per_kg)
     )
-    # Rev 2 §5.7 V_eco1: d_aktual_are * lambda * A_are (bukan d_ha * lambda * A_ha)
-    # Numerik ekuivalen karena d_are * A_are = (d_ha/100) * (A_ha*100) = d_ha * A_ha
-    # Tapi semantik Rev 2 menggunakan d_aktual_are * A_are sebagai satuan utama are.
-    # Guard: V_eco1_raw negatif jika t < 30 (0.02*t - 0.6 < 0)
+
+
+
+
     v_eco1_raw = (
         ((0.02 * duration_days) - 0.6)
         * fertilizer_price_factor
-        * density_are             # d_aktual_are (Rev 2 utama)
+        * density_are
         * constants.survival_lambda
-        * area_are                # A_are (Rev 2 utama)
+        * area_are
     )
     v_eco1 = max(0.0, v_eco1_raw)
-    # V_eco2: d_lit_ha dan A_ha_note sebagai catatan literatur (Rev 2 §5.7)
+
     v_eco2 = compute_v_eco2(density_ha, area_ha)
     weed_reduction_rate = (
         min(1.0, density_are / k_max_are) if k_max_are > 0 else 0.0
@@ -198,7 +197,7 @@ def compute_ecology(
     return {
         "status": "estimation_only",
         "fertilizer_saving_rp": v_eco1,
-        "fertilizer_saving_raw_rp": v_eco1_raw,  # exposed for trace/audit
+        "fertilizer_saving_raw_rp": v_eco1_raw,
         "fertilizer_saving_status": "literature-uncalibrated",
         "pesticide_herbicide_saving_rp": v_eco2,
         "pesticide_herbicide_saving_status": "literature-uncalibrated",
@@ -259,14 +258,12 @@ def compute_economics(
     Bukan: x_final_kg_ha * A_ha * p_gabah_RD
     x_final_kg_are adalah output utama; x_final_kg_ha_note hanya catatan.
     """
-    area_ha = area_are / 100.0          # A_ha_note — catatan konversi
-    density_ha = density_are * 100.0    # d_lit_ha — catatan konversi
+    area_ha = area_are / 100.0
+    density_ha = density_are * 100.0
 
-    # Rev 2: x_final_kg_are = x_final_kg_ha_note / 100 (primary)
     if x_final_kg_are is None:
         x_final_kg_are = final_yield_kg_per_ha / 100.0
 
-    # Rev 2: x0_kg_are = conventional baseline dalam kg/are
     if x0_kg_are is None and constants.conventional_yield_kg_per_ha is not None:
         x0_kg_are = constants.conventional_yield_kg_per_ha / 100.0
 
@@ -281,7 +278,6 @@ def compute_economics(
         constants=constants,
     )
 
-    # Rev 2 §5.6: R_gabah_RD = x_final_kg_are * A_are * p_gabah_RD
     rice_revenue = None
     if (
         constants.rice_duck_price_rp_per_kg is not None
@@ -293,7 +289,6 @@ def compute_economics(
             * constants.rice_duck_price_rp_per_kg
         )
 
-    # Rev 2 §5.6: R_gabah_K = x0_kg_are * A_are * p_gabah_konv
     conventional_rice_revenue = None
     if (
         x0_kg_are is not None
@@ -318,7 +313,6 @@ def compute_economics(
         else None
     )
 
-    # V_duck_lokal = N_d * p_duck - C_duck_buy (C_feed = 0)
     duck_net_value = None
     if duck_purchase_cost is not None:
         duck_net_value = (
@@ -326,18 +320,16 @@ def compute_economics(
             - duck_purchase_cost
         )
 
-    # penalty_yield: nilai kehilangan akibat penalti
     penalty_yield = None
     if constants.rice_duck_price_rp_per_kg is not None:
-        # penalty yield dalam are basis
+
         penalty_yield = (
-            (base_yield_kg_per_ha / 100.0)  # x_base_kg_are
+            (base_yield_kg_per_ha / 100.0)
             * penalty_rate
             * area_are
             * constants.rice_duck_price_rp_per_kg
         )
 
-    # Laba_bersih = R_gabah_RD + V_duck_lokal + V_eco - C_infra - biaya_tambahan
     net_profit = None
     if rice_revenue is not None and duck_net_value is not None:
         net_profit = (
@@ -345,20 +337,19 @@ def compute_economics(
             + duck_net_value
             + partial_ecological_value_rp
             - infrastructure["total_infrastructure_cost_rp"]
-            - constants.additional_cost_rp_per_season
+            
         )
     elif duck_net_value is not None:
-        # Feed tersedia tapi rice_revenue null — tetap hitung partial profit
+
         net_profit = (
             duck_net_value
             + partial_ecological_value_rp
             - infrastructure["total_infrastructure_cost_rp"]
-            - constants.additional_cost_rp_per_season
+            
         )
 
-    # V_duck_Xiong (Rev 2 §5.6): [-0.0096*d_lit_ha^2 + (11.3861+14.4*lambda)*d_lit_ha
-    #   - 0.18*lambda*t*d_lit_ha + 17.0857] * A_ha_note
-    # Jangan kurangi C_feed — rumus Xiong adalah net-revenue akademik.
+
+
     v_duck_xiong = _compute_v_duck_xiong(
         density_ha=density_ha,
         survival_lambda=constants.survival_lambda,
@@ -366,9 +357,8 @@ def compute_economics(
         area_ha=area_ha,
     )
 
-    # Penentuan sumber_data
     feed_source = feed.get("feed_cost_source", "unavailable")
-    duck_price_local = True  # duck_sale_price dan duck_buy_price sudah local-calibrated
+    duck_price_local = True
     rice_price_local = constants.rice_duck_price_rp_per_kg is not None
 
     if feed_source == "unavailable":
@@ -478,3 +468,7 @@ def compute_environment(
             "x_do",
         ],
     }
+
+
+
+

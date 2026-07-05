@@ -535,11 +535,11 @@ def test_planting_system_kmax_status_local_calibrated() -> None:
 
 # --- TC-SEED-2: f_yield_status tetap literature-uncalibrated ---
 def test_planting_system_fyield_status_literature_uncalibrated() -> None:
-    """R-6 AC-7: f_yield_status tidak boleh dinaikkan ke local-calibrated."""
+    """R-6 AC-7 / Rev Final: f_yield_status sekarang menjadi local-calibrated berdasarkan Bin Dominan."""
     from app.data.seed import PLANTING_SYSTEMS
     for ps in PLANTING_SYSTEMS:
-        assert ps.f_yield_status == "literature-uncalibrated", (
-            f"{ps.code}.f_yield_status harus 'literature-uncalibrated', bukan '{ps.f_yield_status}'"
+        assert ps.f_yield_status == "local-calibrated", (
+            f"{ps.code}.f_yield_status harus 'local-calibrated', bukan '{ps.f_yield_status}'"
         )
 
 

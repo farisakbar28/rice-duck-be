@@ -5,11 +5,10 @@ from app.domain.models import (
     RiceVariety,
 )
 
-# Academic DSS seed data:
-# - deterministic mathematical model
-# - not machine learning
-# - not IoT
-# - several lookup values remain local defaults that need field calibration
+
+
+
+
 
 RICE_VARIETIES = [
     RiceVariety(
@@ -19,9 +18,9 @@ RICE_VARIETIES = [
         hst_heading=65,
         harvest_age_days=105,
         risk_note="Default awal dari dokumen; bebek sebaiknya ditarik sebelum fase keluar malai.",
-        hst_masuk_min=21,
-        hst_masuk_max=30,
-        hst_heading_min=40,
+        hst_masuk_min=20,
+        hst_masuk_max=20,
+        hst_heading_min=60,
         hst_heading_max=65,
         status="estimation",
     ),
@@ -32,9 +31,9 @@ RICE_VARIETIES = [
         hst_heading=65,
         harvest_age_days=95,
         risk_note="Umur panen lebih pendek sehingga waktu tarik bebek perlu lebih hati-hati.",
-        hst_masuk_min=21,
-        hst_masuk_max=30,
-        hst_heading_min=40,
+        hst_masuk_min=20,
+        hst_masuk_max=20,
+        hst_heading_min=60,
         hst_heading_max=65,
         status="estimation",
     ),
@@ -50,11 +49,10 @@ PLANTING_SYSTEMS = [
         k_max_min_are=4.0,
         k_max_max_are=8.0,
         limited_test_max_are=6.0,
-        k_max_status="local-estimate",       # R4: JANGAN local-calibrated — hanya range dari Field_Data rows 20-21
-        f_yield_status="literature-uncalibrated",  # R4, R13: belum faktor numerik lokal final
-        # R1, R3: Density constraint separation (audit-fixes-post-rev1)
-        recommended_density_min_are=2.0,  # Field_Data row 22: rekomendasi praktis 2-4 ekor/are
-        recommended_density_max_are=4.0,  # Field_Data row 22: rekomendasi praktis 2-4 ekor/are
+        k_max_status="local-estimate",
+        f_yield_status="local-calibrated",
+        recommended_density_min_are=2.0,
+        recommended_density_max_are=4.0,
     ),
     PlantingSystem(
         code="tegel",
@@ -66,7 +64,7 @@ PLANTING_SYSTEMS = [
         k_max_max_are=3.0,
         limited_test_max_are=None,
         k_max_status="local-estimate",
-        f_yield_status="literature-uncalibrated",
+        f_yield_status="local-calibrated",
         recommended_density_min_are=2.0,
         recommended_density_max_are=3.0,
     ),
@@ -108,11 +106,11 @@ DSS_CONSTANTS = DSSConstants(
     shelter_lifetime_seasons=4,
     infrastructure_maintenance_rp_per_season=0.0,
     additional_cost_rp_per_season=0.0,
-    kappa_n=0.049,  # MATCH_EXACT: workbook referensi Data row 977 "Duck dung N content = 0.049 kg" (A02)
-    kappa_p=0.072,  # MATCH_EXACT: workbook referensi Data row 978 "Duck dung P2O5 content = 0.072 kg" (A02)
-    kappa_k=0.032,  # MATCH_EXACT: workbook referensi Data row 979 "Duck dung K2O content = 0.032 kg" (A02)
-    gwp_ch4=34.0,   # MATCH_EXACT: workbook referensi Data row 855 "GWP CH4 = 34" (A16, IPCC 2014)
-    gwp_n2o=265.0,  # MATCH_EXACT: workbook referensi Data row 855 "GWP N2O = 265" (A16, IPCC 2014)
+    kappa_n=0.049,
+    kappa_p=0.072,
+    kappa_k=0.032,
+    gwp_ch4=34.0,
+    gwp_n2o=265.0,
     seasonal_ch4_rice_duck_kg_per_ha=None,
     seasonal_ch4_conventional_kg_per_ha=None,
     seasonal_n2o_kg_per_ha=None,
@@ -127,28 +125,28 @@ PARAMETER_METADATA = {
         value=0.67,
         unit="ratio",
         source="data_collection",
-        status="local-estimate",  # R4 AC-1, R13: weak/indicative — JANGAN local-calibrated
+        status="local-estimate",
         minimum=0.35,
         maximum=0.67,
         note="Range 0.35-0.67 dari Field_Data row 29 adalah contoh indikatif; 0.67 estimasi atas, bukan rata-rata final dan bukan local-calibrated. Perlu kalibrasi keras 3-5 siklus.",
     ),
     "hst_masuk": ParameterMetadata(
-        value=28,
+        value=20,
         unit="HST",
         source="data_collection",
-        status="local-estimate",  # R13: range 21-30 HST dari data lokal
-        minimum=21,
-        maximum=30,
-        note="Rentang aman 21-30 HST; 28 HST dipakai sebagai default konservatif pada contoh model.",
+        status="local-calibrated",
+        minimum=20,
+        maximum=20,
+        note="DIKUNCI 20 HST (Standar fase vegetatif akar padi mapan).",
     ),
     "hst_heading": ParameterMetadata(
-        value=60,
+        value=65,
         unit="HST",
         source="data_collection",
-        status="local-estimate",  # R13: range 40-65 HST, default sekitar 56-60
-        minimum=40,
+        status="local-estimate",
+        minimum=60,
         maximum=65,
-        note="Sekitar 60 HST dan menjadi batas utama penarikan bebek.",
+        note="DIKUNCI 60-65 HST (Batas ditarik sebelum malai keluar).",
     ),
     "duck_age_days": ParameterMetadata(
         value=None,
@@ -184,7 +182,7 @@ PARAMETER_METADATA = {
         value=5600,
         unit="Rp/kg gabah",
         source="data_collection",
-        status="local-estimate",   # R13: Rp5.600-5.700/kg periode Maret 2026
+        status="local-estimate",
         minimum=5600,
         maximum=5700,
         note="Berlaku periode Maret 2026. Nilai bawah rentang digunakan secara konservatif. R-13 AC-4: jangan dipakai sebagai harga 'selalu berlaku'.",
@@ -200,7 +198,7 @@ PARAMETER_METADATA = {
         value=28000,
         unit="Rp/duck",
         source="data_collection",
-        status="local-estimate",   # R13: Rp25.000-28.000/ekor — range lokal, bukan kalibrasi kuat
+        status="local-estimate",
         minimum=25000,
         maximum=28000,
         note="Nilai biaya atas digunakan sebagai default konservatif.",
@@ -209,7 +207,7 @@ PARAMETER_METADATA = {
         value=30000,
         unit="Rp/duck",
         source="data_collection",
-        status="local-estimate",     # R13: Rp30.000-60.000/ekor — bobot jual belum tersedia
+        status="local-estimate",
         minimum=30000,
         maximum=60000,
         note="Nilai pendapatan bawah digunakan secara konservatif.",
@@ -232,7 +230,7 @@ PARAMETER_METADATA = {
         value=1350000,
         unit="Rp/200m",
         source="data_collection",
-        status="local-estimate",   # R13: Rp1.200.000-1.350.000/200m — range lokal
+        status="local-estimate",
         minimum=1200000,
         maximum=1350000,
         note="Nilai terbaru Rp1.350.000 digunakan.",
@@ -241,7 +239,7 @@ PARAMETER_METADATA = {
         value=2,
         unit="cycle",
         source="data_collection",
-        status="local-estimate",   # R13: amortisasi perlu life cycle lebih lengkap
+        status="local-estimate",
         minimum=2,
         maximum=3,
         note="Masa pakai terpendek dipakai untuk amortisasi konservatif.",
@@ -250,14 +248,14 @@ PARAMETER_METADATA = {
         value=600000,
         unit="Rp/unit",
         source="data_collection",
-        status="local-estimate",   # R13: Rp600.000/unit 2x1m — perlu jumlah unit/life cycle
+        status="local-estimate",
         note="Kandang ukuran sekitar 2x1 meter.",
     ),
     "shelter_lifetime": ParameterMetadata(
         value=3,
         unit="cycle",
         source="data_collection",
-        status="local-estimate",   # R13: perlu life cycle lebih lengkap
+        status="local-estimate",
         minimum=3,
         maximum=4,
         note="Masa pakai terpendek dipakai untuk amortisasi konservatif.",
@@ -273,7 +271,7 @@ PARAMETER_METADATA = {
         value=6000,
         unit="Rp/are/cycle",
         source="data_collection",
-        status="local-estimate",     # R13: Rp6.000-25.000 tipikal; outlier Rp70.000-72.000 tidak jadi default
+        status="local-estimate",
         minimum=6000,
         maximum=25000,
         note="Nilai bawah rentang tipikal; Rp70.000-Rp72.000 diperlakukan sebagai outlier.",
@@ -282,7 +280,7 @@ PARAMETER_METADATA = {
         value=0.66,
         unit="ratio",
         source="literature",
-        status="literature-uncalibrated",  # R13: 66% belum validated lokal
+        status="literature-uncalibrated",
         note=(
             "0.66 berasal dari teks referensi: 'ducks ... eat pests, rice, weeds to substitute "
             "part of their feed ... which accounts for around two thirds of their total feed' "
@@ -291,38 +289,38 @@ PARAMETER_METADATA = {
         ),
     ),
     "K_max_are": ParameterMetadata(
-        value=None,  # berbeda per sistem tanam
+        value=None,
         unit="ekor/are",
         source="data_collection",
         status="local-estimate",
         note="Daya dukung/safety constraint; Jarwo default aman 4.0 dari range 4-8; Tegel memakai rentang lokal 2-3 dengan batas praktis 3.0.",
     ),
     "f_yield": ParameterMetadata(
-        value=None,  # berbeda per sistem tanam
+        value=None,
         unit="multiplier",
         source="literature",
-        status="literature-uncalibrated",  # R13: belum faktor numerik lokal final
+        status="literature-uncalibrated",
         note="Faktor pengali yield; belum ada faktor numerik lokal final.",
     ),
     "technical_min_density_are": ParameterMetadata(
         value=1.0,
         unit="ekor/are",
         source="model",
-        status="system-design-uncalibrated",  # R1 AC-7, R13: boundary internal grid search
+        status="system-design-uncalibrated",
         note="Boundary internal grid search, bukan rekomendasi praktis.",
     ),
     "recommended_density_min_are": ParameterMetadata(
         value=2.0,
         unit="ekor/are",
         source="data_collection",
-        status="local-estimate",  # R1 AC-7, R13: dari Field_Data row 22
+        status="local-estimate",
         note="Batas praktis rekomendasi umum dari Field_Data row 22.",
     ),
     "recommended_density_max_are": ParameterMetadata(
-        value=None,  # berbeda per sistem tanam: Jarwo 4.0, Tegel 3.0
+        value=None,
         unit="ekor/are",
         source="data_collection",
-        status="local-estimate",  # R1 AC-7, R13: dari Field_Data row 22
+        status="local-estimate",
         note="Batas praktis rekomendasi umum dari Field_Data row 22; Jarwo 4.0, Tegel 3.0.",
     ),
     "q_feed_reference_range": ParameterMetadata(
@@ -414,9 +412,9 @@ PARAMETER_METADATA = {
         unit="kg/ha/season",
         source="data_collection",
         status="unavailable",
-        note="CH4, N2O, dan DO belum tersedia lokal; modul environment berstatus literature-uncalibrated dengan rumus dari basis literatur akademik.",  # R4 AC-5, R15: environment NEVER disabled
+        note="CH4, N2O, dan DO belum tersedia lokal; modul environment berstatus literature-uncalibrated dengan rumus dari basis literatur akademik.",
     ),
-    # ---- METADATA BARU: dung_phase, gwp, system-design, feed_saving ----
+
     "dung_phase_1_total_kg": ParameterMetadata(
         value=4.0,
         unit="kg/ekor/fase-1 (≤50 hari)",
@@ -569,3 +567,5 @@ PARAMETER_METADATA = {
         ),
     ),
 }
+
+

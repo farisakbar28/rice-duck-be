@@ -168,7 +168,7 @@ def compute_final_yield_kg_per_ha(
     Output utama = x_final_kg_are = x_final_kg_ha_note / 100.
     d_lit_ha = d_aktual_are * 100 digunakan hanya untuk rumus Xiong/backbone.
     """
-    density_ha = density_are * 100.0  # d_lit_ha — catatan konversi untuk rumus literatur
+    density_ha = density_are * 100.0
     x_base = compute_base_yield_kg_per_ha(density_ha=density_ha, duration_days=duration_days)
     penalty_rate = compute_penalty_rate(
         density_are=density_are,
@@ -176,7 +176,7 @@ def compute_final_yield_kg_per_ha(
         constants=constants,
     )
     x_penalized = x_base * (1.0 - penalty_rate)
-    x_final = 0.643 * (x_base / 100 * (1.0 - penalty_rate)) * f_yield * 100 # keep kg/ha signature intact but formula internally uses are
+    x_final = constants.alpha_local * (x_base / 100 * (1.0 - penalty_rate)) * f_yield * 100
     return x_base, penalty_rate, x_penalized, x_final
 
 
@@ -187,8 +187,8 @@ def convert_yield_units(final_yield_kg_per_ha: float, land_area_are: float) -> t
     x_final_ton_ha_note = x_final_kg_are / 10 (catatan ton/ha untuk pembanding).
     estimated_total_kg = x_final_kg_are * A_are.
     """
-    kg_per_are = final_yield_kg_per_ha / 100.0  # x_final_kg_are = x_final_kg_ha_note / 100
-    estimated_total_kg = kg_per_are * land_area_are  # total = x_final_kg_are * A_are
+    kg_per_are = final_yield_kg_per_ha / 100.0
+    estimated_total_kg = kg_per_are * land_area_are
     return kg_per_are, estimated_total_kg
 
 
@@ -265,12 +265,13 @@ def compute_rey(
             "rey_notes": _REY_NOTES,
         }
 
-    # Σ(Y_i * P_i) = nilai padi + pendapatan bebek
-    total_value = (rice_yield_kg * rice_price_rp_per_kg) + duck_revenue_rp  # type: ignore[operator]
-    rey = total_value / rice_reference_price_rp_per_kg  # type: ignore[operator]
+    total_value = (rice_yield_kg * rice_price_rp_per_kg) + duck_revenue_rp
+    rey = total_value / rice_reference_price_rp_per_kg
     return {
         "rey": rey,
         "rey_status": "calculated",
         "missing_params": [],
         "rey_notes": _REY_NOTES,
     }
+
+
