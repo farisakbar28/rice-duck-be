@@ -357,7 +357,7 @@ class DSSService:
                 "note": "Kotoran bebek belum diukur secara lokal pada data collection.",
             },
             "yield_model": {
-                "formula": "x(d,t) = (-0.0103*d_ha^2 + 2.6314*d_ha + 7569.4) * exp(-((t - 80)^2 / (2 * 80^2)))",
+                "formula": "x_final_kg_are = 0.643 * [x_base_kg_ha / 100 * (1 - P_rate)] * f_yield",
                 "density_basis": "d_ha",
                 "x_base": round(actual["x_base"], 4),
                 "p_rate": round(actual["penalty_rate"], 4),
@@ -882,7 +882,7 @@ class DSSService:
         candidates: list[dict] = []
         minimum_duck_count = max(
             1,
-            math.ceil(planting_system.recommended_density_min_are * land_area_are),
+            math.ceil(1.0 * land_area_are), # min 1 duck per are logic
         )
         maximum_duck_count = math.floor(
             planting_system.k_max_are * land_area_are

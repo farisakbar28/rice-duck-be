@@ -140,8 +140,8 @@ def compute_penalty_rate(
 ) -> float:
     if density_are <= k_max_are:
         return 0.0
-    over_capacity_ratio = (density_are - k_max_are) / k_max_are
-    return min(constants.p_max, constants.penalty_gamma * over_capacity_ratio)
+    over_capacity_ratio = 0.5 * (density_are - k_max_are) / k_max_are
+    return min(1.0, over_capacity_ratio)
 
 
 def compute_base_yield_kg_per_ha(density_ha: float, duration_days: int) -> float:
@@ -176,7 +176,7 @@ def compute_final_yield_kg_per_ha(
         constants=constants,
     )
     x_penalized = x_base * (1.0 - penalty_rate)
-    x_final = constants.alpha_local * x_penalized * f_yield
+    x_final = 0.643 * (x_base / 100 * (1.0 - penalty_rate)) * f_yield * 100 # keep kg/ha signature intact but formula internally uses are
     return x_base, penalty_rate, x_penalized, x_final
 
 

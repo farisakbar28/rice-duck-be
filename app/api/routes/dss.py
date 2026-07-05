@@ -45,6 +45,9 @@ def simulate_dss(
     payload: DSSSimulationRequest,
     auth: AuthContext | None = Depends(get_optional_current_user),
 ) -> DSSSimulationResponse:
+    if payload.land_area_are <= 0:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Luas lahan (land_area_are) harus lebih dari 0.")
     return dss_service.simulate(
         payload,
         user_id=auth.user.id if auth is not None else None,

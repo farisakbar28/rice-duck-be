@@ -53,7 +53,7 @@ class DSSSimulationRequest(BaseModel):
         }
     )
 
-    duck_count: int = Field(ge=0)
+    duck_count: int = Field(gt=0)
     land_area_are: float = Field(gt=0)
     planting_date: date
     rice_variety: str = Field(min_length=1)
