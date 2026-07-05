@@ -209,6 +209,14 @@ class DSSService:
                 "Durasi aktual melebihi t_max_eff sehingga trace mencatat dua angka: durasi kalender aktual dan durasi yang dipakai model yield."
             )
 
+        if not recommended["candidate_count"]:
+            raise AppError(
+                code="quality_gate_failed",
+                message="Kepadatan kandidat grid search gagal dieksekusi, kemungkinan karena luas lahan (land_area_are) terlalu sempit untuk kepadatan bebek minimum yang aman.",
+                status_code=400,
+                field="land_area_are"
+            )
+
         optimality = self._compute_optimality(
             actual=actual,
             recommended=recommended,
@@ -224,14 +232,6 @@ class DSSService:
         if not show_recommendation:
             notes.append(
                 "Kondisi aktual sudah identik dengan skenario terbaik menurut optimizer model, sehingga tidak ada rekomendasi alternatif."
-            )
-
-        if not recommended["candidate_count"]:
-            raise AppError(
-                code="quality_gate_failed",
-                message="Kepadatan kandidat grid search gagal dieksekusi, kemungkinan karena luas lahan (land_area_are) terlalu sempit untuk kepadatan bebek minimum yang aman.",
-                status_code=400,
-                field="land_area_are"
             )
 
 
@@ -1007,7 +1007,8 @@ class DSSService:
 
         if not candidates:
             # Fallback safe value when candidates list is empty due to small land area constraints
-            return {
+            fallback = dict(actual)
+            fallback.update({
                 "score": actual["score"],
                 "objective_components_used": actual["objective_components_used"],
                 "candidate_count": 0,
@@ -1016,7 +1017,8 @@ class DSSService:
                 "duration_limit_days": duration_limit,
                 "economics_component_used": False,
                 "ecology_component_used": False,
-            }
+            })
+            return fallback
 
         best = max(
             candidates,
@@ -1512,9 +1514,6 @@ class DSSService:
             if best_density_are not in (None, 0)
             else None
         )
-
-        # Dev note: jangan gunakan heuristic thresholds untuk gating rekomendasi.
-
 
         delta_yield_pct = None
         if actual.get("kg_per_ha", 0) not in (None, 0):
