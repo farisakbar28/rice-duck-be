@@ -1115,3 +1115,7 @@ jika `p_feed` atau `p_gabah_RD` benar-benar tidak tersedia.
 
 _Dokumentasi ini mencerminkan kondisi sistem per Rev 2. Status kalibrasi dan ketersediaan data
 akan diperbarui seiring pengumpulan data lapangan Astungkara Way._
+ 
+ # #   D S S   F i n a l i z a t i o n   2 0 2 6  
+ S y s t e m   f u l l y   m i g r a t e d   a n d   a l i g n e d   w i t h   f i n a l   m a t h e m a t i c a l   m o d e l .  
+ 

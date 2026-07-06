@@ -84,6 +84,10 @@ class DSSConstants:
     seasonal_n2o_kg_per_ha: float | None
     calibration_note: str
 
+    HET_urea: float = 1800.0
+    HET_phonska: float = 1840.0
+    HET_kcl: float = 9500.0
+
     valid_period_conventional_rice_price: str = "Maret 2026"
 
 

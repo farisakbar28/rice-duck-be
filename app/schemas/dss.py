@@ -393,24 +393,29 @@ class DataReadinessSummary(BaseModel):
 
 
 class DSSSimulationResponse(BaseModel):
-    history_id: str | None
-    input: DSSInput
-    lookup: dict
-    duck_age_assessment: DuckAgeAssessment
-    duration_constraints: DurationConstraintSummary
-    quality_output: QualityOutput
-    actual_scenario: ActualScenario
-    optimality_assessment: OptimalityAssessment
-    recommended_scenario: RecommendedScenario | None
-    comparison: ComparisonSummary | None
-    risk: RiskSummary
-    trace: dict
-    notes: list[str]
-    economics: EconomicsSummary
-    ecology: EcologySummary
-    environment: EnvironmentSummary
-    validation: ValidationSummary
-    data_readiness: DataReadinessSummary
+    density_status: str
+    age_status: str
+    D_masuk_bebek: date
+    D_tarik_bebek: date
+    N_survive: float
+    Yield_are_predict: float
+    Yield_total_predict: float
+    Revenue_gabah: float
+    Revenue_duck: float
+    Total_Revenue: float
+    Cost_duck_buy: float
+    Cost_feed: float
+    Cost_labor_total: float
+    Cost_infra: float
+    Cost_fertilizer_total: float
+    Cost_fert_urea: float
+    Cost_fert_phonska: float
+    Cost_fert_kcl: float
+    Cost_pesticide: float
+    Cost_total_cash: float
+    Profit_net_cash: float
+    Valuation_weed_eco: float
+    Profit_net_full: float
 
 
 class HistorySummary(BaseModel):
