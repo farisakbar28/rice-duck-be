@@ -14,9 +14,13 @@ RICE_VARIETIES = [
     RiceVariety(
         code="sertani",
         label="Sertani / Seratih",
+        # Canonical SoT — Tabel 2.2 Calendar Engine (Catatan Finalisasi poin 8).
+        hst_panen=99,
+        # Deprecated legacy fields. ``harvest_age_days`` is kept in sync with
+        # ``hst_panen`` (additive per keputusan #2).
         hst_masuk=20,
         hst_heading=65,
-        harvest_age_days=105,
+        harvest_age_days=99,
         risk_note="Default awal dari dokumen; bebek sebaiknya ditarik sebelum fase keluar malai.",
         hst_masuk_min=20,
         hst_masuk_max=20,
@@ -27,10 +31,12 @@ RICE_VARIETIES = [
     RiceVariety(
         code="inpari",
         label="Inpari",
+        # Canonical SoT — Tabel 2.2 Calendar Engine (Catatan Finalisasi poin 8).
+        hst_panen=112,
         hst_masuk=20,
         hst_heading=65,
-        harvest_age_days=95,
-        risk_note="Umur panen lebih pendek sehingga waktu tarik bebek perlu lebih hati-hati.",
+        harvest_age_days=112,
+        risk_note="Umur panen lebih panjang sehingga jadwal panen gabah bergeser mundur.",
         hst_masuk_min=20,
         hst_masuk_max=20,
         hst_heading_min=60,
@@ -43,9 +49,15 @@ PLANTING_SYSTEMS = [
     PlantingSystem(
         code="jajar_legowo",
         label="Jajar Legowo",
+        # Canonical SoT — Tabel 2.2 Density & Yield Engine.
+        k_safe_are=4.0,
+        F_sys=1.00,
+        # Deprecated aliases kept in sync with canonical values.
         k_max_are=4.0,
         f_yield=1.00,
-        note="Ruang gerak bebek lebih baik; nilai awal mengikuti contoh dokumen dan perlu kalibrasi lokal. Jarwo bin dominant baseline 43.45 kg/are.",
+        note="Ruang gerak bebek lebih baik; K_safe = 4.0 ekor/are; F_sys = 1.00.",
+        k_safe_min_are=4.0,
+        k_safe_max_are=8.0,
         k_max_min_are=4.0,
         k_max_max_are=8.0,
         limited_test_max_are=6.0,
@@ -57,9 +69,19 @@ PLANTING_SYSTEMS = [
     PlantingSystem(
         code="tegel",
         label="Tegel / Konvensional",
+        # Canonical SoT — Tabel 2.2. Tegel receives a PENALTY (0.95), NOT the
+        # legacy bonus 1.39 from FINAL.md. (Catatan Finalisasi poin: Yield
+        # Engine Fase B.)
+        k_safe_are=3.0,
+        F_sys=0.95,
         k_max_are=3.0,
-        f_yield=1.39,
-        note="Ruang gerak lebih sempit sehingga risiko injakan tanaman lebih tinggi. Rentang lokal 2-3 ekor/are dengan batas praktis 3 ekor/are. Tegel bin dominant 60.60 / Jarwo 43.45 = 1.39.",
+        f_yield=0.95,
+        note=(
+            "Ruang gerak lebih sempit sehingga K_safe lebih rendah (3.0). "
+            "F_sys = 0.95 adalah penalti struktural (Tabel 2.2), bukan bonus 1.39."
+        ),
+        k_safe_min_are=2.0,
+        k_safe_max_are=3.0,
         k_max_min_are=2.0,
         k_max_max_are=3.0,
         limited_test_max_are=None,
@@ -80,15 +102,14 @@ DSS_CONSTANTS = DSSConstants(
     minimum_density_are=1.0,
     p_max=0.8,
     penalty_gamma=0.5,
-    alpha_local=0.643,
+    # Fase 6 cleanup: ``alpha_local`` removed.
     daily_duck_grazing_hours=10.0,
     baseline_grazing_hours=10.0,
     feed_requirement_kg_per_duck_day=0.10,
     feed_natural_saving_rate=1.0,
     feed_greedy_kg_per_duck_day=0.15,
     rice_duck_price_rp_per_kg=6000.0,
-    conventional_rice_price_rp_per_kg=None,
-    conventional_yield_kg_per_ha=None,
+    # Fase 6 cleanup: conventional_* removed.
     duck_sale_price_rp_per_duck=35000.0,
     duck_buy_price_rp_per_duck=25000.0,
     duck_target_out_max_days=60,
@@ -96,19 +117,18 @@ DSS_CONSTANTS = DSSConstants(
     duck_buy_price_fallback_max_rp=25000.0,
     duck_buy_price_fallback_mid_rp=25000.0,
     feed_price_rp_per_kg=0.0,
+    # Fase 6 cleanup: phosphate_price (2700) removed — stale, unused.
     nitrogen_price_rp_per_kg=1800.0,
-    phosphate_price_rp_per_kg=2700.0,
     potassium_price_rp_per_kg=9500.0,
     weeding_cost_rp_per_are=15000.0,
+    # True-cost interview artifacts — dokumentasi saja, bukan model aktif.
     net_cost_rp=1350000.0,
     net_lifetime_seasons=3,
     shelter_cost_rp=600000.0,
     shelter_lifetime_seasons=4,
     infrastructure_maintenance_rp_per_season=0.0,
     additional_cost_rp_per_season=0.0,
-    kappa_n=0.049,
-    kappa_p=0.072,
-    kappa_k=0.032,
+    # Fase 6 cleanup: kappa_n/p/k removed.
     gwp_ch4=34.0,
     gwp_n2o=265.0,
     seasonal_ch4_rice_duck_kg_per_ha=None,
@@ -116,7 +136,8 @@ DSS_CONSTANTS = DSSConstants(
     seasonal_n2o_kg_per_ha=None,
     calibration_note=(
         "Nilai biologis, harga, biaya, hara, dan lookup adalah default awal dari "
-        "dokumen model dan masih perlu validasi lapangan Astungkara Way."
+        "dokumen model dan masih perlu validasi lapangan Astungkara Way. "
+        "alpha_local, kappa_n/p/k lama, conventional_* telah dihapus (Fase 6 cleanup)."
     ),
 )
 
@@ -179,20 +200,26 @@ PARAMETER_METADATA = {
         note="Harga padi-bebek final belum terkunci; tidak dipakai menghitung DeltaV_rice.",
     ),
     "conventional_rice_price": ParameterMetadata(
-        value=5600,
+        value=None,  # Fase 6: removed from active model.
         unit="Rp/kg gabah",
         source="data_collection",
-        status="local-estimate",
+        status="deprecated",
         minimum=5600,
         maximum=5700,
-        note="Berlaku periode Maret 2026. Nilai bawah rentang digunakan secara konservatif. R-13 AC-4: jangan dipakai sebagai harga 'selalu berlaku'.",
+        note=(
+            "DEPRECATED Fase 6. SoT _terbaru tidak memakai harga konvensional "
+            "sebagai output aktif. Entry dipertahankan untuk audit historis saja."
+        ),
     ),
     "conventional_yield": ParameterMetadata(
-        value=None,
+        value=None,  # Fase 6: removed from active model.
         unit="kg/ha",
         source="data_collection",
-        status="partial",
-        note="Tersedia 2-3 sampel/estimasi tetapi tidak ada angka baseline final yang sebanding.",
+        status="deprecated",
+        note=(
+            "DEPRECATED Fase 6. SoT _terbaru tidak memakai yield konvensional "
+            "sebagai output aktif."
+        ),
     ),
     "duck_buy_price": ParameterMetadata(
         value=28000,
@@ -367,38 +394,29 @@ PARAMETER_METADATA = {
         ),
     ),
     "kappa_n_reference": ParameterMetadata(
-        value=0.049,
+        value=None,  # Fase 6: removed from active model.
         unit="kg-N / (10 kg kotoran)",
         source="literature",
-        status="literature-uncalibrated",
+        status="deprecated",
         note=(
-            "MATCH_EXACT: workbook referensi Data row 977, article A02 "
-            "'Duck dung N content = 0.049 kg'. "
-            "Belum dikalibrasi lokal Astungkara Way; belum aktif di perhitungan karena "
-            "uji kotoran lokal belum tersedia."
+            "DEPRECATED Fase 6. SoT _terbaru Material Engine menggunakan "
+            "koefisien 0.107/0.424/0.058 (Tabel 2.2), bukan 0.049/0.072/0.032. "
+            "Entry dipertahankan untuk audit historis saja."
         ),
     ),
     "kappa_p_reference": ParameterMetadata(
-        value=0.072,
+        value=None,
         unit="kg-P2O5 / (10 kg kotoran)",
         source="literature",
-        status="literature-uncalibrated",
-        note=(
-            "MATCH_EXACT: workbook referensi Data row 978, article A02 "
-            "'Duck dung P2O5 content = 0.072 kg'. "
-            "Belum dikalibrasi lokal Astungkara Way."
-        ),
+        status="deprecated",
+        note="DEPRECATED Fase 6. Lihat catatan kappa_n_reference.",
     ),
     "kappa_k_reference": ParameterMetadata(
-        value=0.032,
+        value=None,
         unit="kg-K2O / (10 kg kotoran)",
         source="literature",
-        status="literature-uncalibrated",
-        note=(
-            "MATCH_EXACT: workbook referensi Data row 979, article A02 "
-            "'Duck dung K2O content = 0.032 kg'. "
-            "Belum dikalibrasi lokal Astungkara Way."
-        ),
+        status="deprecated",
+        note="DEPRECATED Fase 6. Lihat catatan kappa_n_reference.",
     ),
     "pesticide_reduction": ParameterMetadata(
         value=None,
@@ -487,14 +505,16 @@ PARAMETER_METADATA = {
         status="system-design",
         note="SYSTEM_DESIGN. Koefisien penalti desain sistem, bukan data Excel.",
     ),
-    "alpha_local": ParameterMetadata(
-        value=1.0,
+    # Fase 6 cleanup: ``alpha_local`` removed (Generasi-A artifact).
+    "alpha_local_legacy": ParameterMetadata(
+        value=None,
         unit="dimensionless",
         source="model",
-        status="model-assumption",
+        status="deprecated",
         note=(
-            "MODEL_ASSUMPTION. Default netral sebelum kalibrasi 3-5 siklus panen lokal. "
-            "Bukan data Excel; digunakan agar rumus berjalan sebelum ada faktor lokal."
+            "DEPRECATED Fase 6. SoT _terbaru menggunakan formula "
+            "Yield_are = 48.039 * F_density * F_age * F_sys * F_var (Tabel 2.2) "
+            "tanpa alpha_local. Entry ini hanya sisa dokumentasi."
         ),
     ),
     "baseline_grazing_hours_system": ParameterMetadata(

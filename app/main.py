@@ -22,7 +22,19 @@ OPENAPI_TAGS = [
     },
     {
         "name": "dss",
-        "description": "Dropdown, simulasi, dan history DSS padi-bebek.",
+        "description": (
+            "DSS Core calculator — kalkulator SoT padi-bebek "
+            "(Model_Matematika_..._FINAL_BANGET.md). Tidak mengandung fitur "
+            "optimizer/rekomendasi."
+        ),
+    },
+    {
+        "name": "optimizer",
+        "description": (
+            "Optimizer/rekomendasi (FITUR TERPISAH, di luar cakupan SoT). "
+            "Boleh memakai formula literatur lama; tidak boleh reuse engine "
+            "DSS core tanpa memanggil endpoint /api/v1/dss/simulate."
+        ),
     },
 ]
 
@@ -32,9 +44,11 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.app_name,
         description=(
-            "Backend Decision Support System padi-bebek berbasis model matematika deterministik.\n\n"
-            "API ini dijaga minimal untuk kebutuhan akademik: auth JWT sederhana, simulasi publik, "
-            "history per user, rekomendasi grid search, dan trace perhitungan."
+            "Backend Decision Support System padi-bebek.\n\n"
+            "Endpoint `/api/v1/dss/simulate` mengikuti model SoT "
+            "Model_Matematika_..._FINAL_BANGET.md. Endpoint "
+            "`/api/v1/optimizer/recommend` adalah fitur produk terpisah di luar "
+            "cakupan SoT."
         ),
         version=settings.app_version,
         debug=settings.app_debug,

@@ -4,80 +4,112 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from app.core.database import get_connection
-from app.domain.models import SimulationHistory
+from app.domain.models import SimulationHistory, SimulationHistoryLegacy
+
+
+V2_INSERT_SQL = """
+INSERT INTO dss_simulation_histories (
+    id, user_id, schema_version, created_at,
+    density_status, age_status, d_masuk_bebek, d_tarik_bebek, d_panen_gabah,
+    n_survive,
+    yield_are_predict, yield_total_predict,
+    revenue_gabah, revenue_duck, total_revenue,
+    cost_duck_buy, cost_feed, cost_labor_base, cost_labor_weed_hired,
+    cost_labor_tending, cost_labor_total, cost_infra_net, cost_infra_cage,
+    cost_infra_total, cost_fert_urea, cost_fert_phonska, cost_fert_kcl,
+    cost_fertilizer_total, cost_pesticide, cost_total_cash,
+    profit_net_cash, valuation_weed_eco, profit_net_full,
+    input_json, actual_scenario_json, recommended_scenario_json,
+    comparison_json, risk_json, trace_json, notes_json,
+    economics_json, ecology_json, environment_json, lookup_json,
+    validation_json, data_readiness_json
+) VALUES (
+    ?, ?, 2, ?,
+    ?, ?, ?, ?, ?,
+    ?,
+    ?, ?,
+    ?, ?, ?,
+    ?, ?, ?, ?,
+    ?, ?, ?, ?,
+    ?, ?, ?, ?,
+    ?, ?, ?,
+    ?, ?, ?,
+    ?, ?, ?, ?,
+    ?, ?, ?, ?,
+    ?, ?, ?, ?,
+    ?, ?
+)
+"""
 
 
 class HistoryRepository:
-    def create(
-        self,
-        *,
-        user_id: str,
-        input_data: dict,
-        actual_scenario: dict,
-        recommended_scenario: dict,
-        comparison: dict,
-        risk: dict,
-        trace: dict,
-        notes: list[str],
-        economics: dict,
-        ecology: dict,
-        environment: dict,
-        lookup: dict,
-        validation: dict,
-        data_readiness: dict,
-    ) -> SimulationHistory:
-        history = SimulationHistory(
-            id=str(uuid4()),
-            user_id=user_id,
-            input_data=input_data,
-            actual_scenario=actual_scenario,
-            recommended_scenario=recommended_scenario,
-            comparison=comparison,
-            risk=risk,
-            trace=trace,
-            notes=notes,
-            economics=economics,
-            ecology=ecology,
-            environment=environment,
-            lookup=lookup,
-            validation=validation,
-            data_readiness=data_readiness,
-            created_at=datetime.now(timezone.utc),
-        )
+    # ------------------------------------------------------------------
+    # v2 — explicit columns
+    # ------------------------------------------------------------------
+    def create_v2(self, *, user_id: str, history: SimulationHistory) -> SimulationHistory:
         with get_connection() as connection:
             connection.execute(
-                """
-                INSERT INTO dss_simulation_histories (
-                    id, user_id, input_json, actual_scenario_json,
-                    recommended_scenario_json, comparison_json, risk_json,
-                    trace_json, notes_json, economics_json, ecology_json,
-                    environment_json, lookup_json, validation_json,
-                    data_readiness_json, created_at
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
+                V2_INSERT_SQL,
                 (
                     history.id,
                     history.user_id,
-                    json.dumps(history.input_data),
-                    json.dumps(history.actual_scenario),
-                    json.dumps(history.recommended_scenario),
-                    json.dumps(history.comparison),
-                    json.dumps(history.risk),
-                    json.dumps(history.trace),
-                    json.dumps(history.notes),
-                    json.dumps(history.economics),
-                    json.dumps(history.ecology),
-                    json.dumps(history.environment),
-                    json.dumps(history.lookup),
-                    json.dumps(history.validation),
-                    json.dumps(history.data_readiness),
                     history.created_at.isoformat(),
+                    history.density_status,
+                    history.age_status,
+                    history.d_masuk_bebek,
+                    history.d_tarik_bebek,
+                    history.d_panen_gabah,
+                    history.n_survive,
+                    history.yield_are_predict,
+                    history.yield_total_predict,
+                    history.revenue_gabah,
+                    history.revenue_duck,
+                    history.total_revenue,
+                    history.cost_duck_buy,
+                    history.cost_feed,
+                    history.cost_labor_base,
+                    history.cost_labor_weed_hired,
+                    history.cost_labor_tending,
+                    history.cost_labor_total,
+                    history.cost_infra_net,
+                    history.cost_infra_cage,
+                    history.cost_infra_total,
+                    history.cost_fert_urea,
+                    history.cost_fert_phonska,
+                    history.cost_fert_kcl,
+                    history.cost_fertilizer_total,
+                    history.cost_pesticide,
+                    history.cost_total_cash,
+                    history.profit_net_cash,
+                    history.valuation_weed_eco,
+                    history.profit_net_full,
+                    json.dumps({}),     # input_json
+                    json.dumps({}),     # actual_scenario_json
+                    json.dumps({}),     # recommended_scenario_json
+                    json.dumps({}),     # comparison_json
+                    json.dumps({}),     # risk_json
+                    json.dumps({}),     # trace_json
+                    json.dumps([]),     # notes_json
+                    json.dumps({}),     # economics_json
+                    json.dumps({}),     # ecology_json
+                    json.dumps({}),     # environment_json
+                    json.dumps({}),     # lookup_json
+                    json.dumps({}),     # validation_json
+                    json.dumps({}),     # data_readiness_json
                 ),
             )
         return history
 
-    def list_by_user(self, user_id: str) -> list[SimulationHistory]:
+    def new_id(self) -> str:
+        return str(uuid4())
+
+    def now(self) -> datetime:
+        return datetime.now(timezone.utc)
+
+    # ------------------------------------------------------------------
+    # Reads — return v2 or legacy depending on schema_version.
+    # ------------------------------------------------------------------
+    def list_by_user(self, user_id: str) -> list[SimulationHistory | SimulationHistoryLegacy]:
         with get_connection() as connection:
             rows = connection.execute(
                 """
@@ -93,7 +125,7 @@ class HistoryRepository:
         self,
         history_id: str,
         user_id: str,
-    ) -> SimulationHistory | None:
+    ) -> SimulationHistory | SimulationHistoryLegacy | None:
         with get_connection() as connection:
             row = connection.execute(
                 """
@@ -115,8 +147,45 @@ class HistoryRepository:
             )
         return cursor.rowcount > 0
 
-    def _to_model(self, row: sqlite3.Row) -> SimulationHistory:
-        return SimulationHistory(
+    def _to_model(self, row: sqlite3.Row) -> SimulationHistory | SimulationHistoryLegacy:
+        version = row["schema_version"]
+        if version >= 2:
+            return SimulationHistory(
+                id=row["id"],
+                user_id=row["user_id"],
+                schema_version=version,
+                density_status=row["density_status"],
+                age_status=row["age_status"],
+                d_masuk_bebek=row["d_masuk_bebek"],
+                d_tarik_bebek=row["d_tarik_bebek"],
+                d_panen_gabah=row["d_panen_gabah"],
+                n_survive=row["n_survive"],
+                yield_are_predict=row["yield_are_predict"],
+                yield_total_predict=row["yield_total_predict"],
+                revenue_gabah=row["revenue_gabah"],
+                revenue_duck=row["revenue_duck"],
+                total_revenue=row["total_revenue"],
+                cost_duck_buy=row["cost_duck_buy"],
+                cost_feed=row["cost_feed"],
+                cost_labor_base=row["cost_labor_base"],
+                cost_labor_weed_hired=row["cost_labor_weed_hired"],
+                cost_labor_tending=row["cost_labor_tending"],
+                cost_labor_total=row["cost_labor_total"],
+                cost_infra_net=row["cost_infra_net"],
+                cost_infra_cage=row["cost_infra_cage"],
+                cost_infra_total=row["cost_infra_total"],
+                cost_fert_urea=row["cost_fert_urea"],
+                cost_fert_phonska=row["cost_fert_phonska"],
+                cost_fert_kcl=row["cost_fert_kcl"],
+                cost_fertilizer_total=row["cost_fertilizer_total"],
+                cost_pesticide=row["cost_pesticide"],
+                cost_total_cash=row["cost_total_cash"],
+                profit_net_cash=row["profit_net_cash"],
+                valuation_weed_eco=row["valuation_weed_eco"],
+                profit_net_full=row["profit_net_full"],
+                created_at=datetime.fromisoformat(row["created_at"]),
+            )
+        return SimulationHistoryLegacy(
             id=row["id"],
             user_id=row["user_id"],
             input_data=json.loads(row["input_json"]),
@@ -133,6 +202,7 @@ class HistoryRepository:
             validation=json.loads(row["validation_json"]),
             data_readiness=json.loads(row["data_readiness_json"]),
             created_at=datetime.fromisoformat(row["created_at"]),
+            schema_version=version,
         )
 
 
