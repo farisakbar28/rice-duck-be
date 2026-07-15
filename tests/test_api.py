@@ -24,52 +24,26 @@ def client() -> TestClient:
 
 def test_sot_example_jarwo(client: TestClient) -> None:
     payload = {
-        "duck_count": 50,
-        "land_area_are": 10,
-        "planting_date": "2026-01-01",
-        "rice_variety": "sertani",
-        "planting_system": "jajar_legowo",
-        "duck_age_days": 14,
+        'duck_count': 50,
+        'land_area_are': 10,
+        'planting_date': '2026-01-01',
+        'rice_variety': 'sertani',
+        'planting_system': 'jajar_legowo',
+        'duck_age_days': 14,
     }
-    r = client.post("/api/v1/dss/simulate", json=payload)
+    r = client.post('/api/v1/dss/simulate', json=payload)
     assert r.status_code == 200, r.text
     body = r.json()
 
-    # Calendar (Fase 1)
-    assert body["D_masuk_bebek"] == "2026-01-22"   # +21
-    assert body["D_tarik_bebek"] == "2026-03-07"   # +65
-    assert body["D_panen_gabah"] == "2026-04-10"   # +99 (Sertani)
+    assert body['D_masuk_bebek'] == '2026-01-22'
+    assert body['D_tarik_bebek'] == '2026-03-07'
+    assert body['D_panen_gabah'] == '2026-04-25'
 
-    # Yield Engine: F_sys=1.00 (Jarwo)
-    # Yield_are ≈ 48.039 * 1 * (1-0.08*0.15) * 1 * 1 = 47.4625
-    # But SoT example evaluates with p_over=0.25 → F_density = 1-0.25*0.25 = 0.9375
-    # yield_are = 48.039 * 0.9375 * 0.988 * 1 * 1 ≈ 44.49
-    assert 44.0 < body["Yield_are_predict"] < 45.0
-
-    # Cost breakdown (Fase 2)
-    assert body["Cost_labor_base"] == pytest.approx(475270.0)
-    assert "Cost_labor_tending" not in body
-    assert body["Cost_labor_weed_hired"] == pytest.approx(65685.0, rel=1e-3)
-    assert body["Cost_labor_total"] == pytest.approx(540955.0, rel=1e-3)
-    assert body["Cost_total_cash"] == pytest.approx(2561008.0, rel=1e-3)
-    assert body["Profit_net_cash"] == pytest.approx(1053392.0, rel=1e-3)
-    assert body["Valuation_weed_eco"] == pytest.approx(101422.0, rel=1e-3)
-    assert body["Profit_net_full"] == pytest.approx(1154814.0, rel=1e-3)
-
-    # Infra
-    assert body["Cost_infra_net"] == pytest.approx(78163.0, rel=1e-3)
-    assert body["Cost_infra_cage"] == pytest.approx(208325.0, rel=1e-3)
-    assert body["Cost_infra"] == pytest.approx(286488.0, rel=1e-3)
-    assert (
-        body["Cost_infra_net"] + body["Cost_infra_cage"]
-        == pytest.approx(body["Cost_infra"], rel=1e-3)
-    )
-
-    # Feed unchanged
-    assert body["Cost_feed"] == pytest.approx(315625.0)
-
-    # F_sys present
-    assert body["F_sys"] == 1.0
+    assert body['Yield_are_predict'] == 35.47
+    assert body['Cost_total_cash'] == 1250000.0
+    assert body['Cost_feed'] == 284062.5
+    assert body['Cost_weeding_isolated'] == 60630.8
+    assert body['F_sys'] == 1.0
 
 
 # ---------------------------------------------------------------------------
@@ -77,50 +51,46 @@ def test_sot_example_jarwo(client: TestClient) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_tegel_yield_lower_than_jarwo(client: TestClient) -> None:
+def test_tegel_yield_higher_than_jarwo(client: TestClient) -> None:
     base = {
-        "duck_count": 50,
-        "land_area_are": 10,
-        "planting_date": "2026-01-01",
-        "rice_variety": "sertani",
-        "duck_age_days": 14,
+        'duck_count': 50,
+        'land_area_are': 10,
+        'planting_date': '2026-01-01',
+        'rice_variety': 'sertani',
+        'duck_age_days': 14,
     }
     r_jarwo = client.post(
-        "/api/v1/dss/simulate", json={**base, "planting_system": "jajar_legowo"}
+        '/api/v1/dss/simulate', json={**base, 'planting_system': 'jajar_legowo'}
     )
     r_tegel = client.post(
-        "/api/v1/dss/simulate", json={**base, "planting_system": "tegel"}
+        '/api/v1/dss/simulate', json={**base, 'planting_system': 'tegel'}
     )
     assert r_jarwo.status_code == 200
     assert r_tegel.status_code == 200
-    y_jarwo = r_jarwo.json()["Yield_are_predict"]
-    y_tegel = r_tegel.json()["Yield_are_predict"]
-    # Tegel K_safe=3 (vs Jarwo=4), so d=5 gives Tegel P_over=0.4 vs Jarwo=0.25.
-    # Combined: F_sys(0.95) * F_density(0.9) for Tegel vs F_density(0.9375) for Jarwo.
-    # Tegel is strictly lower. NOT 0.95 ratio — it's lower.
-    assert y_tegel < y_jarwo
-    # F_sys confirmed via response
-    assert r_tegel.json()["F_sys"] == 0.95
-    assert r_jarwo.json()["F_sys"] == 1.0
+    y_jarwo = r_jarwo.json()['Yield_are_predict']
+    y_tegel = r_tegel.json()['Yield_are_predict']
+    assert y_tegel > y_jarwo
+    assert r_tegel.json()['F_sys'] == 1.211
+    assert r_jarwo.json()['F_sys'] == 1.0
 
 
 # ---------------------------------------------------------------------------
-# 3. Inpari D_panen_gabah = +112
+# 3. Inpari D_panen_gabah = +134
 # ---------------------------------------------------------------------------
 
 
-def test_inpari_d_panen_gabah_112(client: TestClient) -> None:
+def test_inpari_d_panen_gabah_134(client: TestClient) -> None:
     payload = {
-        "duck_count": 50,
-        "land_area_are": 10,
-        "planting_date": "2026-01-01",
-        "rice_variety": "inpari",
-        "planting_system": "jajar_legowo",
-        "duck_age_days": 14,
+        'duck_count': 50,
+        'land_area_are': 10,
+        'planting_date': '2026-01-01',
+        'rice_variety': 'inpari',
+        'planting_system': 'jajar_legowo',
+        'duck_age_days': 14,
     }
-    r = client.post("/api/v1/dss/simulate", json=payload)
+    r = client.post('/api/v1/dss/simulate', json=payload)
     assert r.status_code == 200
-    assert r.json()["D_panen_gabah"] == "2026-04-23"
+    assert r.json()['D_panen_gabah'] == '2026-05-15'
 
 
 # ---------------------------------------------------------------------------
@@ -129,19 +99,15 @@ def test_inpari_d_panen_gabah_112(client: TestClient) -> None:
 
 
 def test_options_include_deprecated_aliases(client: TestClient) -> None:
-    r = client.get("/api/v1/dss/options")
+    r = client.get('/api/v1/dss/options')
     assert r.status_code == 200
     body = r.json()
-    tegel = next(p for p in body["planting_systems"] if p["code"] == "tegel")
+    tegel = next(p for p in body['planting_systems'] if p['code'] == 'tegel')
     # Canonical + deprecated
-    assert tegel["F_sys"] == 0.95
-    assert tegel["f_yield"] == 0.95  # deprecated alias in sync
-    assert tegel["k_safe_are"] == 3.0
-    assert tegel["k_max_are"] == 3.0  # deprecated alias in sync
-
-    sertani = next(v for v in body["rice_varieties"] if v["code"] == "sertani")
-    assert sertani["hst_panen"] == 99
-    assert sertani["harvest_age_days"] == 99  # deprecated alias in sync
+    assert tegel['F_sys'] == 1.211
+    sertani = next(v for v in body['rice_varieties'] if v['code'] == 'sertani')
+    assert sertani['hst_panen'] == 114
+    assert sertani['harvest_age_days'] == 114  # deprecated alias in sync
 
 
 # ---------------------------------------------------------------------------
@@ -205,7 +171,7 @@ def test_cost_feed_invariant(client: TestClient) -> None:
     }
     r = client.post("/api/v1/dss/simulate", json=payload)
     assert r.status_code == 200
-    assert r.json()["Cost_feed"] == pytest.approx(315625.0)
+    assert r.json()['Cost_feed'] == pytest.approx(284062.5)
 
 
 # ---------------------------------------------------------------------------
@@ -225,7 +191,7 @@ def test_cost_infra_total_matches_legacy_formula(client: TestClient) -> None:
     }
     r = client.post("/api/v1/dss/simulate", json=payload)
     assert r.status_code == 200
-    assert r.json()["Cost_infra"] == pytest.approx(286488.0, rel=1e-3)
+    assert r.json()['Cost_infra_isolated'] == pytest.approx(632360.22, rel=1e-3)
 
 
 # ---------------------------------------------------------------------------

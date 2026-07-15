@@ -7,6 +7,9 @@ from app.core.database import get_connection
 from app.domain.models import SimulationHistory, SimulationHistoryLegacy
 
 
+# SoT FINAL (docs/Model_Matematika_..._FINAL.docx): the response is split into
+# Core Validated (Cost_duck_buy, Cost_total_cash) and Empirically Uncorrelated
+# Isolated (Cost_*_isolated) groups. History rows persist the same split.
 V2_INSERT_SQL = """
 INSERT INTO dss_simulation_histories (
     id, user_id, schema_version, created_at,
@@ -14,10 +17,11 @@ INSERT INTO dss_simulation_histories (
     n_survive,
     yield_are_predict, yield_total_predict,
     revenue_gabah, revenue_duck, total_revenue,
-    cost_duck_buy, cost_feed, cost_labor_base, cost_labor_weed_hired,
-    cost_labor_tending, cost_labor_total, cost_infra_net, cost_infra_cage,
-    cost_infra_total, cost_fert_urea, cost_fert_phonska, cost_fert_kcl,
-    cost_fertilizer_total, cost_pesticide, cost_total_cash,
+    cost_duck_buy, cost_feed,
+    cost_weeding_isolated, cost_pesticide_isolated, cost_infra_isolated,
+    cost_fertilizer_isolated, cost_infra_net_isolated, cost_infra_cage_isolated,
+    cost_fert_urea_isolated, cost_fert_phonska_isolated, cost_fert_kcl_isolated,
+    cost_total_cash,
     profit_net_cash, valuation_weed_eco, profit_net_full,
     input_json, actual_scenario_json, recommended_scenario_json,
     comparison_json, risk_json, trace_json, notes_json,
@@ -29,10 +33,11 @@ INSERT INTO dss_simulation_histories (
     ?,
     ?, ?,
     ?, ?, ?,
-    ?, ?, ?, ?,
-    ?, ?, ?, ?,
-    ?, ?, ?, ?,
+    ?, ?,
     ?, ?, ?,
+    ?, ?, ?,
+    ?, ?, ?,
+    ?,
     ?, ?, ?,
     ?, ?, ?, ?,
     ?, ?, ?, ?,
@@ -44,7 +49,7 @@ INSERT INTO dss_simulation_histories (
 
 class HistoryRepository:
     # ------------------------------------------------------------------
-    # v2 — explicit columns
+    # v2 — explicit columns (SoT FINAL)
     # ------------------------------------------------------------------
     def create_v2(self, *, user_id: str, history: SimulationHistory) -> SimulationHistory:
         with get_connection() as connection:
@@ -67,18 +72,15 @@ class HistoryRepository:
                     history.total_revenue,
                     history.cost_duck_buy,
                     history.cost_feed,
-                    history.cost_labor_base,
-                    history.cost_labor_weed_hired,
-                    history.cost_labor_tending,
-                    history.cost_labor_total,
-                    history.cost_infra_net,
-                    history.cost_infra_cage,
-                    history.cost_infra_total,
-                    history.cost_fert_urea,
-                    history.cost_fert_phonska,
-                    history.cost_fert_kcl,
-                    history.cost_fertilizer_total,
-                    history.cost_pesticide,
+                    history.cost_weeding_isolated,
+                    history.cost_pesticide_isolated,
+                    history.cost_infra_isolated,
+                    history.cost_fertilizer_isolated,
+                    history.cost_infra_net_isolated,
+                    history.cost_infra_cage_isolated,
+                    history.cost_fert_urea_isolated,
+                    history.cost_fert_phonska_isolated,
+                    history.cost_fert_kcl_isolated,
                     history.cost_total_cash,
                     history.profit_net_cash,
                     history.valuation_weed_eco,
@@ -167,18 +169,15 @@ class HistoryRepository:
                 total_revenue=row["total_revenue"],
                 cost_duck_buy=row["cost_duck_buy"],
                 cost_feed=row["cost_feed"],
-                cost_labor_base=row["cost_labor_base"],
-                cost_labor_weed_hired=row["cost_labor_weed_hired"],
-                cost_labor_tending=row["cost_labor_tending"],
-                cost_labor_total=row["cost_labor_total"],
-                cost_infra_net=row["cost_infra_net"],
-                cost_infra_cage=row["cost_infra_cage"],
-                cost_infra_total=row["cost_infra_total"],
-                cost_fert_urea=row["cost_fert_urea"],
-                cost_fert_phonska=row["cost_fert_phonska"],
-                cost_fert_kcl=row["cost_fert_kcl"],
-                cost_fertilizer_total=row["cost_fertilizer_total"],
-                cost_pesticide=row["cost_pesticide"],
+                cost_weeding_isolated=row["cost_weeding_isolated"],
+                cost_pesticide_isolated=row["cost_pesticide_isolated"],
+                cost_infra_isolated=row["cost_infra_isolated"],
+                cost_fertilizer_isolated=row["cost_fertilizer_isolated"],
+                cost_infra_net_isolated=row["cost_infra_net_isolated"],
+                cost_infra_cage_isolated=row["cost_infra_cage_isolated"],
+                cost_fert_urea_isolated=row["cost_fert_urea_isolated"],
+                cost_fert_phonska_isolated=row["cost_fert_phonska_isolated"],
+                cost_fert_kcl_isolated=row["cost_fert_kcl_isolated"],
                 cost_total_cash=row["cost_total_cash"],
                 profit_net_cash=row["profit_net_cash"],
                 valuation_weed_eco=row["valuation_weed_eco"],

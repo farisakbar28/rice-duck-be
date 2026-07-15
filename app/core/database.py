@@ -4,9 +4,15 @@ from pathlib import Path
 from app.core.config import settings
 
 
-# Columns added by Fase 5 (explicit-column migration). The history table
-# originally stored everything as JSON blobs; rows written before this
-# migration keep ``schema_version=1`` and remain read-only legacy.
+# Explicit-column schema (v2) — aligned with SoT FINAL (docs/Model_Matematika_..._FINAL.docx).
+#
+# The SoT splits the cost response into two groups (Bagian 5):
+#   - Core Validated: Cost_duck_buy, Cost_total_cash
+#   - Empirically Uncorrelated Isolated: Cost_*_isolated fields
+#
+# Historical legacy columns (cost_labor_base, cost_infra_net, cost_infra_total,
+# cost_fertilizer_total, cost_pesticide, etc.) are NOT recreated — they were
+# replaced by the _isolated group in the SoT FINAL.
 HISTORY_V2_COLUMNS = (
     # Agronomi & operasional
     "density_status TEXT NOT NULL DEFAULT ''",
@@ -22,25 +28,18 @@ HISTORY_V2_COLUMNS = (
     "revenue_gabah REAL NOT NULL DEFAULT 0",
     "revenue_duck REAL NOT NULL DEFAULT 0",
     "total_revenue REAL NOT NULL DEFAULT 0",
-    # Cost detail
+    # Cost detail (Core + Isolated groups)
     "cost_duck_buy REAL NOT NULL DEFAULT 0",
     "cost_feed REAL NOT NULL DEFAULT 0",
-    "cost_labor_base REAL NOT NULL DEFAULT 0",
-    "cost_labor_weed_hired REAL NOT NULL DEFAULT 0",
-    # DEPRECATED (lihat FINAL_BANGET.md Catatan Finalisasi poin 12):
-    # dihapus dari formula Cost Engine sejak 2026-07-07. Kolom dipertahankan
-    # di DB untuk backward compatibility historical records, nilai selalu 0.0,
-    # TIDAK di-expose di API response.
-    "cost_labor_tending REAL NOT NULL DEFAULT 0",
-    "cost_labor_total REAL NOT NULL DEFAULT 0",
-    "cost_infra_net REAL NOT NULL DEFAULT 0",
-    "cost_infra_cage REAL NOT NULL DEFAULT 0",
-    "cost_infra_total REAL NOT NULL DEFAULT 0",
-    "cost_fert_urea REAL NOT NULL DEFAULT 0",
-    "cost_fert_phonska REAL NOT NULL DEFAULT 0",
-    "cost_fert_kcl REAL NOT NULL DEFAULT 0",
-    "cost_fertilizer_total REAL NOT NULL DEFAULT 0",
-    "cost_pesticide REAL NOT NULL DEFAULT 0",
+    "cost_weeding_isolated REAL NOT NULL DEFAULT 0",
+    "cost_pesticide_isolated REAL NOT NULL DEFAULT 0",
+    "cost_infra_isolated REAL NOT NULL DEFAULT 0",
+    "cost_fertilizer_isolated REAL NOT NULL DEFAULT 0",
+    "cost_infra_net_isolated REAL NOT NULL DEFAULT 0",
+    "cost_infra_cage_isolated REAL NOT NULL DEFAULT 0",
+    "cost_fert_urea_isolated REAL NOT NULL DEFAULT 0",
+    "cost_fert_phonska_isolated REAL NOT NULL DEFAULT 0",
+    "cost_fert_kcl_isolated REAL NOT NULL DEFAULT 0",
     "cost_total_cash REAL NOT NULL DEFAULT 0",
     # Profit
     "profit_net_cash REAL NOT NULL DEFAULT 0",

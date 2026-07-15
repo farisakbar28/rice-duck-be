@@ -12,81 +12,69 @@ from app.domain.models import (
 
 RICE_VARIETIES = [
     RiceVariety(
-        code="sertani",
-        label="Sertani / Seratih",
-        # Canonical SoT — Tabel 2.2 Calendar Engine (Catatan Finalisasi poin 8).
-        hst_panen=99,
-        # Deprecated legacy fields. ``harvest_age_days`` is kept in sync with
-        # ``hst_panen`` (additive per keputusan #2).
+        code='sertani',
+        label='Sertani / Seratih',
+        hst_panen=114,
         hst_masuk=20,
         hst_heading=65,
-        harvest_age_days=99,
-        risk_note="Default awal dari dokumen; bebek sebaiknya ditarik sebelum fase keluar malai.",
+        harvest_age_days=114,
+        risk_note='Default awal dari dokumen; bebek sebaiknya ditarik sebelum fase keluar malai.',
         hst_masuk_min=20,
         hst_masuk_max=20,
         hst_heading_min=60,
         hst_heading_max=65,
-        status="estimation",
+        status='estimation',
     ),
     RiceVariety(
-        code="inpari",
-        label="Inpari",
-        # Canonical SoT — Tabel 2.2 Calendar Engine (Catatan Finalisasi poin 8).
-        hst_panen=112,
+        code='inpari',
+        label='Inpari',
+        hst_panen=134,
         hst_masuk=20,
         hst_heading=65,
-        harvest_age_days=112,
-        risk_note="Umur panen lebih panjang sehingga jadwal panen gabah bergeser mundur.",
+        harvest_age_days=134,
+        risk_note='Umur panen lebih panjang sehingga jadwal panen gabah bergeser mundur.',
         hst_masuk_min=20,
         hst_masuk_max=20,
         hst_heading_min=60,
         hst_heading_max=65,
-        status="estimation",
+        status='estimation',
     ),
 ]
 
 PLANTING_SYSTEMS = [
     PlantingSystem(
-        code="jajar_legowo",
-        label="Jajar Legowo",
-        # Canonical SoT — Tabel 2.2 Density & Yield Engine.
+        code='jajar_legowo',
+        label='Jajar Legowo',
         k_safe_are=4.0,
         F_sys=1.00,
-        # Deprecated aliases kept in sync with canonical values.
         k_max_are=4.0,
         f_yield=1.00,
-        note="Ruang gerak bebek lebih baik; K_safe = 4.0 ekor/are; F_sys = 1.00.",
+        note='Ruang gerak bebek lebih baik; K_safe = 4.0 ekor/are; F_sys = 1.00.',
         k_safe_min_are=4.0,
         k_safe_max_are=8.0,
         k_max_min_are=4.0,
         k_max_max_are=8.0,
         limited_test_max_are=6.0,
-        k_max_status="local-estimate",
-        f_yield_status="local-calibrated",
+        k_max_status='local-estimate',
+        f_yield_status='local-calibrated',
         recommended_density_min_are=2.0,
         recommended_density_max_are=4.0,
     ),
     PlantingSystem(
-        code="tegel",
-        label="Tegel / Konvensional",
-        # Canonical SoT — Tabel 2.2. Tegel receives a PENALTY (0.95), NOT the
-        # legacy bonus 1.39 from FINAL.md. (Catatan Finalisasi poin: Yield
-        # Engine Fase B.)
+        code='tegel',
+        label='Tegel / Konvensional',
         k_safe_are=3.0,
-        F_sys=0.95,
+        F_sys=1.211,
         k_max_are=3.0,
-        f_yield=0.95,
-        note=(
-            "Ruang gerak lebih sempit sehingga K_safe lebih rendah (3.0). "
-            "F_sys = 0.95 adalah penalti struktural (Tabel 2.2), bukan bonus 1.39."
-        ),
+        f_yield=1.211,
+        note='Ruang gerak lebih sempit sehingga K_safe lebih rendah (3.0). F_sys = 1.211 adalah keunggulan produktivitas median empiris (Bagian 4.5).',
         k_safe_min_are=2.0,
         k_safe_max_are=3.0,
         k_max_min_are=2.0,
         k_max_max_are=3.0,
         limited_test_max_are=None,
-        k_max_status="local-estimate",
-        f_yield_status="local-calibrated",
+        k_max_status='local-estimate',
+        f_yield_status='local-calibrated',
         recommended_density_min_are=2.0,
         recommended_density_max_are=3.0,
     ),

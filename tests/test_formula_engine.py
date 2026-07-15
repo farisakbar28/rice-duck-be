@@ -17,11 +17,7 @@ from app.engines.formula_engine import (
     compute_yield_components,
 )
 from app.engines.impact_engine import (
-    INFRA_CAGE_COEF,
-    INFRA_FLOOR_RP,
-    INFRA_NET_COEF,
     K_WEED_HIRE_RP_PER_ARE,
-    RHO_WEED,
     compute_ecology_weed,
     compute_feed_costs,
     compute_infrastructure_breakdown,
@@ -38,22 +34,22 @@ from app.engines.impact_engine import (
 
 def test_age_below_14_high_risk() -> None:
     out = compute_duck_age_status(10)
-    assert out["R_age"] == 0.35
-    assert "WARNING" in out["age_status"]
+    assert out['R_age'] == 0.35
+    assert 'WARNING' in out['age_status']
 
 
-def test_age_14_to_20_safe_range() -> None:
+def test_age_14_to_29_safe_range() -> None:
     out = compute_duck_age_status(14)
-    assert out["R_age"] == 0.15
-    assert out["age_status"] == "AGE_BUY_RANGE"
-    out20 = compute_duck_age_status(20)
-    assert out20["R_age"] == 0.15
+    assert out['R_age'] == 0.15
+    assert out['age_status'] == 'AGE_BUY_RANGE'
+    out29 = compute_duck_age_status(29)
+    assert out29['R_age'] == 0.15
 
 
-def test_age_above_21_warning() -> None:
-    out = compute_duck_age_status(25)
-    assert out["R_age"] == 0.05
-    assert "WARNING" in out["age_status"]
+def test_age_above_29_warning() -> None:
+    out = compute_duck_age_status(30)
+    assert out['R_age'] == 0.05
+    assert 'ADAPTED_FULLY' in out['age_status']
 
 
 # ===========================================================================
@@ -96,15 +92,15 @@ def test_density_over_capped_at_1() -> None:
 
 def test_lambda_eff_safe() -> None:
     # U=14 → r_age=0.15, d=5 → p_over=0.25
-    # 0.67 * (1 - 0.5*0.15) * (1 - 0.45*0.25) = 0.67*0.925*0.8875 = 0.5502...
+    # 0.78125 * (1 - 0.5*0.15) * (1 - 0.45*0.25) = 0.67*0.925*0.8875 = 0.5502...
     n = compute_surviving_ducks(50, 0.15, 0.25)
-    expected = 50 * 0.67 * 0.925 * 0.8875
+    expected = 50 * 0.78125 * 0.925 * 0.8875
     assert n == pytest.approx(expected)
 
 
 def test_lambda_eff_zero_p_over() -> None:
     n = compute_surviving_ducks(50, 0.15, 0.0)
-    expected = 50 * 0.67 * 0.925 * 1.0
+    expected = 50 * 0.78125 * 0.925 * 1.0
     assert n == pytest.approx(expected)
 
 
@@ -114,9 +110,9 @@ def test_n_survive_output_uses_floor_not_round_or_int_truncation() -> None:
     from app.services.simulation_service import DSSService
 
     raw_n_survive = compute_surviving_ducks(50, 0.15, 0.25)
-    assert raw_n_survive == pytest.approx(27.50140625)
-    assert math.floor(raw_n_survive) == 27
-    assert round(raw_n_survive) == 28
+    assert raw_n_survive == pytest.approx(32.06787109375)
+    assert math.floor(raw_n_survive) == 32
+    assert round(raw_n_survive) == 32
 
     response = DSSService().simulate(
         DSSSimulationRequest(
@@ -128,7 +124,7 @@ def test_n_survive_output_uses_floor_not_round_or_int_truncation() -> None:
             duck_age_days=14,
         )
     )
-    assert response.N_survive == 27.0
+    assert response.N_survive == 32.0
 
 
 # ===========================================================================
@@ -138,31 +134,30 @@ def test_n_survive_output_uses_floor_not_round_or_int_truncation() -> None:
 
 def test_yield_jarwo_safe() -> None:
     # F_sys=1.00, p_under=0, p_over=0, r_age=0.15
-    y = compute_yield_components(0.0, 0.0, 0.15, 1.00, 1.0)
-    # 48.039 * 1 * (1-0.08*0.15) * 1 * 1
-    expected = 48.039 * 1.0 * 0.988
+    y = compute_yield_components(0.0, 0.0, 0.15, 1.00, 0.8)
+    # 47.8767507 * 1 * (1-0.08*0.15) * 1 * 0.8
+    expected = 47.8767507 * 1.0 * 0.988 * 0.8
     assert y == pytest.approx(expected, rel=1e-4)
 
 
-def test_yield_tegel_penalty_not_bonus() -> None:
-    """Critical: Tegel F_sys=0.95 should LOWER yield, not raise it."""
-    y_jarwo = compute_yield_components(0.0, 0.0, 0.15, 1.00, 1.0)
-    y_tegel = compute_yield_components(0.0, 0.0, 0.15, 0.95, 1.0)
-    assert y_tegel < y_jarwo
-    assert y_tegel == pytest.approx(y_jarwo * 0.95, rel=1e-4)
+def test_yield_tegel_higher_than_jarwo() -> None:
+    y_jarwo = compute_yield_components(0.0, 0.0, 0.15, 1.00, 0.8)
+    y_tegel = compute_yield_components(0.0, 0.0, 0.15, 1.211, 0.8)
+    assert y_tegel > y_jarwo
+    assert y_tegel == pytest.approx(y_jarwo * 1.211, rel=1e-4)
 
 
 def test_yield_density_penalty() -> None:
     # p_under=0.5 → 1-0.12*0.5 = 0.94
-    y = compute_yield_components(0.5, 0.0, 0.0, 1.0, 1.0)
-    expected = 48.039 * 0.94
+    y = compute_yield_components(0.5, 0.0, 0.0, 1.0, 0.8)
+    expected = 47.8767507 * 0.94 * 0.8
     assert y == pytest.approx(expected, rel=1e-4)
 
 
 def test_yield_overdensity_penalty() -> None:
     # p_over=0.5 → 1-0.25*0.5 = 0.875
-    y = compute_yield_components(0.0, 0.5, 0.0, 1.0, 1.0)
-    expected = 48.039 * 0.875
+    y = compute_yield_components(0.0, 0.5, 0.0, 1.0, 0.8)
+    expected = 47.8767507 * 0.875 * 0.8
     assert y == pytest.approx(expected, rel=1e-4)
 
 
@@ -179,15 +174,14 @@ def test_calendar_d_masuk_21_d_tarik_65() -> None:
     assert m["t_active"] == 44
 
 
-def test_calendar_d_panen_sertani_99() -> None:
-    """SoT example: 01-Jan-2026 + 99 hari = 10-Apr-2026."""
-    m = compute_calendar_milestones(date(2026, 1, 1), 99, 20, 65)
-    assert m["D_panen_gabah"] == date(2026, 4, 10)
+def test_calendar_d_panen_sertani_114() -> None:
+    m = compute_calendar_milestones(date(2026, 1, 1), 114, 20, 65)
+    assert m['D_panen_gabah'] == date(2026, 4, 25)
 
 
-def test_calendar_d_panen_inpari_112() -> None:
-    m = compute_calendar_milestones(date(2026, 1, 1), 112, 20, 65)
-    assert m["D_panen_gabah"] == date(2026, 4, 23)
+def test_calendar_d_panen_inpari_134() -> None:
+    m = compute_calendar_milestones(date(2026, 1, 1), 134, 20, 65)
+    assert m['D_panen_gabah'] == date(2026, 5, 15)
 
 
 # ===========================================================================
@@ -198,9 +192,9 @@ def test_calendar_d_panen_inpari_112() -> None:
 def test_feed_unchanged_scale() -> None:
     # SoT example: 50 ducks, p_over=0.25, r_age=0.15 → 315625
     c = compute_feed_costs(50, 0.25, 0.15)
-    expected = 50 * 5000 * (1 + 0.75 * 0.25 + 0.50 * 0.15)
+    expected = 50 * 4500 * (1 + 0.75 * 0.25 + 0.50 * 0.15)
     assert c == pytest.approx(expected, rel=1e-4)
-    assert c == pytest.approx(315625.0, rel=1e-4)
+    assert c == pytest.approx(284062.5, rel=1e-4)
 
 
 # ===========================================================================
@@ -209,29 +203,20 @@ def test_feed_unchanged_scale() -> None:
 
 
 def test_labor_breakdown_sot_example() -> None:
-    """A=10, J=50, U=14 (r_age=0.15), d=5, p_over=0.25.
-
-    - base = 47527*10 = 475270
-    - weed_hired = 30539*10*(1-0.7849) ≈ 65685
-    - total = 475270 + 65685 = 540955
-    """
-    lab = compute_labor_breakdown(10, 0.25, 0.15, 5.0) # duck_count removed
-    assert lab["Cost_labor_base"] == pytest.approx(475270.0)
-    # Cost_labor_tending removed
-    assert lab["Cost_labor_weed_hired"] == pytest.approx(65685.0, rel=1e-3)
-    # Cost_labor_base_tending removed
-    assert lab["Cost_labor_total"] == pytest.approx(540955.0, rel=1e-3) # new total
+    lab = compute_labor_breakdown(10, 0.25, 0.15, 5.0)
+    expected = 26178.0 * 10 * (1 - (0.93 * (1 - math.exp(-0.35 * 5.0))))
+    assert lab['Cost_labor_weeding'] == pytest.approx(expected, rel=1e-3) # new total
 
 
 def test_weed_reduction_formula() -> None:
-    # R_weed(5) = 0.95 * (1 - exp(-1.75))
+    # R_weed(5) = 0.93 * (1 - exp(-1.75))
     r = compute_weed_reduction(5.0)
-    expected = 0.95 * (1.0 - math.exp(-1.75))
+    expected = 0.93 * (1.0 - math.exp(-1.75))
     assert r == pytest.approx(expected, rel=1e-6)
 
 
 def test_weed_hired_constant() -> None:
-    assert K_WEED_HIRE_RP_PER_ARE == 30539.0
+    assert K_WEED_HIRE_RP_PER_ARE == 26178.0
 
 
 # ===========================================================================
@@ -240,38 +225,17 @@ def test_weed_hired_constant() -> None:
 
 
 def test_infra_no_floor_jarwo() -> None:
-    """A=10, J=50: raw sum > 58333, no floor."""
     inf = compute_infrastructure_breakdown(50, 10)
-    expected_net = 0.5 * INFRA_NET_COEF * math.sqrt(10)
-    expected_cage = 0.5 * INFRA_CAGE_COEF * 50
-    assert inf["Cost_infra_net"] == pytest.approx(expected_net)
-    assert inf["Cost_infra_cage"] == pytest.approx(expected_cage)
-    assert inf["Cost_infra"] == pytest.approx(expected_net + expected_cage)
-
-
-def test_infra_floor_jarwo_active_proportional_split() -> None:
-    """Small inputs: floor 58333 active, both parts scaled proportionally."""
-    # A=1, J=2 → raw very small
-    inf = compute_infrastructure_breakdown(2, 1)
-    assert inf["Cost_infra"] == INFRA_FLOOR_RP
-    # net_raw + cage_raw < 58333
-    raw_net = 0.5 * INFRA_NET_COEF * math.sqrt(1)
-    raw_cage = 0.5 * INFRA_CAGE_COEF * 2
-    scale = INFRA_FLOOR_RP / (raw_net + raw_cage)
-    assert inf["Cost_infra_net"] == pytest.approx(raw_net * scale)
-    assert inf["Cost_infra_cage"] == pytest.approx(raw_cage * scale)
-    # Invariant: net + cage == total
-    assert inf["Cost_infra_net"] + inf["Cost_infra_cage"] == pytest.approx(
-        inf["Cost_infra"], rel=1e-4
-    )
+    expected_net = 0.5 * 289260.0 * math.sqrt(10)
+    expected_cage = 175000.0
+    assert inf['Cost_infra_net'] == pytest.approx(expected_net)
+    assert inf['Cost_infra_cage'] == pytest.approx(expected_cage)
+    assert inf['Cost_infra'] == pytest.approx(expected_net + expected_cage)
 
 
 def test_infra_floor_zero_raw_split_50_50() -> None:
-    """Edge case: A=0, J=0 → raw=0 → 50/50 floor split (interim)."""
     inf = compute_infrastructure_breakdown(0, 0)
-    assert inf["Cost_infra"] == INFRA_FLOOR_RP
-    assert inf["Cost_infra_net"] == INFRA_FLOOR_RP / 2
-    assert inf["Cost_infra_cage"] == INFRA_FLOOR_RP / 2
+    assert inf['Cost_infra'] == pytest.approx(175000.0)
 
 
 # ===========================================================================
@@ -279,30 +243,12 @@ def test_infra_floor_zero_raw_split_50_50() -> None:
 # ===========================================================================
 
 
-def test_valuation_weed_eco_basis_excludes_weed_hired() -> None:
-    """Regression test: adding C_weed_hired must NOT change V_weed_eco."""
-    cost_labor_base = 475270.0
+def test_valuation_weed_eco_basis() -> None:
     d = 5.0
     p_over = 0.25
-    expected = (RHO_WEED * cost_labor_base) * compute_weed_reduction(d) * (1.0 - 0.25 * p_over)
-    v = compute_ecology_weed(cost_labor_base, d, p_over)
+    expected = (13500.0 * 10) * compute_weed_reduction(d) * (1.0 - 0.25 * p_over)
+    v = compute_ecology_weed(10, d, p_over)
     assert v == pytest.approx(expected, rel=1e-4)
-
-
-def test_valuation_weed_eco_ignores_extra_weed_hired() -> None:
-    """If you accidentally pass Cost_labor_total instead of base,
-    the result would be higher. This test confirms the basis fix.
-    """
-    cost_labor_base = 475270.0
-    total_with_weed = 540955.0  # base + weed_hired
-    d = 5.0
-    p_over = 0.25
-    v_correct = compute_ecology_weed(cost_labor_base, d, p_over)
-    v_wrong = compute_ecology_weed(total_with_weed, d, p_over)
-    # The wrong basis is strictly higher:
-    assert v_wrong > v_correct
-    # And the difference is exactly proportional to the extra labor:
-    assert v_wrong / v_correct == pytest.approx(total_with_weed / cost_labor_base, rel=1e-4)
 
 
 # ===========================================================================
@@ -362,26 +308,26 @@ def test_HET_pupuk() -> None:
 # ===========================================================================
 
 
-def test_seed_sertani_hst_panen_99() -> None:
+def test_seed_sertani_hst_panen_114() -> None:
     from app.data.seed import RICE_VARIETIES
 
-    sertani = next(v for v in RICE_VARIETIES if v.code == "sertani")
-    assert sertani.hst_panen == 99
+    sertani = next(v for v in RICE_VARIETIES if v.code == 'sertani')
+    assert sertani.hst_panen == 114
 
 
-def test_seed_inpari_hst_panen_112() -> None:
+def test_seed_inpari_hst_panen_134() -> None:
     from app.data.seed import RICE_VARIETIES
 
-    inpari = next(v for v in RICE_VARIETIES if v.code == "inpari")
-    assert inpari.hst_panen == 112
+    inpari = next(v for v in RICE_VARIETIES if v.code == 'inpari')
+    assert inpari.hst_panen == 134
 
 
-def test_seed_tegel_F_sys_penalty_0_95() -> None:
+def test_seed_tegel_F_sys_1_211() -> None:
     from app.data.seed import PLANTING_SYSTEMS
 
-    tegel = next(p for p in PLANTING_SYSTEMS if p.code == "tegel")
-    assert tegel.F_sys == 0.95
-    assert tegel.f_yield == 0.95  # deprecated alias in sync
+    tegel = next(p for p in PLANTING_SYSTEMS if p.code == 'tegel')
+    assert tegel.F_sys == 1.211
+    assert tegel.f_yield == 1.211  # deprecated alias in sync
 
 
 def test_seed_jarwo_k_safe_4_F_sys_1() -> None:

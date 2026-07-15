@@ -159,7 +159,7 @@ class SimulationHistoryLegacy:
 
 @dataclass(frozen=True)
 class SimulationHistory:
-    """New explicit-column row (schema_version=2)."""
+    """New explicit-column row (schema_version=2) — aligned with SoT FINAL."""
     id: str
     user_id: str
     schema_version: int
@@ -177,31 +177,24 @@ class SimulationHistory:
     revenue_gabah: float
     revenue_duck: float
     total_revenue: float
-    # Cost detail
+    # Cost detail (Core + Isolated groups per SoT Bagian 5)
     cost_duck_buy: float
     cost_feed: float
-    cost_labor_base: float
-    cost_labor_weed_hired: float
-    cost_labor_total: float
-    cost_infra_net: float
-    cost_infra_cage: float
-    cost_infra_total: float
-    cost_fert_urea: float
-    cost_fert_phonska: float
-    cost_fert_kcl: float
-    cost_fertilizer_total: float
-    cost_pesticide: float
+    cost_weeding_isolated: float
+    cost_pesticide_isolated: float
+    cost_infra_isolated: float
+    cost_fertilizer_isolated: float
+    cost_infra_net_isolated: float
+    cost_infra_cage_isolated: float
+    cost_fert_urea_isolated: float
+    cost_fert_phonska_isolated: float
+    cost_fert_kcl_isolated: float
     cost_total_cash: float
     # Profit
     profit_net_cash: float
     valuation_weed_eco: float
     profit_net_full: float
     created_at: datetime
-    cost_labor_tending: float = 0.0  # DEPRECATED (lihat FINAL_BANGET.md Catatan Finalisasi poin 12):
-                                      # dihapus dari formula Cost Engine sejak 2026-07-07.
-                                      # Field dipertahankan di DB untuk backward compatibility
-                                      # historical records, nilai selalu 0.0,
-                                      # TIDAK di-expose di API response.
 
 
 @dataclass(frozen=True)

@@ -149,17 +149,15 @@ class DSSSimulationResponse(BaseModel):
     # Komponen biaya detail (Cost) — Fase 2 additive breakdown
     Cost_duck_buy: float
     Cost_feed: float
-    Cost_labor_base: float  # NEW — Fase 2
-    Cost_labor_weed_hired: float  # NEW — Fase 2
-    Cost_labor_total: float
-    Cost_infra_net: float  # NEW — Fase 2
-    Cost_infra_cage: float  # NEW — Fase 2
-    Cost_infra: float
-    Cost_fertilizer_total: float
-    Cost_fert_urea: float
-    Cost_fert_phonska: float
-    Cost_fert_kcl: float
-    Cost_pesticide: float
+    Cost_weeding_isolated: float
+    Cost_pesticide_isolated: float
+    Cost_infra_isolated: float
+    Cost_fertilizer_isolated: float
+    Cost_infra_net_isolated: float
+    Cost_infra_cage_isolated: float
+    Cost_fert_urea_isolated: float
+    Cost_fert_phonska_isolated: float
+    Cost_fert_kcl_isolated: float
     Cost_total_cash: float
 
     # Profit
@@ -219,17 +217,15 @@ class HistoryDetailResponse(BaseModel):
     # Cost detail
     cost_duck_buy: float
     cost_feed: float
-    cost_labor_base: float
-    cost_labor_weed_hired: float
-    cost_labor_total: float
-    cost_infra_net: float
-    cost_infra_cage: float
-    cost_infra_total: float
-    cost_fert_urea: float
-    cost_fert_phonska: float
-    cost_fert_kcl: float
-    cost_fertilizer_total: float
-    cost_pesticide: float
+    cost_weeding_isolated: float
+    cost_pesticide_isolated: float
+    cost_infra_isolated: float
+    cost_fertilizer_isolated: float
+    cost_infra_net_isolated: float
+    cost_infra_cage_isolated: float
+    cost_fert_urea_isolated: float
+    cost_fert_phonska_isolated: float
+    cost_fert_kcl_isolated: float
     cost_total_cash: float
     # Profit
     profit_net_cash: float
