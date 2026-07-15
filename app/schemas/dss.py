@@ -241,21 +241,24 @@ class DeleteHistoryResponse(BaseModel):
 
 class DensityPoint(BaseModel):
     density: float
-    jarwo_yield_factor: float
-    tegel_yield_factor: float
-    is_safe_jarwo: bool = True
+    yield_factor_jarwo: float
+    yield_factor_tegel: float
+    is_safe_jarwo: bool
+    is_safe_tegel: bool
+    is_over_density: bool
 
 
 class AgePoint(BaseModel):
     age_days: int
     risk_ratio: float
     survival_ceiling: float
+    zone: str  # "red", "yellow", "green"
 
 
 class WaterfallNode(BaseModel):
-    label: str
-    value: float
-    node_type: str  # "revenue", "cost", "profit"
+    name: str
+    amount: float
+    type: str  # "revenue", "cost", "total"
 
 
 class ReferenceBenchmarks(BaseModel):
@@ -273,6 +276,7 @@ class VisualizationsObject(BaseModel):
     density_curve: list[DensityPoint]
     age_vulnerability: list[AgePoint]
     financial_waterfall: list[WaterfallNode]
+    benchmarks: ReferenceBenchmarks
 
 
 class VisualizationResponse(BaseModel):

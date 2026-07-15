@@ -31,7 +31,7 @@ class VisualizationService:
         # High precision calculation layer
         getcontext().prec = 50
 
-        # 1. Density Curve Series (100 points, interval 0.1: 0.1 to 10.0)
+        # 1. Density Curve Series (100 points, interval step 0.1: 0.1 to 10.0)
         density_curve: list[DensityPoint] = []
 
         # Bio-density constants (SoT 4.5)
@@ -42,14 +42,12 @@ class VisualizationService:
 
         # System factors (SoT 4.5 / Tabel 2.2)
         f_sys_jarwo = Decimal("1.00")
-        f_sys_tegel = Decimal("0.95")
+        f_sys_tegel = Decimal("1.211")
 
-        # Fixed baseline age factor (adapted fully, R_age = 0.05 => F_age = 1 - 0.08*0.05 = 0.996)
-        r_age_base = Decimal("0.05")
-        f_age_base = Decimal("1") - Decimal("0.08") * r_age_base
+        k_safe_jarwo = Decimal("4.0")
+        k_safe_tegel = Decimal("3.0")
 
         step = Decimal("0.1")
-        k_safe_jarwo = Decimal("4.0")
 
         for i in range(1, 101):
             d_current = Decimal(i) * step
@@ -61,19 +59,23 @@ class VisualizationService:
             )
             f_density_bio = Decimal("1") + boost - trampling
 
-            # Calculate total yield factor including F_sys
-            jarwo_factor = round(float(f_density_bio * f_sys_jarwo * f_age_base), 4)
-            tegel_factor = round(float(f_density_bio * f_sys_tegel * f_age_base), 4)
-            d_val = round(float(d_current), 1)
+            # Calculate yield factors
+            jarwo_factor = round(float(f_density_bio * f_sys_jarwo), 6)
+            tegel_factor = round(float(f_density_bio * f_sys_tegel), 6)
+            d_val = round(float(d_current), 6)
 
             is_safe_jarwo = d_current <= k_safe_jarwo
+            is_safe_tegel = d_current <= k_safe_tegel
+            is_over_density = d_current > k_max
 
             density_curve.append(
                 DensityPoint(
                     density=d_val,
-                    jarwo_yield_factor=jarwo_factor,
-                    tegel_yield_factor=tegel_factor,
+                    yield_factor_jarwo=jarwo_factor,
+                    yield_factor_tegel=tegel_factor,
                     is_safe_jarwo=is_safe_jarwo,
+                    is_safe_tegel=is_safe_tegel,
+                    is_over_density=is_over_density,
                 )
             )
 
@@ -93,11 +95,19 @@ class VisualizationService:
             )
             lambda_eff = surviving_dec / Decimal(base_duck_count)
 
+            if age < 14:
+                zone = "red"
+            elif age <= 29:
+                zone = "yellow"
+            else:
+                zone = "green"
+
             age_vulnerability.append(
                 AgePoint(
                     age_days=age,
-                    risk_ratio=round(float(r_age_dec), 4),
-                    survival_ceiling=round(float(lambda_eff), 4),
+                    risk_ratio=round(float(r_age_dec), 6),
+                    survival_ceiling=round(float(lambda_eff), 6),
+                    zone=zone,
                 )
             )
 
@@ -111,14 +121,16 @@ class VisualizationService:
         # 4. Financial Absorption Two-Tier Breakdown
         sim_res = dss_service.simulate(payload, user_id=None)
 
-        core_cash = round(sim_res.Cost_total_cash, 2)
+        core_cash = round(float(sim_res.Cost_total_cash), 6)
         isolated_shadow_sum = round(
-            sim_res.Cost_weeding_isolated
-            + sim_res.Cost_pesticide_isolated
-            + sim_res.Cost_infra_isolated
-            + sim_res.Cost_feed_isolated
-            + sim_res.Cost_fertilizer_isolated,
-            2,
+            float(
+                sim_res.Cost_weeding_isolated
+                + sim_res.Cost_pesticide_isolated
+                + sim_res.Cost_infra_isolated
+                + sim_res.Cost_feed_isolated
+                + sim_res.Cost_fertilizer_isolated
+            ),
+            6,
         )
 
         financial_breakdown = FinancialAbsorptionBreakdown(
@@ -126,27 +138,27 @@ class VisualizationService:
             empirically_uncorrelated_isolated_shadow_costs=isolated_shadow_sum,
         )
 
-        # 5. Waterfall Series (Revenue Gabah, Revenue Bebek, Cost items, Profit)
+        # 5. Waterfall Series (Gross Grain Revenue, Gross Duck Revenue, Duckling Acquisition Cost, Pure Absorbed Net Cash)
         financial_waterfall: list[WaterfallNode] = [
             WaterfallNode(
-                label="Revenue Gabah",
-                value=round(sim_res.Revenue_gabah, 2),
-                node_type="revenue",
+                name="Gross Grain Revenue",
+                amount=round(float(sim_res.Revenue_gabah), 6),
+                type="revenue",
             ),
             WaterfallNode(
-                label="Revenue Bebek",
-                value=round(sim_res.Revenue_duck, 2),
-                node_type="revenue",
+                name="Gross Duck Revenue",
+                amount=round(float(sim_res.Revenue_duck), 6),
+                type="revenue",
             ),
             WaterfallNode(
-                label="Cost Duck Buy",
-                value=round(sim_res.Cost_duck_buy, 2),
-                node_type="cost",
+                name="Duckling Acquisition Cost",
+                amount=-round(float(sim_res.Cost_duck_buy), 6),
+                type="cost",
             ),
             WaterfallNode(
-                label="Profit Net Cash",
-                value=round(sim_res.Profit_net_cash, 2),
-                node_type="profit",
+                name="Pure Absorbed Net Cash",
+                amount=round(float(sim_res.Profit_net_cash), 6),
+                type="total",
             ),
         ]
 
@@ -154,6 +166,7 @@ class VisualizationService:
             density_curve=density_curve,
             age_vulnerability=age_vulnerability,
             financial_waterfall=financial_waterfall,
+            benchmarks=benchmarks,
         )
 
         return VisualizationResponse(
@@ -166,4 +179,5 @@ class VisualizationService:
 
 
 visualization_service = VisualizationService()
+
 
