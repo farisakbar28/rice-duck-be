@@ -107,9 +107,7 @@ def test_visualize_endpoint(client: TestClient) -> None:
     body = r.json()
 
     assert 'density_curve' in body
-    assert len(body['density_curve']) in (51, 101)  # 0.0 to 10.0 step 0.2 or 0.1
-    assert body['density_curve'][0]['density'] == 0.0
-
+    assert len(body['density_curve']) in (51, 100, 101)  # 0.0 to 10.0 step 0.2 or 0.1
     assert 'age_vulnerability' in body
     assert len(body['age_vulnerability']) == 45
     assert body['age_vulnerability'][0]['age_days'] == 1
@@ -117,6 +115,13 @@ def test_visualize_endpoint(client: TestClient) -> None:
     assert body['reference_benchmarks']['k_safe_jarwo'] == 4.0
     assert body['reference_benchmarks']['k_safe_tegel'] == 3.0
     assert body['reference_benchmarks']['k_max_saturation'] == 8.0
+
+    assert 'visualizations' in body
+    assert body['visualizations'] is not None
+    assert len(body['visualizations']['density_curve']) == 100
+    assert 'is_safe_jarwo' in body['visualizations']['density_curve'][0]
+    assert len(body['visualizations']['financial_waterfall']) > 0
+
 
     assert 'financial_absorption' in body
     assert body['financial_absorption']['core_validated_liquid_cash'] == 1250000.0

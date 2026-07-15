@@ -243,12 +243,19 @@ class DensityPoint(BaseModel):
     density: float
     jarwo_yield_factor: float
     tegel_yield_factor: float
+    is_safe_jarwo: bool = True
 
 
 class AgePoint(BaseModel):
     age_days: int
     risk_ratio: float
     survival_ceiling: float
+
+
+class WaterfallNode(BaseModel):
+    label: str
+    value: float
+    node_type: str  # "revenue", "cost", "profit"
 
 
 class ReferenceBenchmarks(BaseModel):
@@ -262,9 +269,17 @@ class FinancialAbsorptionBreakdown(BaseModel):
     empirically_uncorrelated_isolated_shadow_costs: float
 
 
+class VisualizationsObject(BaseModel):
+    density_curve: list[DensityPoint]
+    age_vulnerability: list[AgePoint]
+    financial_waterfall: list[WaterfallNode]
+
+
 class VisualizationResponse(BaseModel):
     density_curve: list[DensityPoint]
     age_vulnerability: list[AgePoint]
     reference_benchmarks: ReferenceBenchmarks
     financial_absorption: FinancialAbsorptionBreakdown
+    visualizations: VisualizationsObject
+
 
