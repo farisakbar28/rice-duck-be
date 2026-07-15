@@ -9,8 +9,10 @@ from app.schemas.dss import (
     DSSSimulationRequest,
     DSSSimulationResponse,
     HistoryListResponse,
+    VisualizationResponse,
 )
 from app.services.simulation_service import dss_service
+from app.services.visualization_service import visualization_service
 
 router = APIRouter(prefix="/dss")
 
@@ -93,3 +95,28 @@ def delete_history(
     auth: AuthContext = Depends(get_current_user),
 ) -> DeleteHistoryResponse:
     return dss_service.delete_history(history_id, auth.user.id)
+
+
+@router.post(
+    "/visualize",
+    response_model=VisualizationResponse,
+    summary="Get visualization graph series",
+    description=(
+        "Menghasilkan titik koordinat visualisasi grafik (density curve, age vulnerability, "
+        "dan financial breakdown) berdasarkan input simulasi."
+    ),
+    responses={
+        422: {
+            "model": ErrorResponse,
+            "description": "Request tidak valid.",
+        },
+    },
+)
+def visualize_dss(
+    payload: DSSSimulationRequest,
+) -> VisualizationResponse:
+    if payload.land_area_are <= 0:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Luas lahan (land_area_are) harus lebih dari 0.")
+    return visualization_service.generate_visualization_series(payload)
+

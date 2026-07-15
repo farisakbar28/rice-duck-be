@@ -93,6 +93,36 @@ def test_inpari_d_panen_gabah_134(client: TestClient) -> None:
     assert r.json()['D_panen_gabah'] == '2026-05-15'
 
 
+def test_visualize_endpoint(client: TestClient) -> None:
+    payload = {
+        'duck_count': 50,
+        'land_area_are': 10,
+        'planting_date': '2026-01-01',
+        'rice_variety': 'sertani',
+        'planting_system': 'jajar_legowo',
+        'duck_age_days': 14,
+    }
+    r = client.post('/api/v1/dss/visualize', json=payload)
+    assert r.status_code == 200, r.text
+    body = r.json()
+
+    assert 'density_curve' in body
+    assert len(body['density_curve']) == 51  # 0.0 to 10.0 step 0.2
+    assert body['density_curve'][0]['density'] == 0.0
+
+    assert 'age_vulnerability' in body
+    assert len(body['age_vulnerability']) == 45
+    assert body['age_vulnerability'][0]['age_days'] == 1
+
+    assert body['reference_benchmarks']['k_safe_jarwo'] == 4.0
+    assert body['reference_benchmarks']['k_safe_tegel'] == 3.0
+    assert body['reference_benchmarks']['k_max_saturation'] == 8.0
+
+    assert 'financial_absorption' in body
+    assert body['financial_absorption']['core_validated_liquid_cash'] == 1250000.0
+
+
+
 # ---------------------------------------------------------------------------
 # 4. Deprecation — f_yield and hst_masuk still present and synced
 # ---------------------------------------------------------------------------

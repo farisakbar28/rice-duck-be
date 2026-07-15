@@ -232,3 +232,39 @@ class HistoryDetailResponse(BaseModel):
 
 class DeleteHistoryResponse(BaseModel):
     message: str
+
+
+# -----------------------------------------------------------------------------
+# Visualization — Graph Data Contracts
+# -----------------------------------------------------------------------------
+
+
+class DensityPoint(BaseModel):
+    density: float
+    jarwo_yield_factor: float
+    tegel_yield_factor: float
+
+
+class AgePoint(BaseModel):
+    age_days: int
+    risk_ratio: float
+    survival_ceiling: float
+
+
+class ReferenceBenchmarks(BaseModel):
+    k_safe_jarwo: float = 4.0
+    k_safe_tegel: float = 3.0
+    k_max_saturation: float = 8.0
+
+
+class FinancialAbsorptionBreakdown(BaseModel):
+    core_validated_liquid_cash: float
+    empirically_uncorrelated_isolated_shadow_costs: float
+
+
+class VisualizationResponse(BaseModel):
+    density_curve: list[DensityPoint]
+    age_vulnerability: list[AgePoint]
+    reference_benchmarks: ReferenceBenchmarks
+    financial_absorption: FinancialAbsorptionBreakdown
+
