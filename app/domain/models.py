@@ -179,7 +179,7 @@ class SimulationHistory:
     total_revenue: float
     # Cost detail (Core + Isolated groups per SoT Bagian 5)
     cost_duck_buy: float
-    cost_feed: float
+    cost_feed_isolated: float
     cost_weeding_isolated: float
     cost_pesticide_isolated: float
     cost_infra_isolated: float
@@ -192,8 +192,6 @@ class SimulationHistory:
     cost_total_cash: float
     # Profit
     profit_net_cash: float
-    valuation_weed_eco: float
-    profit_net_full: float
     created_at: datetime
 
 

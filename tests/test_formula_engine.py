@@ -6,6 +6,7 @@ These tests cover the SoT-aligned core (Tabel 2.2 in
 
 import math
 from datetime import date
+from decimal import Decimal
 
 import pytest
 
@@ -18,7 +19,6 @@ from app.engines.formula_engine import (
 )
 from app.engines.impact_engine import (
     K_WEED_HIRE_RP_PER_ARE,
-    compute_ecology_weed,
     compute_feed_costs,
     compute_infrastructure_breakdown,
     compute_labor_breakdown,
@@ -34,21 +34,21 @@ from app.engines.impact_engine import (
 
 def test_age_below_14_high_risk() -> None:
     out = compute_duck_age_status(10)
-    assert out['R_age'] == 0.35
+    assert out['R_age'] == Decimal("0.35")
     assert 'WARNING' in out['age_status']
 
 
 def test_age_14_to_29_safe_range() -> None:
     out = compute_duck_age_status(14)
-    assert out['R_age'] == 0.15
+    assert out['R_age'] == Decimal("0.15")
     assert out['age_status'] == 'AGE_BUY_RANGE'
     out29 = compute_duck_age_status(29)
-    assert out29['R_age'] == 0.15
+    assert out29['R_age'] == Decimal("0.15")
 
 
 def test_age_above_29_warning() -> None:
     out = compute_duck_age_status(30)
-    assert out['R_age'] == 0.05
+    assert out['R_age'] == Decimal("0.05")
     assert 'ADAPTED_FULLY' in out['age_status']
 
 
@@ -60,29 +60,29 @@ def test_age_above_29_warning() -> None:
 def test_density_safe_zone() -> None:
     # Jarwo K_safe=4, d=3 → safe
     out = compute_density(30, 10, 4.0)
-    assert out["d"] == 3.0
-    assert out["P_over"] == 0
-    assert out["P_under"] == 0
+    assert out["d"] == Decimal("3.0")
+    assert out["P_over"] == Decimal("0")
+    assert out["P_under"] == Decimal("0")
     assert out["density_status"] == "SAFE"
 
 
 def test_density_above_k_safe_overdensity() -> None:
     # Jarwo K_safe=4, d=6 → (6-4)/(8-4)=0.5
     out = compute_density(60, 10, 4.0)
-    assert out["P_over"] == pytest.approx(0.5)
-    assert out["P_under"] == 0
+    assert out["P_over"] == Decimal("0.5")
+    assert out["P_under"] == Decimal("0")
     assert out["density_status"] == "WARNING_DENSITY"
 
 
 def test_density_underdensity() -> None:
     out = compute_density(10, 10, 4.0)
-    assert out["P_under"] == pytest.approx(0.5)
+    assert out["P_under"] == Decimal("0.5")
     assert out["density_status"] == "WARNING_UNDER_DENSITY"
 
 
 def test_density_over_capped_at_1() -> None:
     out = compute_density(100, 1, 3.0)
-    assert out["P_over"] == 1.0
+    assert out["P_over"] == Decimal("1")
 
 
 # ===========================================================================
@@ -94,14 +94,14 @@ def test_lambda_eff_safe() -> None:
     # U=14 → r_age=0.15, d=5 → p_over=0.25
     # 0.78125 * (1 - 0.5*0.15) * (1 - 0.45*0.25) = 0.67*0.925*0.8875 = 0.5502...
     n = compute_surviving_ducks(50, 0.15, 0.25)
-    expected = 50 * 0.78125 * 0.925 * 0.8875
-    assert n == pytest.approx(expected)
+    expected = Decimal("50") * Decimal("0.78125") * Decimal("0.925") * Decimal("0.8875")
+    assert abs(float(n) - float(expected)) < 1e-6
 
 
 def test_lambda_eff_zero_p_over() -> None:
     n = compute_surviving_ducks(50, 0.15, 0.0)
-    expected = 50 * 0.78125 * 0.925 * 1.0
-    assert n == pytest.approx(expected)
+    expected = Decimal("50") * Decimal("0.78125") * Decimal("0.925") * Decimal("1.0")
+    assert abs(float(n) - float(expected)) < 1e-6
 
 
 def test_n_survive_output_uses_floor_not_round_or_int_truncation() -> None:
@@ -110,9 +110,8 @@ def test_n_survive_output_uses_floor_not_round_or_int_truncation() -> None:
     from app.services.simulation_service import DSSService
 
     raw_n_survive = compute_surviving_ducks(50, 0.15, 0.25)
-    assert raw_n_survive == pytest.approx(32.06787109375)
-    assert math.floor(raw_n_survive) == 32
-    assert round(raw_n_survive) == 32
+    assert abs(float(raw_n_survive) - 32.06787109375) < 1e-6
+    assert int(raw_n_survive) == 32
 
     response = DSSService().simulate(
         DSSSimulationRequest(
@@ -128,37 +127,90 @@ def test_n_survive_output_uses_floor_not_round_or_int_truncation() -> None:
 
 
 # ===========================================================================
-# 4. Yield Engine (Tabel 2.2) — TEGEL MUST BE 0.95, NOT 1.39
+# 4. Yield Engine (Tabel 2.2) — New bio-density formula
 # ===========================================================================
+
+Y0 = Decimal("47.8767507")
+ALPHA_BIO = Decimal("0.15")
+K_OPT = Decimal("4.0")
+BETA_TRAMP = Decimal("0.25")
+K_MAX = Decimal("8.0")
+
+
+def _f_density_bio(d: Decimal) -> Decimal:
+    boost = ALPHA_BIO * (Decimal("1") - (Decimal("1") - (-d / K_OPT).exp()))
+    # The engines use internal Taylor series for exp; the test mirror uses
+    # Python's built-in Decimal.exp() which is exact to the current precision.
+    # Re-derive directly with Decimal.exp():
+    boost = ALPHA_BIO * (Decimal("1") - (-d / K_OPT).exp())
+    trampling = BETA_TRAMP * (max(Decimal("0"), (d - K_MAX) / K_MAX) ** Decimal("2"))
+    return Decimal("1") + boost - trampling
+
+
+def _f_age(r_age: Decimal) -> Decimal:
+    return Decimal("1") - Decimal("0.08") * r_age
 
 
 def test_yield_jarwo_safe() -> None:
-    # F_sys=1.00, p_under=0, p_over=0, r_age=0.15
-    y = compute_yield_components(0.0, 0.0, 0.15, 1.00, 0.8)
-    # 47.8767507 * 1 * (1-0.08*0.15) * 1 * 0.8
-    expected = 47.8767507 * 1.0 * 0.988 * 0.8
-    assert y == pytest.approx(expected, rel=1e-4)
+    # Safe density d=3.0 (between 2 and K_safe=4), r_age=0.15, F_sys=1.0, f_var=1.0
+    d = Decimal("3.0")
+    r_age = Decimal("0.15")
+    F_sys = Decimal("1.0")
+    f_var = Decimal("1.0")
+    expected = Y0 * _f_density_bio(d) * _f_age(r_age) * F_sys * f_var
+    y = compute_yield_components(3.0, 0.15, 1.0, 1.0)
+    assert abs(float(y) - float(expected)) < 1e-4
 
 
 def test_yield_tegel_higher_than_jarwo() -> None:
-    y_jarwo = compute_yield_components(0.0, 0.0, 0.15, 1.00, 0.8)
-    y_tegel = compute_yield_components(0.0, 0.0, 0.15, 1.211, 0.8)
+    d = Decimal("3.0")
+    r_age = Decimal("0.15")
+    f_var = Decimal("1.0")
+    y_jarwo = compute_yield_components(3.0, 0.15, 1.0, 1.0)
+    y_tegel = compute_yield_components(3.0, 0.15, 1.211, 1.0)
     assert y_tegel > y_jarwo
-    assert y_tegel == pytest.approx(y_jarwo * 1.211, rel=1e-4)
+    expected_ratio = Decimal("1.211")
+    assert abs(float(y_tegel) - float(y_jarwo * expected_ratio)) < 1e-3
 
 
-def test_yield_density_penalty() -> None:
-    # p_under=0.5 → 1-0.12*0.5 = 0.94
-    y = compute_yield_components(0.5, 0.0, 0.0, 1.0, 0.8)
-    expected = 47.8767507 * 0.94 * 0.8
-    assert y == pytest.approx(expected, rel=1e-4)
+def test_yield_density_bio_boost_at_k_opt() -> None:
+    # At d = K_OPT = 4.0, boost = alpha * (1 - exp(-1))
+    d = Decimal("4.0")
+    r_age = Decimal("0.0")
+    F_sys = Decimal("1.0")
+    f_var = Decimal("1.0")
+    expected_boost = ALPHA_BIO * (Decimal("1") - (-d / K_OPT).exp())
+    expected_f_density = Decimal("1") + expected_boost
+    y = compute_yield_components(4.0, 0.0, 1.0, 1.0)
+    expected = Y0 * expected_f_density * _f_age(r_age) * F_sys * f_var
+    assert abs(float(y) - float(expected)) < 1e-4
 
 
-def test_yield_overdensity_penalty() -> None:
-    # p_over=0.5 → 1-0.25*0.5 = 0.875
-    y = compute_yield_components(0.0, 0.5, 0.0, 1.0, 0.8)
-    expected = 47.8767507 * 0.875 * 0.8
-    assert y == pytest.approx(expected, rel=1e-4)
+def test_yield_trampling_penalty_above_k_max() -> None:
+    # d = 12 > K_MAX = 8, penalty applies
+    d = Decimal("12.0")
+    r_age = Decimal("0.0")
+    F_sys = Decimal("1.0")
+    f_var = Decimal("1.0")
+    trampling = BETA_TRAMP * ((d - K_MAX) / K_MAX) ** Decimal("2")
+    expected_f_density = (
+        Decimal("1") + ALPHA_BIO * (Decimal("1") - (-d / K_OPT).exp()) - trampling
+    )
+    y = compute_yield_components(12.0, 0.0, 1.0, 1.0)
+    expected = Y0 * expected_f_density * _f_age(r_age) * F_sys * f_var
+    assert abs(float(y) - float(expected)) < 1e-4
+
+
+def test_yield_no_trampling_at_k_max() -> None:
+    # d = 8 == K_MAX, trampling term zero
+    d = Decimal("8.0")
+    r_age = Decimal("0.0")
+    F_sys = Decimal("1.0")
+    f_var = Decimal("1.0")
+    expected_f_density = Decimal("1") + ALPHA_BIO * (Decimal("1") - (-d / K_OPT).exp())
+    y = compute_yield_components(8.0, 0.0, 1.0, 1.0)
+    expected = Y0 * expected_f_density * _f_age(r_age) * F_sys * f_var
+    assert abs(float(y) - float(expected)) < 1e-4
 
 
 # ===========================================================================
@@ -190,11 +242,13 @@ def test_calendar_d_panen_inpari_134() -> None:
 
 
 def test_feed_unchanged_scale() -> None:
-    # SoT example: 50 ducks, p_over=0.25, r_age=0.15 → 315625
+    # SoT example: 50 ducks, p_over=0.25, r_age=0.15 → 284062.5
     c = compute_feed_costs(50, 0.25, 0.15)
-    expected = 50 * 4500 * (1 + 0.75 * 0.25 + 0.50 * 0.15)
-    assert c == pytest.approx(expected, rel=1e-4)
-    assert c == pytest.approx(284062.5, rel=1e-4)
+    expected = Decimal("50") * Decimal("4500") * (
+        Decimal("1") + Decimal("0.75") * Decimal("0.25") + Decimal("0.50") * Decimal("0.15")
+    )
+    assert abs(float(c) - float(expected)) < 1e-2
+    assert abs(float(c) - 284062.5) < 1e-2
 
 
 # ===========================================================================
@@ -204,19 +258,21 @@ def test_feed_unchanged_scale() -> None:
 
 def test_labor_breakdown_sot_example() -> None:
     lab = compute_labor_breakdown(10, 0.25, 0.15, 5.0)
-    expected = 26178.0 * 10 * (1 - (0.93 * (1 - math.exp(-0.35 * 5.0))))
-    assert lab['Cost_labor_weeding'] == pytest.approx(expected, rel=1e-3) # new total
+    # R_weed(5) = 0.93 * (1 - exp(-0.35*5)) using Decimal exp
+    r_weed = Decimal("0.93") * (Decimal("1") - (Decimal("-0.35") * Decimal("5")).exp())
+    expected = Decimal("26178.0") * Decimal("10") * (Decimal("1") - r_weed)
+    assert abs(float(lab['Cost_labor_weeding']) - float(expected)) < 1e-2
 
 
 def test_weed_reduction_formula() -> None:
     # R_weed(5) = 0.93 * (1 - exp(-1.75))
     r = compute_weed_reduction(5.0)
-    expected = 0.93 * (1.0 - math.exp(-1.75))
-    assert r == pytest.approx(expected, rel=1e-6)
+    expected = Decimal("0.93") * (Decimal("1") - (Decimal("-0.35") * Decimal("5")).exp())
+    assert abs(float(r) - float(expected)) < 1e-6
 
 
 def test_weed_hired_constant() -> None:
-    assert K_WEED_HIRE_RP_PER_ARE == 26178.0
+    assert K_WEED_HIRE_RP_PER_ARE == Decimal("26178.0")
 
 
 # ===========================================================================
@@ -226,29 +282,20 @@ def test_weed_hired_constant() -> None:
 
 def test_infra_no_floor_jarwo() -> None:
     inf = compute_infrastructure_breakdown(50, 10)
-    expected_net = 0.5 * 289260.0 * math.sqrt(10)
-    expected_cage = 175000.0
-    assert inf['Cost_infra_net'] == pytest.approx(expected_net)
-    assert inf['Cost_infra_cage'] == pytest.approx(expected_cage)
-    assert inf['Cost_infra'] == pytest.approx(expected_net + expected_cage)
+    # Decimal sqrt of 10 via Python's built-in Decimal.sqrt()
+    expected_net = Decimal("0.5") * Decimal("289260.0") * Decimal("10").sqrt()
+    expected_cage = Decimal("175000.0")
+    assert abs(float(inf['Cost_infra_net']) - float(expected_net)) < 1e-2
+    assert abs(float(inf['Cost_infra_cage']) - float(expected_cage)) < 1e-2
+    assert abs(float(inf['Cost_infra']) - float(expected_net + expected_cage)) < 1e-2
 
 
 def test_infra_floor_zero_raw_split_50_50() -> None:
     inf = compute_infrastructure_breakdown(0, 0)
-    assert inf['Cost_infra'] == pytest.approx(175000.0)
+    assert inf['Cost_infra'] == Decimal("175000.0")
 
 
-# ===========================================================================
-# 9. Ecology Engine (Fase 3) — basis must be Cost_labor_base
-# ===========================================================================
 
-
-def test_valuation_weed_eco_basis() -> None:
-    d = 5.0
-    p_over = 0.25
-    expected = (13500.0 * 10) * compute_weed_reduction(d) * (1.0 - 0.25 * p_over)
-    v = compute_ecology_weed(10, d, p_over)
-    assert v == pytest.approx(expected, rel=1e-4)
 
 
 # ===========================================================================

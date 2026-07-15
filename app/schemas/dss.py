@@ -148,7 +148,7 @@ class DSSSimulationResponse(BaseModel):
 
     # Komponen biaya detail (Cost) — Fase 2 additive breakdown
     Cost_duck_buy: float
-    Cost_feed: float
+    Cost_feed_isolated: float
     Cost_weeding_isolated: float
     Cost_pesticide_isolated: float
     Cost_infra_isolated: float
@@ -158,13 +158,12 @@ class DSSSimulationResponse(BaseModel):
     Cost_fert_urea_isolated: float
     Cost_fert_phonska_isolated: float
     Cost_fert_kcl_isolated: float
+    # Core
     Cost_total_cash: float
 
     # Profit
     Profit_net_cash: float
-    Valuation_weed_eco: float
-    Profit_net_full: float
-
+    # Valuation_weed_eco and Profit_net_full removed per SoT
     # Fase 4 — additive deprecation marker (not a value field).
     # New canonical yield factor name; equals ``planting_systems[].F_sys`` at request time.
     F_sys: float
@@ -216,7 +215,7 @@ class HistoryDetailResponse(BaseModel):
     total_revenue: float
     # Cost detail
     cost_duck_buy: float
-    cost_feed: float
+    cost_feed_isolated: float
     cost_weeding_isolated: float
     cost_pesticide_isolated: float
     cost_infra_isolated: float
@@ -229,8 +228,6 @@ class HistoryDetailResponse(BaseModel):
     cost_total_cash: float
     # Profit
     profit_net_cash: float
-    valuation_weed_eco: float
-    profit_net_full: float
 
 
 class DeleteHistoryResponse(BaseModel):

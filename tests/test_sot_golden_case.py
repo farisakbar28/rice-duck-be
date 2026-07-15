@@ -28,13 +28,13 @@ def test_golden_full_response_matches_sot_tabel_2_3(client: TestClient) -> None:
         'D_tarik_bebek': '2026-03-07',
         'D_panen_gabah': '2026-04-25',
         'N_survive': 32.0,
-        'Yield_are_predict': 35.47,
-        'Yield_total_predict': 354.7,
-        'Revenue_gabah': 2128200.0,
+        'Yield_are_predict': 52.36,
+        'Yield_total_predict': 523.6,
+        'Revenue_gabah': 3141883.01,
         'Revenue_duck': 1120000.0,
-        'Total_Revenue': 3248200.0,
+        'Total_Revenue': 4261883.01,
         'Cost_duck_buy': 1250000.0,
-        'Cost_feed': 284062.5,
+        'Cost_feed_isolated': 284062.5,
         'Cost_weeding_isolated': 60630.8,
         'Cost_pesticide_isolated': 7238.06,
         'Cost_infra_isolated': 632360.22,
@@ -45,9 +45,7 @@ def test_golden_full_response_matches_sot_tabel_2_3(client: TestClient) -> None:
         'Cost_fert_phonska_isolated': 88479.87,
         'Cost_fert_kcl_isolated': 0.0,
         'Cost_total_cash': 1250000.0,
-        'Profit_net_cash': 1998200.0,
-        'Valuation_weed_eco': 97249.39,
-        'Profit_net_full': 2095449.39,
+        'Profit_net_cash': 3011883.01,
         'F_sys': 1.0
     }
     assert body == expected
@@ -66,4 +64,3 @@ def test_golden_invariants_hold(client: TestClient) -> None:
     assert body['Cost_fert_urea_isolated'] + body['Cost_fert_phonska_isolated'] + body['Cost_fert_kcl_isolated'] == pytest.approx(body['Cost_fertilizer_isolated'], abs=RP1)
     assert body['Revenue_gabah'] + body['Revenue_duck'] == pytest.approx(body['Total_Revenue'], abs=RP1)
     assert body['Total_Revenue'] - body['Cost_total_cash'] == pytest.approx(body['Profit_net_cash'], abs=RP1)
-    assert body['Profit_net_cash'] + body['Valuation_weed_eco'] == pytest.approx(body['Profit_net_full'], abs=RP1)

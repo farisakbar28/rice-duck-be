@@ -39,9 +39,9 @@ def test_sot_example_jarwo(client: TestClient) -> None:
     assert body['D_tarik_bebek'] == '2026-03-07'
     assert body['D_panen_gabah'] == '2026-04-25'
 
-    assert body['Yield_are_predict'] == 35.47
+    assert body['Yield_are_predict'] == 52.36
     assert body['Cost_total_cash'] == 1250000.0
-    assert body['Cost_feed'] == 284062.5
+    assert body['Cost_feed_isolated'] == 284062.5
     assert body['Cost_weeding_isolated'] == 60630.8
     assert body['F_sys'] == 1.0
 
@@ -160,7 +160,7 @@ def test_dss_simulate_response_has_no_optimizer_fields(client: TestClient) -> No
 
 
 def test_cost_feed_invariant(client: TestClient) -> None:
-    """Feed cost formula must produce exactly 315625 for SoT example."""
+    """Feed cost formula must produce exactly 284062.5 for SoT example."""
     payload = {
         "duck_count": 50,
         "land_area_are": 10,
@@ -171,7 +171,7 @@ def test_cost_feed_invariant(client: TestClient) -> None:
     }
     r = client.post("/api/v1/dss/simulate", json=payload)
     assert r.status_code == 200
-    assert r.json()['Cost_feed'] == pytest.approx(284062.5)
+    assert r.json()['Cost_feed_isolated'] == pytest.approx(284062.5)
 
 
 # ---------------------------------------------------------------------------
@@ -194,32 +194,4 @@ def test_cost_infra_total_matches_legacy_formula(client: TestClient) -> None:
     assert r.json()['Cost_infra_isolated'] == pytest.approx(632360.22, rel=1e-3)
 
 
-# ---------------------------------------------------------------------------
-# 8. Fase 3 regression: V_weed_eco unchanged by adding C_weed_hired
-# ---------------------------------------------------------------------------
 
-
-def test_valuation_weed_eco_independent_of_weed_hired(client: TestClient) -> None:
-    """If V_weed_eco basis were Cost_labor_total (wrong), it would change
-    when weed_hired varies. SoT basis = Cost_labor_base murni, which is
-    independent of the extra weed_hired component.
-    """
-    base = {
-        "land_area_are": 10,
-        "planting_date": "2026-01-01",
-        "rice_variety": "sertani",
-        "planting_system": "jajar_legowo",
-        "duck_age_days": 14,
-    }
-    r1 = client.post(
-        "/api/v1/dss/simulate", json={**base, "duck_count": 50}
-    )
-    r2 = client.post(
-        "/api/v1/dss/simulate", json={**base, "duck_count": 100}
-    )
-    # This endpoint-level test keeps the assertion lightweight; the exact basis
-    # behaviour is covered in the formula-engine unit tests.
-    # That's already tested in test_formula_engine.test_valuation_weed_eco_basis.
-    # Here we just assert the response contains the field and it's positive.
-    assert r1.json()["Valuation_weed_eco"] > 0
-    assert r2.json()["Valuation_weed_eco"] > 0

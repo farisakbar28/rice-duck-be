@@ -1,4 +1,4 @@
-﻿"""DSS simulation service.
+"""DSS simulation service.
 
 Orchestrates the SoT engines (see docs/Model_Matematika_..._FINAL.docx) in the
 order mandated by the model document:
@@ -10,16 +10,19 @@ order mandated by the model document:
   5. Yield Engine
   6. Material Engine
   7. Cost Engine (split into Core + Isolated groups)
-  8. Ecology Engine
 
 Group separation per SoT Bagian 5:
 - Core Validated Output: Cost_duck_buy, Cost_total_cash, Profit_net_cash,
-  Profit_net_full, plus revenue/calendar/yield values.
+  plus revenue/calendar/yield values.
 - Empirically Uncorrelated Isolated Output: Cost_*_isolated fields. These
   components are FULLY EXCLUDED from Cost_total_cash and Profit_net_cash.
+
+Numerical precision: all engine computations use ``decimal.Decimal`` with
+precision 50. No mid-calculation rounding is performed. Conversion to native
+``float`` happens only at the DTO serialisation boundary.
 """
 
-import math
+from decimal import Decimal, ROUND_FLOOR
 
 from app.core.exceptions import InvalidReferenceError, ResourceNotFoundError
 from app.domain.models import DSSConstants, PlantingSystem, RiceVariety
@@ -31,7 +34,6 @@ from app.engines.formula_engine import (
     compute_yield_components,
 )
 from app.engines.impact_engine import (
-    compute_ecology_weed,
     compute_feed_costs,
     compute_infrastructure_breakdown,
     compute_labor_breakdown,
@@ -50,18 +52,25 @@ from app.schemas.dss import (
 )
 
 
-# SoT 4.6: literature-anchored baseline nutrient needs per are.
+# [local-calculated] SoT 4.6: literature-anchored baseline nutrient needs per are.
 # N_need = 1,1761; P_need = 0,2745; K_need = 0,2745 (satuan hara oksida per are).
-N_NEED_PER_ARE = 1.1761
-P_NEED_PER_ARE = 0.2745
-K_NEED_PER_ARE = 0.2745
+N_NEED_PER_ARE = Decimal("1.1761")
+P_NEED_PER_ARE = Decimal("0.2745")
+K_NEED_PER_ARE = Decimal("0.2745")
 
-# SoT 4.5 / Tabel 1: Local-validated market price points.
-P_GABAH_PER_KG = 6000.0
-P_DUCK_SELL_PER_DUCK = 35000.0
+# [local-validated] SoT 4.5 / Tabel 1: Local-validated market price points.
+P_GABAH_PER_KG = Decimal("6000.0")
+P_DUCK_SELL_PER_DUCK = Decimal("35000.0")
 
-# SoT 4.7: default p_duck_buy lower-bound per Tabel 1.
-P_DUCK_BUY_DEFAULT = 25000.0
+# [local-estimate] SoT 4.7: default p_duck_buy lower-bound per Tabel 1.
+P_DUCK_BUY_DEFAULT = Decimal("25000.0")
+
+
+def _d(value) -> Decimal:
+    """Coerce value to Decimal for safe arithmetic in service layer."""
+    if isinstance(value, Decimal):
+        return value
+    return Decimal(str(value))
 
 
 class DSSService:
@@ -152,21 +161,25 @@ class DSSService:
 
         # 4. Survival Engine (SoT 4.4)
         n_survive_raw = compute_surviving_ducks(payload.duck_count, r_age, p_over)
-        n_survive = math.floor(n_survive_raw)
+        # [system-design] Floor operation is part of SoT math, not display rounding.
+        n_survive = int(n_survive_raw.to_integral_value(rounding=ROUND_FLOOR))
+        duck_count_d = _d(payload.duck_count)
         lambda_eff = (
-            n_survive_raw / payload.duck_count if payload.duck_count > 0 else 0.0
+            n_survive_raw / duck_count_d if duck_count_d > 0 else Decimal("0")
         )
 
         # 5. Yield Engine (SoT 4.5)
+        # [system-design] F_density_bio with exponential saturation + quadratic trampling.
         yield_are_predict = compute_yield_components(
-            p_under, p_over, r_age, planting_system.F_sys
+            density["d"], r_age, planting_system.F_sys
         )
-        yield_total_predict = yield_are_predict * payload.land_area_are
+        land_area_d = _d(payload.land_area_are)
+        yield_total_predict = yield_are_predict * land_area_d
 
         # 6. Material Engine (SoT 4.6)
-        n_need_total = N_NEED_PER_ARE * payload.land_area_are
-        p_need_total = P_NEED_PER_ARE * payload.land_area_are
-        k_need_total = K_NEED_PER_ARE * payload.land_area_are
+        n_need_total = N_NEED_PER_ARE * land_area_d
+        p_need_total = P_NEED_PER_ARE * land_area_d
+        k_need_total = K_NEED_PER_ARE * land_area_d
 
         nutrients = compute_soil_nutrients(
             duck_count=payload.duck_count,
@@ -179,47 +192,45 @@ class DSSService:
         )
 
         # 7. Cost Engine (SoT 4.7 + 5.2)
-        # Core group: C_duck_buy = J * p_duck_buy.
-        cost_duck_buy = payload.duck_count * (
-            payload.duck_buy_price_rp_per_duck or P_DUCK_BUY_DEFAULT
+        # [local-estimate] Core group: C_duck_buy = J * p_duck_buy.
+        duck_buy_price = _d(
+            payload.duck_buy_price_rp_per_duck
+            if payload.duck_buy_price_rp_per_duck is not None
+            else P_DUCK_BUY_DEFAULT
         )
+        cost_duck_buy = duck_count_d * duck_buy_price
 
-        # Isolated group (Empirically Uncorrelated, Bagian 5.2):
+        # [empirically-uncorrelated] Isolated group (Bagian 5.2):
         # weeding, pesticide, infrastructure, fertilizer, feed.
         labor = compute_labor_breakdown(
-            payload.land_area_are,
+            land_area_d,
             p_over,
             r_age,
             density["d"],
         )
-        cost_pesticide = compute_pesticide_cost(
-            payload.land_area_are, density["d"]
-        )
+        cost_pesticide = compute_pesticide_cost(land_area_d, density["d"])
         infra = compute_infrastructure_breakdown(
             payload.duck_count, payload.land_area_are
         )
         cost_feed = compute_feed_costs(payload.duck_count, p_over, r_age)
 
-        # 8. Ecology Engine (SoT 4.8)
-        valuation_weed_eco = compute_ecology_weed(
-            payload.land_area_are, density["d"], p_over
-        )
+        # Ecology Engine removed per SoT - no valuation_weed_eco or profit_net_full
 
-        # SoT 5.1: Core Validated Output
+        # [soT-precise] Core Validated Output
         # Cost_total_cash = Cost_duck_buy (murni terdiri dari pengadaan bibit
-        # unggas — komponen pakan diisolasi penuh ke modul cadangan).
+        # unggas - komponen pakan diisolasi penuh ke modul cadangan).
         cost_total_cash = cost_duck_buy
 
         n_survive_display = float(n_survive)
-        yield_are_display = math.floor(yield_are_predict * 100.0) / 100.0
-        yield_total_display = round(yield_are_display * payload.land_area_are, 1)
+        # [soT-precise] No mid-calculation rounding. Use raw Decimal values.
+        # Display rounding applied only at DTO serialisation below.
+        yield_total_predict_raw = yield_total_predict
 
-        revenue_gabah = yield_total_display * P_GABAH_PER_KG
-        revenue_duck = n_survive_display * P_DUCK_SELL_PER_DUCK
-        total_revenue = revenue_gabah + revenue_duck
+        revenue_gabah = yield_total_predict_raw * P_GABAH_PER_KG
+        revenue_duck = n_survive_display * float(P_DUCK_SELL_PER_DUCK)
+        total_revenue = revenue_gabah + _d(revenue_duck)
 
         profit_net_cash = total_revenue - cost_total_cash
-        profit_net_full = profit_net_cash + valuation_weed_eco
 
         return DSSSimulationResponse(
             density_status=density_status,
@@ -228,29 +239,27 @@ class DSSService:
             D_tarik_bebek=d_tarik_bebek,
             D_panen_gabah=d_panen_gabah,
             N_survive=n_survive_display,
-            Yield_are_predict=yield_are_display,
-            Yield_total_predict=yield_total_display,
-            Revenue_gabah=round(revenue_gabah, 2),
-            Revenue_duck=round(revenue_duck, 2),
-            Total_Revenue=round(total_revenue, 2),
+            Yield_are_predict=float(round(yield_are_predict, 2)),
+            Yield_total_predict=float(round(yield_total_predict_raw, 1)),
+            Revenue_gabah=float(round(revenue_gabah, 2)),
+            Revenue_duck=float(round(revenue_duck, 2)),
+            Total_Revenue=float(round(total_revenue, 2)),
             # Core
-            Cost_duck_buy=round(cost_duck_buy, 2),
-            Cost_feed=round(cost_feed, 2),
-            Cost_total_cash=round(cost_total_cash, 2),
+            Cost_duck_buy=float(round(cost_duck_buy, 2)),
+            Cost_feed_isolated=float(round(cost_feed, 2)),
+            Cost_total_cash=float(round(cost_total_cash, 2)),
             # Isolated (Bagian 5.2) - fully separated from core cash flow
-            Cost_weeding_isolated=round(labor["Cost_labor_weeding"], 2),
-            Cost_pesticide_isolated=round(cost_pesticide, 2),
-            Cost_infra_net_isolated=round(infra["Cost_infra_net"], 2),
-            Cost_infra_cage_isolated=round(infra["Cost_infra_cage"], 2),
-            Cost_infra_isolated=round(infra["Cost_infra"], 2),
-            Cost_fert_urea_isolated=round(nutrients["Cost_fert_urea"], 2),
-            Cost_fert_phonska_isolated=round(nutrients["Cost_fert_phonska"], 2),
-            Cost_fert_kcl_isolated=round(nutrients["Cost_fert_kcl"], 2),
-            Cost_fertilizer_isolated=round(nutrients["Cost_fertilizer_total"], 2),
+            Cost_weeding_isolated=float(round(labor["Cost_labor_weeding"], 2)),
+            Cost_pesticide_isolated=float(round(cost_pesticide, 2)),
+            Cost_infra_net_isolated=float(round(infra["Cost_infra_net"], 2)),
+            Cost_infra_cage_isolated=float(round(infra["Cost_infra_cage"], 2)),
+            Cost_infra_isolated=float(round(infra["Cost_infra"], 2)),
+            Cost_fert_urea_isolated=float(round(nutrients["Cost_fert_urea"], 2)),
+            Cost_fert_phonska_isolated=float(round(nutrients["Cost_fert_phonska"], 2)),
+            Cost_fert_kcl_isolated=float(round(nutrients["Cost_fert_kcl"], 2)),
+            Cost_fertilizer_isolated=float(round(nutrients["Cost_fertilizer_total"], 2)),
             # Profit
-            Profit_net_cash=round(profit_net_cash, 2),
-            Valuation_weed_eco=round(valuation_weed_eco, 2),
-            Profit_net_full=round(profit_net_full, 2),
+            Profit_net_cash=float(round(profit_net_cash, 2)),
             # Yield factor marker (Fase 4)
             F_sys=planting_system.F_sys,
         )

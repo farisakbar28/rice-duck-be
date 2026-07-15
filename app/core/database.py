@@ -30,7 +30,7 @@ HISTORY_V2_COLUMNS = (
     "total_revenue REAL NOT NULL DEFAULT 0",
     # Cost detail (Core + Isolated groups)
     "cost_duck_buy REAL NOT NULL DEFAULT 0",
-    "cost_feed REAL NOT NULL DEFAULT 0",
+    "cost_feed_isolated REAL NOT NULL DEFAULT 0",
     "cost_weeding_isolated REAL NOT NULL DEFAULT 0",
     "cost_pesticide_isolated REAL NOT NULL DEFAULT 0",
     "cost_infra_isolated REAL NOT NULL DEFAULT 0",
@@ -43,8 +43,6 @@ HISTORY_V2_COLUMNS = (
     "cost_total_cash REAL NOT NULL DEFAULT 0",
     # Profit
     "profit_net_cash REAL NOT NULL DEFAULT 0",
-    "valuation_weed_eco REAL NOT NULL DEFAULT 0",
-    "profit_net_full REAL NOT NULL DEFAULT 0",
 )
 
 

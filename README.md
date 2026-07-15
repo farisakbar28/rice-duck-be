@@ -6,13 +6,13 @@ Backend **FastAPI** untuk kalkulator Decision Support System (DSS) padi-bebek. M
 
 Source-of-truth aktif dan tunggal:
 
-[`docs/Model Matematika Data Collection DSS Padi Bebek FINAL.docx`](docs/Model Matematika Data Collection DSS Padi Bebek FINAL.docx)
+[`docs/Model Matematika Data Collection DSS Padi Bebek FINAL.md`](docs/Model Matematika Data Collection DSS Padi Bebek FINAL.md)
 
-Semua dokumen model lama atau versi "FINAL_BANGET" telah usang dan digantikan oleh DOCX SoT terbaru di atas. Logika runtime DSS Core mutlak mengikuti file DOCX ini.
+Semua dokumen model lama atau versi "FINAL_BANGET" telah usang dan digantikan oleh SoT terbaru di atas. Logika runtime DSS Core mutlak mengikuti file SoT ini.
 
 ## Scope Sistem
 
-- **DSS Core**: `POST /api/v1/dss/simulate`, mematuhi struktur output (Core vs Isolated) dari Tabel 3 dan 4 DOCX SoT, serta parameter-parameter konstan dari Bab 4 dan jurnal pelengkap.
+- **DSS Core**: `POST /api/v1/dss/simulate`, mematuhi struktur output (Core vs Isolated) dari SoT Bagian 5, serta parameter-parameter konstan dari Bab 4 dan jurnal pelengkap.
 - **Optimizer**: `POST /api/v1/optimizer/recommend`, fitur produk terpisah di luar scope SoT DSS Core.
 - **History DB**: struktur history menyimpan kolom eksplisit (termasuk isolated outputs) untuk audit komprehensif.
 
@@ -87,7 +87,7 @@ Nilai aktif:
 | Varietas | `hst_panen` | Catatan |
 |---|---:|---|
 | `sertani` | 114 | mencakup Sertani/Seratih |
-| `inpari` | 134 | hasil kalibrasi DOCX |
+| `inpari` | 134 | hasil kalibrasi SoT |
 
 | Sistem tanam | `k_safe_are` | `F_sys` |
 |---|---:|---:|
@@ -147,18 +147,20 @@ N_survive = floor(J * lambda_eff)
 
 Output `N_survive` memakai `floor`, bukan `round`, untuk prinsip kehati-hatian.
 
-### Yield Engine
+### Yield Engine (SoT v2 — Economic Differential-Costing Engine)
 
 ```text
-F_density = 1 - 0.12 * P_under - 0.25 * P_over
+F_density_bio(d) = 1 + 0.15 * (1 - exp(-d / 4)) - 0.25 * (max(0, (d - 8) / 8))^2
 F_age = 1 - 0.08 * R_age
 F_sys = 1.00 untuk Jarwo, 1.211 untuk Tegel
-F_var = 0.80
-Yield_are_predict = 47.8767507 * F_density * F_age * F_sys * F_var
+F_var = 1.00
+Y0 = 47.8767507 kg/are (lokal-validated)
+
+Yield_are_predict = Y0 * F_density_bio(d) * F_age * F_sys * F_var
 Yield_total_predict = Yield_are_predict * A_are
 ```
 
-Implementasi display membulatkan `Yield_are_predict` ke 2 desimal lalu menghitung total yield 1 desimal.
+**Catatan presisi:** Semua perhitungan engine menggunakan `decimal.Decimal` dengan presisi 50 digit (IEEE 754 compliance). Fungsi eksponensial menggunakan deret Taylor 100 suku; akar kuadrat menggunakan Newton-Raphson 50 iterasi. **Tidak ada pembulatan di tengah kalkulasi** — pembulatan hanya terjadi pada layer serialisasi JSON response (2 desimal untuk yield are, 1 desimal untuk yield total).
 
 ### Material Engine
 
@@ -191,41 +193,106 @@ HET pupuk:
 | Phonska | Rp1.840/kg |
 | KCl | Rp9.500/kg |
 
-### Cost Engine
+### Cost Engine (Two-Tier Architecture)
 
+**Core Validated Output Group (Active Circuit):**
 ```text
 Cost_duck_buy = J * p_duck_buy
+Cost_total_cash = Cost_duck_buy
+```
+
+**Empirically Uncorrelated Isolated Output Group (Sandbox Circuit):**
+```text
 Cost_feed_isolated = J * 4500 * (1 + 0.75 * P_over + 0.50 * R_age)
 
 R_weed(d) = 0.93 * (1 - exp(-0.35 * d))
-Cost_labor_weeding = 26178 * A_are * (1 - R_weed(d))
+Cost_weeding_isolated = 26178 * A_are * (1 - R_weed(d))
 
-Cost_infra_net = 0.5 * 289260 * sqrt(A_are)
-Cost_infra_cage = 175000
-Cost_infra = Cost_infra_net + Cost_infra_cage
+R_pest(d) = 0.80 * (1 - exp(-0.35 * d))
+Cost_pesticide_isolated = 2135 * A_are * (1 - R_pest(d))
+
+Cost_infra_net_isolated = 0.5 * 289260 * sqrt(A_are)
+Cost_infra_cage_isolated = 175000
+Cost_infra_isolated = Cost_infra_net_isolated + Cost_infra_cage_isolated
 ```
 
-**Penting:** `Cost_labor_base`, `Cost_labor_tending`, dan `Cost_labor_total` sudah dihapus permanen dari formula Cost Engine sesuai DOCX SoT. Pakan, pemeliharaan infrastruktur, pupuk, penyiangan, dan pestisida diisolasi sepenuhnya sebagai *Isolated Outputs*.
+**Penting:** Semua biaya *Sandbox* (`Cost_weeding_isolated`, `Cost_pesticide_isolated`, `Cost_infra_isolated`, `Cost_fertilizer_isolated`, `Cost_feed_isolated`) **diisolasi sepenuhnya** dan **TIDAK BOLEH** mengurangi `Profit_net_cash` atau menjadi bagian dari `Cost_total_cash`. `Cost_total_cash` murni hanya berisi `Cost_duck_buy`.
 
-### Ecology Engine
-
-```text
-Valuation_weed_eco = (13500 * A_are) * R_weed(d) * (1 - 0.25 * P_over)
-```
-
-Basis ekologi murni Rp13.500/are.
-
-### Revenue & Profit
+### Revenue & Profit (Core Circuit Only)
 
 ```text
 Revenue_gabah = Yield_total_predict * 6000
 Revenue_duck = N_survive * 35000
 Total_Revenue = Revenue_gabah + Revenue_duck
 
-Cost_pesticide_isolated = 2135 * A_are * (1 - R_pest(d))
-Cost_total_cash = Cost_duck_buy
-
 Profit_net_cash = Total_Revenue - Cost_total_cash
-Profit_net_full = Profit_net_cash + Valuation_weed_eco
 ```
 
+**Catatan:** `Valuation_weed_eco` (Ecology Engine) dan `Profit_net_full` **telah dihapus total** dari SoT v2. Fokus sistem adalah pada **likuiditas tunai nyata** (`Profit_net_cash`) saja.
+
+## Output Response Schema (DSSSimulationResponse)
+
+### Core Validated Output Group
+| Field | Tipe | Deskripsi |
+|---|---|---|
+| `density_status` | string | `SAFE` / `WARNING_DENSITY` / `WARNING_UNDER_DENSITY` |
+| `age_status` | string | `AGE_BUY_RANGE` / `AGE_BUY_RANGE_WARNING` / `ADAPTED_FULLY` |
+| `D_masuk_bebek` | date | Tanggal masuk bebek |
+| `D_tarik_bebek` | date | Tanggal tarik bebek |
+| `D_panen_gabah` | date | Tanggal panen gabah |
+| `N_survive` | float | Populasi bebek survive (floor) |
+| `Yield_are_predict` | float | Yield prediksi per are (2 desimal) |
+| `Yield_total_predict` | float | Yield prediksi total (1 desimal) |
+| `Revenue_gabah` | float | Pendapatan gabah |
+| `Revenue_duck` | float | Pendapatan bebek |
+| `Total_Revenue` | float | Total pendapatan |
+| `Cost_duck_buy` | float | Biaya beli bebek |
+| `Cost_total_cash` | float | **= Cost_duck_buy** (biaya inti kas) |
+| `Profit_net_cash` | float | **Likuiditas tunai bersih** = Total_Revenue - Cost_total_cash |
+| `F_sys` | float | Faktor sistem tanam (1.00 / 1.211) |
+
+### Empirically Uncorrelated Isolated Output Group (Indicative)
+| Field | Tipe | Deskripsi |
+|---|---|---|
+| `Cost_feed_isolated` | float | Biaya pakan bebek (indikatif) |
+| `Cost_weeding_isolated` | float | Biaya penyiangan (indikatif) |
+| `Cost_pesticide_isolated` | float | Biaya pestisida (indikatif) |
+| `Cost_infra_isolated` | float | Total biaya infrastruktur (indikatif) |
+| `Cost_fertilizer_isolated` | float | Total biaya pupuk (indikatif) |
+| `Cost_infra_net_isolated` | float | Biaya jaring (indikatif) |
+| `Cost_infra_cage_isolated` | float | Biaya kandang (indikatif) |
+| `Cost_fert_urea_isolated` | float | Biaya Urea (indikatif) |
+| `Cost_fert_phonska_isolated` | float | Biaya Phonska (indikatif) |
+| `Cost_fert_kcl_isolated` | float | Biaya KCl (indikatif) |
+
+## Contoh Response (Golden Case)
+
+```json
+{
+  "density_status": "WARNING_DENSITY",
+  "age_status": "AGE_BUY_RANGE",
+  "D_masuk_bebek": "2026-01-22",
+  "D_tarik_bebek": "2026-03-07",
+  "D_panen_gabah": "2026-04-25",
+  "N_survive": 32.0,
+  "Yield_are_predict": 52.36,
+  "Yield_total_predict": 523.6,
+  "Revenue_gabah": 3141883.01,
+  "Revenue_duck": 1120000.0,
+  "Total_Revenue": 4261883.01,
+  "Cost_duck_buy": 1250000.0,
+  "Cost_feed_isolated": 284062.5,
+  "Cost_weeding_isolated": 60630.8,
+  "Cost_pesticide_isolated": 7238.06,
+  "Cost_infra_isolated": 632360.22,
+  "Cost_fertilizer_isolated": 104554.64,
+  "Cost_infra_net_isolated": 457360.22,
+  "Cost_infra_cage_isolated": 175000.0,
+  "Cost_fert_urea_isolated": 16074.77,
+  "Cost_fert_phonska_isolated": 88479.87,
+  "Cost_fert_kcl_isolated": 0.0,
+  "Cost_total_cash": 1250000.0,
+  "Profit_net_cash": 3011883.01,
+  "F_sys": 1.0
+}
+```
