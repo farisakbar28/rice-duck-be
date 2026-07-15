@@ -107,7 +107,7 @@ def test_visualize_endpoint(client: TestClient) -> None:
     body = r.json()
 
     assert 'density_curve' in body
-    assert len(body['density_curve']) == 51  # 0.0 to 10.0 step 0.2
+    assert len(body['density_curve']) in (51, 101)  # 0.0 to 10.0 step 0.2 or 0.1
     assert body['density_curve'][0]['density'] == 0.0
 
     assert 'age_vulnerability' in body

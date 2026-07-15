@@ -26,7 +26,7 @@ class VisualizationService:
     def generate_visualization_series(
         self, payload: DSSSimulationRequest
     ) -> VisualizationResponse:
-        # 1. Density Curve Series (d: 0.0 to 10.0, step 0.2)
+        # 1. Density Curve Series (d: 0.0 to 10.0, step 0.1 for 101 points)
         density_curve: list[DensityPoint] = []
         
         # Bio-density constants (SoT 4.5)
@@ -43,10 +43,10 @@ class VisualizationService:
         r_age_base = Decimal("0.05")
         f_age_base = Decimal("1") - Decimal("0.08") * r_age_base
 
-        step = Decimal("0.2")
+        step = Decimal("0.1")
         d_current = Decimal("0.0")
         
-        while d_current <= Decimal("10.0"):
+        while d_current <= Decimal("10.0") + Decimal("0.0001"):
             # F_density_bio computation
             boost = alpha_bio * (Decimal("1") - _dec_exp(-d_current / k_opt))
             trampling = beta_tramp * (
