@@ -1,77 +1,40 @@
 """Schemas for the DSS Core SoT calculator.
 
-Field semantics follow ``docs/Model_Matematika_Data_Collection_DSS_Padi_Bebek_FINAL_BANGET.md``
-(Tabel 2.1 input, Tabel 2.2 proses, Tabel 2.3 output). Deprecation markers
-indicate legacy fields retained for backward compatibility — they MUST stay
-synchronised with the new canonical fields (see Fase 4 plan).
+Field semantics follow docs/Model Matematika Data Collection DSS Padi Bebek FINAL.md.
 
-The optimizer/recommendation layer is intentionally NOT defined here. It
-lives in ``app.schemas.optimizer`` and is served from
-``/api/v1/optimizer/recommend``.
+SoT §3: 7 mandatory inputs (land_area_are, duck_count, rice_variety, planting_system,
+         duck_age_days, planting_date, p_duck_buy)
+SoT §11: Canonical output semantics
 """
 
 from datetime import date
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
 
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # Options endpoint
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
-# Legacy field name; canonical name is ``hst_panen`` (Fase 1). Deprecated.
+
 class RiceVarietyOption(BaseModel):
     code: str
     label: str
-
-    # Canonical (SoT) — Fase 1: HST_panen per varietas (Sertani/Seratih=99, Inpari=112).
-    # Catatan Finalisasi poin 8; Tabel 2.2.
-    hst_panen: int
-
-    # Deprecated (will be sunset). Retained for backward-compat; values are
-    # now expressed as calendar reminders relative to D_tanam (see Tabel 2.3).
-    # ``hst_masuk`` legacy = 20; ``hst_heading`` legacy = 65. Do NOT use these
-    # for new code paths; call ``D_masuk_bebek``/``D_tarik_bebek`` directly.
-    hst_masuk: int
-    hst_heading: int
-
-    # Deprecated: ``harvest_age_days`` is the legacy alias of ``hst_panen``.
-    # Kept additive (per keputusan #2). Will be sunset.
-    harvest_age_days: int
-
+    # SoT §6.1: Sertani 100–110, Inpari 134
+    hst_panen_min: int
+    hst_panen_max: int
     risk_note: str
-
-    # Deprecated ranges.
-    hst_masuk_range: dict[str, int]
-    hst_heading_range: dict[str, int]
-
     status: str
 
 
-# Legacy field name; canonical name is ``F_sys`` (Fase 2). Deprecated.
 class PlantingSystemOption(BaseModel):
     code: str
     label: str
-
-    # Canonical (SoT) — Fase 1+2: K_safe per sistem tanam. Jarwo=4, Tegel=3.
-    # Tabel 2.2.
-    k_safe_are: float
-
-    # Canonical (SoT) — Fase 2: F_sys per sistem tanam. Jarwo=1.00, Tegel=0.95.
-    # Tabel 2.2 (Yield Engine). Tegel receives a PENALTY, not the legacy
-    # 1.39 bonus.
-    F_sys: float
-
+    # SoT §5.1: recommended density ceiling per system
+    recommended_density_max_are: float
+    recommended_density_min_are: float
     note: str
-
-    # Deprecated: legacy names. Retained for backward-compat (keputusan #2).
-    k_max_are: float
-    f_yield: float
-
-    k_max_range_are: dict[str, float]
-    limited_test_max_are: float | None
-    k_max_status: str
-    f_yield_status: str
 
 
 class DSSOptionsResponse(BaseModel):
@@ -79,99 +42,156 @@ class DSSOptionsResponse(BaseModel):
     planting_systems: list[PlantingSystemOption]
 
 
-# -----------------------------------------------------------------------------
-# Input — Tabel 2.1 SoT
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Input — SoT §3: 7 mandatory inputs
+# ---------------------------------------------------------------------------
 
 
 class DSSSimulationRequest(BaseModel):
-    """6 input inti + 1 kondisional (``p_duck_buy_manual`` muncul hanya jika
-    ``U_duck < 14`` atau ``U_duck > 21``). Tabel 2.1.
+    """7 mandatory inputs per SoT §3.
+
+    All fields are required. No silent fallbacks.
+    p_duck_buy: mandatory, >= 0. Value 0 is valid (no current-cycle cash purchase).
+    duck_age_days: mandatory, >= 0. No default.
+    planting_date: mandatory. No date fallback.
     """
 
     model_config = ConfigDict(
+        # JSON permits non-finite numeric tokens in some parsers, but they do
+        # not represent valid production measurements and would invalidate
+        # Decimal-based density, yield, and economics calculations.
+        allow_inf_nan=False,
         json_schema_extra={
             "example": {
-                "duck_count": 28,
-                "land_area_are": 7,
-                "planting_date": "2026-06-01",
+                "land_area_are": 10.0,
+                "duck_count": 20,
                 "rice_variety": "sertani",
                 "planting_system": "jajar_legowo",
-                "duck_age_days": 30,
-                "duck_buy_price_rp_per_duck": 26500,
+                "duck_age_days": 21,
+                "planting_date": "2024-04-22",
+                "p_duck_buy": 15000,
             }
         }
     )
 
-    duck_count: int = Field(gt=0)
-    land_area_are: float = Field(gt=0)
-    planting_date: date
-    rice_variety: str = Field(min_length=1)
-    planting_system: str = Field(min_length=1)
-    duck_age_days: int = Field(gt=0)
-    duck_buy_price_rp_per_duck: float | None = Field(default=None, gt=0)
+    land_area_are: float = Field(gt=0, description="Luas lahan aktif > 0 are")
+    duck_count: int = Field(gt=0, description="Populasi awal bebek > 0")
+    rice_variety: str = Field(min_length=1, description="'sertani' atau 'inpari'")
+    planting_system: str = Field(
+        min_length=1, description="'jajar_legowo' (2:1 only) atau 'tegel'"
+    )
+    duck_age_days: int = Field(
+        ge=0, description="Umur bebek saat masuk sawah (hari). Wajib, tidak ada default."
+    )
+    planting_date: date = Field(description="Tanggal tanam. Wajib, tidak ada fallback.")
+    p_duck_buy: float = Field(
+        ge=0,
+        description=(
+            "Harga beli bebek (Rp/ekor). Wajib, >= 0. "
+            "Nilai 0 sah bila tidak ada current-cycle cash purchase."
+        ),
+    )
 
 
-# Internal DTO used by ``simulation_service``.
-class DSSInput(BaseModel):
-    duck_count: int
-    land_area_are: float
-    planting_date: date
-    rice_variety: str
-    planting_system: str
-    duck_age_days: int
-    duck_buy_price_rp_per_duck: float | None = None
+# ---------------------------------------------------------------------------
+# Output — SoT §11: Canonical Output Semantics
+# ---------------------------------------------------------------------------
 
 
-# -----------------------------------------------------------------------------
-# Output — Tabel 2.3 SoT
-# -----------------------------------------------------------------------------
+class SandboxWeeding(BaseModel):
+    """SoT §10.1: Weeding Research/Sandbox output (per-event only)."""
+    k_weeding_rp_per_are_event: float
+    R_weeding: float
+    Weeding_residual_per_are_event: float
+    Weeding_avoided_per_are_event: float
+    Weeding_residual_total_one_event: float
+    Weeding_avoided_total_one_event: float
+    note: str
+
+
+class SandboxPesticide(BaseModel):
+    """SoT §10.2: Pesticide Research/Sandbox — non-monetary indicator."""
+    Pesticide_reduction_upper_bound: float
+    note: str
+
+
+class SandboxFertilizer(BaseModel):
+    """SoT §10.3: Fertilizer Research/Sandbox — literature-uncalibrated."""
+    Cost_fertilizer_total: float
+    Cost_fert_urea: float
+    Cost_fert_phonska: float
+    Cost_fert_kcl: float
+    Q_phonska: float
+    Q_urea: float
+    Q_kcl: float
+    note: str
+
+
+class SandboxInfrastructure(BaseModel):
+    """SoT §10.4: Infrastructure — context/reference only, without a cost formula."""
+    note: str
+
+
+class SandboxOutputs(BaseModel):
+    """SoT §10: Research/Sandbox outputs. NOT included in Core_Cash_Cost or Net_Cash_Contribution_DSS."""
+    weeding: SandboxWeeding
+    pesticide: SandboxPesticide
+    fertilizer: SandboxFertilizer
+    infrastructure: SandboxInfrastructure
 
 
 class DSSSimulationResponse(BaseModel):
-    # Evaluasi agronomi & operasional
-    density_status: str
-    age_status: str
-    D_masuk_bebek: date
-    D_tarik_bebek: date
-    D_panen_gabah: date  # NEW — Fase 1
-    N_survive: float
+    """SoT §11: Canonical Output Semantics.
 
-    # Prediksi panen (Yield)
-    Yield_are_predict: float
-    Yield_total_predict: float
+    All Core fields follow SoT §11 naming exactly.
+    Sandbox outputs are nested under 'sandbox' and have zero effect on Core.
+    """
 
-    # Komponen pendapatan (Revenue)
-    Revenue_gabah: float
-    Revenue_duck: float
-    Total_Revenue: float
+    # SoT §4: Age Readiness Engine
+    age_flag: str                   # TOO_YOUNG | RECOMMENDED | ABOVE_RECOMMENDED_AGE
 
-    # Komponen biaya detail (Cost) — Fase 2 additive breakdown
-    Cost_duck_buy: float
-    Cost_feed_isolated: float
-    Cost_weeding_isolated: float
-    Cost_pesticide_isolated: float
-    Cost_infra_isolated: float
-    Cost_fertilizer_isolated: float
-    Cost_infra_net_isolated: float
-    Cost_infra_cage_isolated: float
-    Cost_fert_urea_isolated: float
-    Cost_fert_phonska_isolated: float
-    Cost_fert_kcl_isolated: float
-    # Core
-    Cost_total_cash: float
+    # SoT §5: Density Engine
+    density_are: float              # duck_count / land_area_are
+    density_ha: float               # 100 * density_are
+    density_status: str             # UNDER_DENSITY | RECOMMENDED | ABOVE_RECOMMENDED | OVERLOAD_HIGH_RISK
 
-    # Profit
-    Profit_net_cash: float
-    # Valuation_weed_eco and Profit_net_full removed per SoT
-    # Fase 4 — additive deprecation marker (not a value field).
-    # New canonical yield factor name; equals ``planting_systems[].F_sys`` at request time.
-    F_sys: float
+    # SoT §6: Calendar Engine
+    HST_in: int                     # 21
+    HST_out: int                    # 65
+    t_active: int                   # 44
+    D_in: date                      # planting_date + 21
+    D_out: date                     # planting_date + 65
+    harvest_hst_min: int            # Sertani: 100; Inpari: 134
+    harvest_hst_max: int            # Sertani: 110; Inpari: 134
+    D_panen_min: date               # planting_date + harvest_hst_min
+    D_panen_max: date               # planting_date + harvest_hst_max
+
+    # SoT §7: Survival Engine
+    N_survive: int                  # J (d<=8) or floor(0.60*J) (d>8)
+
+    # SoT §8: Yield Engine
+    Yield_are_pred: float           # 47.8767507 kg/are (constant)
+    Yield_total_pred: float         # Yield_are_pred * land_area_are
+
+    # SoT §9: Core Economic Engine
+    Revenue_gabah: float            # Yield_total_pred * 6000
+    Revenue_duck_potential: float   # N_survive * 52500
+    Cost_duck_buy: float            # duck_count * p_duck_buy
+    Cost_feed: float                # duck_count * 20000
+    Core_Cash_Cost: float           # Cost_duck_buy + Cost_feed
+    Total_Revenue_DSS: float        # Revenue_gabah + Revenue_duck_potential
+    Net_Cash_Contribution_DSS: float  # Total_Revenue_DSS - Core_Cash_Cost
+
+    # SoT §11.1: Warnings
+    warnings: list[str]
+
+    # SoT §10: Research/Sandbox (informational only, does NOT affect Core)
+    sandbox: SandboxOutputs
 
 
-# -----------------------------------------------------------------------------
-# History — Fase 5 explicit columns
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# History schemas
+# ---------------------------------------------------------------------------
 
 
 class HistorySummary(BaseModel):
@@ -179,9 +199,10 @@ class HistorySummary(BaseModel):
     planting_system: str
     duck_count: int
     land_area_are: float
-    actual_density_are: float
-    d_panen_gabah: date
-    estimated_total_yield_kg: float
+    density_are: float
+    d_panen_min: date
+    d_panen_max: date
+    yield_total_pred: float
 
 
 class HistoryListItem(BaseModel):
@@ -199,91 +220,82 @@ class HistoryDetailResponse(BaseModel):
     id: str
     schema_version: int
     created_at: date
-    # Agronomi & operasional
+    # Age
+    age_flag: str
+    # Density
+    density_are: float
+    density_ha: float
     density_status: str
-    age_status: str
-    d_masuk_bebek: date
-    d_tarik_bebek: date
-    d_panen_gabah: date
-    n_survive: float
+    # Calendar
+    hst_in: int
+    hst_out: int
+    t_active: int
+    d_in: date
+    d_out: date
+    harvest_hst_min: int
+    harvest_hst_max: int
+    d_panen_min: date
+    d_panen_max: date
+    # Survival
+    n_survive: int
     # Yield
-    yield_are_predict: float
-    yield_total_predict: float
-    # Revenue
+    yield_are_pred: float
+    yield_total_pred: float
+    # Core Economics
     revenue_gabah: float
-    revenue_duck: float
-    total_revenue: float
-    # Cost detail
+    revenue_duck_potential: float
     cost_duck_buy: float
-    cost_feed_isolated: float
-    cost_weeding_isolated: float
-    cost_pesticide_isolated: float
-    cost_infra_isolated: float
-    cost_fertilizer_isolated: float
-    cost_infra_net_isolated: float
-    cost_infra_cage_isolated: float
-    cost_fert_urea_isolated: float
-    cost_fert_phonska_isolated: float
-    cost_fert_kcl_isolated: float
-    cost_total_cash: float
-    # Profit
-    profit_net_cash: float
+    cost_feed: float
+    core_cash_cost: float
+    total_revenue_dss: float
+    net_cash_contribution_dss: float
+    # Warnings
+    warnings: list[str]
 
 
 class DeleteHistoryResponse(BaseModel):
     message: str
 
 
-# -----------------------------------------------------------------------------
-# Visualization — Graph Data Contracts
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Visualization schemas
+# ---------------------------------------------------------------------------
 
 
-class DensityPoint(BaseModel):
+class DensityZonePoint(BaseModel):
+    """Density zone visualization point."""
     density: float
-    yield_factor_jarwo: float
-    yield_factor_tegel: float
-    is_safe_jarwo: bool
-    is_safe_tegel: bool
-    is_over_density: bool
+    density_status: str             # UNDER_DENSITY | RECOMMENDED | ABOVE_RECOMMENDED | OVERLOAD_HIGH_RISK
+    is_recommended_jarwo: bool      # 2 <= d <= 4
+    is_recommended_tegel: bool      # 2 <= d <= 3
+    is_overload: bool               # d > 8
+    survival_rate: float            # 1.0 (d<=8) or 0.60 (d>8)
 
 
-class AgePoint(BaseModel):
+class AgeZonePoint(BaseModel):
+    """Age readiness zone visualization point."""
     age_days: int
-    risk_ratio: float
-    survival_ceiling: float
-    zone: str  # "red", "yellow", "green"
+    age_flag: str                   # TOO_YOUNG | RECOMMENDED | ABOVE_RECOMMENDED_AGE
+    zone: str                       # "below_recommended" | "recommended" | "above_recommended"
 
 
 class WaterfallNode(BaseModel):
     name: str
     amount: float
-    type: str  # "revenue", "cost", "total"
+    type: str                       # "revenue" | "cost" | "total"
 
 
 class ReferenceBenchmarks(BaseModel):
-    k_safe_jarwo: float = 4.0
-    k_safe_tegel: float = 3.0
-    k_max_saturation: float = 8.0
-
-
-class FinancialAbsorptionBreakdown(BaseModel):
-    core_validated_liquid_cash: float
-    empirically_uncorrelated_isolated_shadow_costs: float
-
-
-class VisualizationsObject(BaseModel):
-    density_curve: list[DensityPoint]
-    age_vulnerability: list[AgePoint]
-    financial_waterfall: list[WaterfallNode]
-    benchmarks: ReferenceBenchmarks
+    recommended_density_max_jarwo: float = 4.0
+    recommended_density_max_tegel: float = 3.0
+    overload_threshold: float = 8.0
+    yield_baseline_kg_per_are: float = 47.8767507
 
 
 class VisualizationResponse(BaseModel):
-    density_curve: list[DensityPoint]
-    age_vulnerability: list[AgePoint]
+    density_zones: list[DensityZonePoint]
+    age_zones: list[AgeZonePoint]
+    financial_waterfall: list[WaterfallNode]
     reference_benchmarks: ReferenceBenchmarks
-    financial_absorption: FinancialAbsorptionBreakdown
-    visualizations: VisualizationsObject
-
-
+    survival_note: str
+    yield_note: str

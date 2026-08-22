@@ -7,110 +7,83 @@ from typing import Any
 class RiceVariety:
     code: str
     label: str
-    hst_panen: int  # Canonical (SoT) — Fase 1: Tabel 2.2 Calendar Engine
-    # Deprecated: legacy fields retained for backward-compat. New code paths
-    # must use ``D_masuk_bebek``/``D_tarik_bebek`` (Tabel 2.3).
-    hst_masuk: int
-    hst_heading: int
-    harvest_age_days: int
+    # SoT §6.1 — harvest HST range
+    # Sertani: hst_panen_min=100, hst_panen_max=110
+    # Inpari:  hst_panen_min=134, hst_panen_max=134 (single point + generic warning)
+    hst_panen_min: int
+    hst_panen_max: int
     risk_note: str
-    hst_masuk_min: int
-    hst_masuk_max: int
-    hst_heading_min: int
-    hst_heading_max: int
     status: str
+    # legacy alias kept for backward-compat read of old data only
+    hst_panen: int = 0          # deprecated: use hst_panen_min/max
+    hst_masuk: int = 21         # fixed HST_in=21 per SoT §6
+    hst_heading: int = 65       # fixed HST_out=65 per SoT §6
+    harvest_age_days: int = 0   # deprecated alias
+    hst_masuk_min: int = 21
+    hst_masuk_max: int = 21
+    hst_heading_min: int = 65
+    hst_heading_max: int = 65
 
 
 @dataclass(frozen=True)
 class PlantingSystem:
     code: str
     label: str
-    # Canonical (SoT) — Fase 2: K_safe & F_sys. Tabel 2.2.
-    k_safe_are: float
-    F_sys: float
-    # Deprecated aliases retained for backward-compat (keputusan #2).
-    k_max_are: float
-    f_yield: float
+    # SoT §5.1 — RECOMMENDED density ceiling per system
+    # jajar_legowo: 2 <= d <= 4  (Jajar Legowo 2:1 only)
+    # tegel:        2 <= d <= 3
+    recommended_density_max_are: float
     note: str = ""
-    k_safe_min_are: float = 0
-    k_safe_max_are: float = 0
-    # Deprecated ranges.
-    k_max_min_are: float = 0
-    k_max_max_are: float = 0
-    limited_test_max_are: float | None = None
-    k_max_status: str = "estimation"
-    f_yield_status: str = "estimation"
-
-
-
+    # Legacy fields retained for backward-compat read only; not used in Core
+    k_safe_are: float = 0.0
+    k_max_are: float = 0.0
+    f_yield: float = 1.0
     recommended_density_min_are: float = 2.0
-    recommended_density_max_are: float = 4.0
+    k_safe_min_are: float = 0.0
+    k_safe_max_are: float = 0.0
+    k_max_min_are: float = 0.0
+    k_max_max_are: float = 0.0
+    limited_test_max_are: float | None = None
+    k_max_status: str = "legacy"
+    f_yield_status: str = "legacy"
 
 
 @dataclass(frozen=True)
 class DSSConstants:
-    survival_lambda: float
-    t_max_eff_days: int
-    t_phase_1_days: int
-    local_feed_warning_phase_days: int
-    dung_phase_1_total_kg: float
-    dung_phase_2_daily_kg: float
-    minimum_density_are: float
-    p_max: float
-    penalty_gamma: float
-    # Fase 6 cleanup: ``alpha_local`` is a deprecated Generasi-A artifact
-    # (Xiong-style calibration in FINAL.md). SoT ``_terbaru`` uses the
-    # ``48.039 * F_density * F_age * F_sys * F_var`` formula and does not
-    # require ``alpha_local``. The field is removed from active contracts.
-    daily_duck_grazing_hours: float
-    baseline_grazing_hours: float
-    feed_requirement_kg_per_duck_day: float | None
-    feed_natural_saving_rate: float | None
-    feed_greedy_kg_per_duck_day: float | None
-    rice_duck_price_rp_per_kg: float | None
-    duck_sale_price_rp_per_duck: float
-    duck_buy_price_rp_per_duck: float
-    duck_target_out_max_days: int
-    duck_buy_price_fallback_min_rp: float
-    duck_buy_price_fallback_max_rp: float
-    duck_buy_price_fallback_mid_rp: float
-    feed_price_rp_per_kg: float | None
-    # Fase 6 cleanup: HET only; legacy ``phosphate_price_rp_per_kg=2700``
-    # was stale and never used by active engine.
-    nitrogen_price_rp_per_kg: float
-    potassium_price_rp_per_kg: float
-    weeding_cost_rp_per_are: float
-    # True-cost interview artifacts — dokumentasi kualitatif, bukan output
-    # model aktif. Disimpan sebagai catatan saja, tidak dipakai Cost Engine.
-    net_cost_rp: float
-    net_lifetime_seasons: int
-    shelter_cost_rp: float
-    shelter_lifetime_seasons: int
-    infrastructure_maintenance_rp_per_season: float
-    additional_cost_rp_per_season: float
-    # Fase 6 cleanup: kappa_n/p/k (0.049/0.072/0.032) adalah Generasi-A
-    # literature-uncalibrated. SoT ``_terbaru`` Material Engine memakai
-    # koefisien 0.107/0.424/0.058 (lihat Tabel 2.2). Field dihapus.
-    gwp_ch4: float
-    gwp_n2o: float
-    seasonal_ch4_rice_duck_kg_per_ha: float | None
-    seasonal_ch4_conventional_kg_per_ha: float | None
-    seasonal_n2o_kg_per_ha: float | None
-    calibration_note: str
-
+    # HET pupuk (hardware-locked)
     HET_urea: float = 1800.0
     HET_phonska: float = 1840.0
     HET_kcl: float = 9500.0
-
-    valid_period_conventional_rice_price: str = "Maret 2026"
-
-
-
-
+    # Misc reference values (not used in Core)
+    survival_lambda: float = 0.67               # legacy reference only
+    t_max_eff_days: int = 45
+    t_phase_1_days: int = 50
+    local_feed_warning_phase_days: int = 30
+    dung_phase_1_total_kg: float = 4.0
+    dung_phase_2_daily_kg: float = 0.2
+    minimum_density_are: float = 1.0
+    p_max: float = 0.8
+    penalty_gamma: float = 0.5
+    daily_duck_grazing_hours: float = 10.0
+    baseline_grazing_hours: float = 10.0
+    feed_requirement_kg_per_duck_day: float | None = None
+    feed_natural_saving_rate: float | None = None
+    feed_greedy_kg_per_duck_day: float | None = None
+    rice_duck_price_rp_per_kg: float | None = None
+    duck_sale_price_rp_per_duck: float = 52500.0   # SoT §9: p_duck_sell
+    duck_buy_price_rp_per_duck: float = 0.0         # placeholder; actual from request
+    duck_target_out_max_days: int = 65
+    feed_price_rp_per_kg: float | None = None
+    nitrogen_price_rp_per_kg: float = 1800.0
+    potassium_price_rp_per_kg: float = 9500.0
+    weeding_cost_rp_per_are: float = 21000.0        # SoT §10.1
+    gwp_ch4: float = 34.0
+    gwp_n2o: float = 265.0
+    seasonal_ch4_rice_duck_kg_per_ha: float | None = None
+    seasonal_ch4_conventional_kg_per_ha: float | None = None
+    seasonal_n2o_kg_per_ha: float | None = None
+    calibration_note: str = ""
     feed_requirement_kg_per_duck_day_reference: float = 0.10
-
-
-
     feed_natural_saving_rate_reference: float = 0.66
 
 
@@ -137,7 +110,7 @@ class User:
 
 @dataclass(frozen=True)
 class SimulationHistoryLegacy:
-    """Legacy schema (schema_version=1). Read-only for audit."""
+    """Legacy schema (schema_version <= 2). Read-only for audit."""
     id: str
     user_id: str
     input_data: dict
@@ -159,43 +132,52 @@ class SimulationHistoryLegacy:
 
 @dataclass(frozen=True)
 class SimulationHistory:
-    """New explicit-column row (schema_version=2) — aligned with SoT FINAL."""
+    """v3 schema — aligned with SoT FINAL (docs/Model Matematika Data Collection DSS Padi Bebek FINAL.md)."""
     id: str
     user_id: str
     schema_version: int
-    # Agronomi & operasional
+    # Input snapshot
+    land_area_are: float
+    duck_count: int
+    rice_variety: str
+    planting_system: str
+    duck_age_days: int
+    planting_date: str
+    p_duck_buy: float
+    # Age Engine
+    age_flag: str
+    # Density Engine
+    density_are: float
+    density_ha: float
     density_status: str
-    age_status: str
-    d_masuk_bebek: str
-    d_tarik_bebek: str
-    d_panen_gabah: str
-    n_survive: float
-    # Yield
-    yield_are_predict: float
-    yield_total_predict: float
-    # Revenue
+    # Calendar Engine
+    hst_in: int
+    hst_out: int
+    t_active: int
+    d_in: str
+    d_out: str
+    harvest_hst_min: int
+    harvest_hst_max: int
+    d_panen_min: str
+    d_panen_max: str
+    # Survival Engine
+    n_survive: int
+    # Yield Engine
+    yield_are_pred: float
+    yield_total_pred: float
+    # Core Economics
     revenue_gabah: float
-    revenue_duck: float
-    total_revenue: float
-    # Cost detail (Core + Isolated groups per SoT Bagian 5)
+    revenue_duck_potential: float
     cost_duck_buy: float
-    cost_feed_isolated: float
-    cost_weeding_isolated: float
-    cost_pesticide_isolated: float
-    cost_infra_isolated: float
-    cost_fertilizer_isolated: float
-    cost_infra_net_isolated: float
-    cost_infra_cage_isolated: float
-    cost_fert_urea_isolated: float
-    cost_fert_phonska_isolated: float
-    cost_fert_kcl_isolated: float
-    cost_total_cash: float
-    # Profit
-    profit_net_cash: float
+    cost_feed: float
+    core_cash_cost: float
+    total_revenue_dss: float
+    net_cash_contribution_dss: float
+    # Warnings (JSON string)
+    warnings_json: str
     created_at: datetime
 
 
 @dataclass(frozen=True)
 class AuthContext:
     user: User
-

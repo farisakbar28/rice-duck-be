@@ -1,66 +1,33 @@
 import pytest
 from fastapi.testclient import TestClient
+
 from app.main import create_app
 
-RP1 = 1.0
 
 @pytest.fixture
 def client() -> TestClient:
     return TestClient(create_app())
 
-GOLDEN_PAYLOAD = {
-    'land_area_are': 10,
-    'duck_count': 50,
-    'rice_variety': 'sertani',
-    'planting_system': 'jajar_legowo',
-    'planting_date': '2026-01-01',
-    'duck_age_days': 14
-}
 
-def test_golden_full_response_matches_sot_tabel_2_3(client: TestClient) -> None:
-    r = client.post('/api/v1/dss/simulate', json=GOLDEN_PAYLOAD)
-    assert r.status_code == 200, r.text
-    body = r.json()
-    expected = {
-        'density_status': 'WARNING_DENSITY',
-        'age_status': 'AGE_BUY_RANGE',
-        'D_masuk_bebek': '2026-01-22',
-        'D_tarik_bebek': '2026-03-07',
-        'D_panen_gabah': '2026-04-25',
-        'N_survive': 32.0,
-        'Yield_are_predict': 52.36,
-        'Yield_total_predict': 523.6,
-        'Revenue_gabah': 3141883.01,
-        'Revenue_duck': 1120000.0,
-        'Total_Revenue': 4261883.01,
-        'Cost_duck_buy': 1250000.0,
-        'Cost_feed_isolated': 284062.5,
-        'Cost_weeding_isolated': 60630.8,
-        'Cost_pesticide_isolated': 7238.06,
-        'Cost_infra_isolated': 632360.22,
-        'Cost_fertilizer_isolated': 104554.64,
-        'Cost_infra_net_isolated': 457360.22,
-        'Cost_infra_cage_isolated': 175000.0,
-        'Cost_fert_urea_isolated': 16074.77,
-        'Cost_fert_phonska_isolated': 88479.87,
-        'Cost_fert_kcl_isolated': 0.0,
-        'Cost_total_cash': 1250000.0,
-        'Profit_net_cash': 3011883.01,
-        'F_sys': 1.0
-    }
-    assert body == expected
+GOLDEN_PAYLOAD = {"land_area_are": 10, "duck_count": 20, "rice_variety": "sertani", "planting_system": "jajar_legowo", "duck_age_days": 21, "planting_date": "2026-01-01", "p_duck_buy": 15000}
 
-def test_golden_response_excludes_cost_labor_tending(client: TestClient) -> None:
-    r = client.post('/api/v1/dss/simulate', json=GOLDEN_PAYLOAD)
-    assert r.status_code == 200
-    body = r.json()
-    assert 'Cost_labor_tending' not in body
 
-def test_golden_invariants_hold(client: TestClient) -> None:
-    r = client.post('/api/v1/dss/simulate', json=GOLDEN_PAYLOAD)
-    assert r.status_code == 200
-    body = r.json()
-    assert body['Cost_infra_net_isolated'] + body['Cost_infra_cage_isolated'] == pytest.approx(body['Cost_infra_isolated'], abs=RP1)
-    assert body['Cost_fert_urea_isolated'] + body['Cost_fert_phonska_isolated'] + body['Cost_fert_kcl_isolated'] == pytest.approx(body['Cost_fertilizer_isolated'], abs=RP1)
-    assert body['Revenue_gabah'] + body['Revenue_duck'] == pytest.approx(body['Total_Revenue'], abs=RP1)
-    assert body['Total_Revenue'] - body['Cost_total_cash'] == pytest.approx(body['Profit_net_cash'], abs=RP1)
+def test_golden_core_response_matches_final_sot(client: TestClient) -> None:
+    response = client.post("/api/v1/dss/simulate", json=GOLDEN_PAYLOAD)
+    assert response.status_code == 200, response.text
+    body = response.json()
+    expected = {"density_status": "RECOMMENDED", "age_flag": "RECOMMENDED", "D_in": "2026-01-22", "D_out": "2026-03-07", "D_panen_min": "2026-04-11", "D_panen_max": "2026-04-21", "N_survive": 20, "Yield_are_pred": 47.8767507, "Yield_total_pred": 478.7675, "Revenue_gabah": 2872605.04, "Revenue_duck_potential": 1050000.0, "Cost_duck_buy": 300000.0, "Cost_feed": 400000.0, "Core_Cash_Cost": 700000.0, "Total_Revenue_DSS": 3922605.04, "Net_Cash_Contribution_DSS": 3222605.04}
+    assert {key: body[key] for key in expected} == expected
+
+
+def test_golden_response_excludes_legacy_contract(client: TestClient) -> None:
+    body = client.post("/api/v1/dss/simulate", json=GOLDEN_PAYLOAD).json()
+    forbidden = {"Profit_net_cash", "Cost_feed_isolated", "Cost_total_cash", "F_sys", "Yield_are_predict", "Revenue_duck", "D_masuk_bebek", "D_tarik_bebek", "D_panen_gabah", "age_status"}
+    assert not (forbidden & body.keys())
+
+
+def test_core_economic_invariant(client: TestClient) -> None:
+    body = client.post("/api/v1/dss/simulate", json=GOLDEN_PAYLOAD).json()
+    assert body["Core_Cash_Cost"] == pytest.approx(body["Cost_duck_buy"] + body["Cost_feed"])
+    assert body["Total_Revenue_DSS"] == pytest.approx(body["Revenue_gabah"] + body["Revenue_duck_potential"])
+    assert body["Net_Cash_Contribution_DSS"] == pytest.approx(body["Total_Revenue_DSS"] - body["Core_Cash_Cost"])

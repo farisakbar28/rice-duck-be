@@ -1,19 +1,26 @@
-"""SoT impact engines (see docs/Model_Matematika_..._FINAL.docx).
+"""SoT §10 Research/Sandbox engines — docs/Model Matematika Data Collection DSS Padi Bebek FINAL.md
 
-Each function maps 1:1 to a numbered engine in the SoT document:
-  - compute_weed_reduction / compute_weed_hired_cost  -> 4.7 Cost Engine
-  - compute_labor_breakdown                            -> 4.7 Cost Engine (isolated)
-  - compute_infrastructure_breakdown                  -> 4.7 Cost Engine (isolated)
-  - compute_feed_costs                                -> 4.7 Cost Engine (isolated)
-  - compute_soil_nutrients                            -> 4.6 Material Engine
+SANDBOX components are fully excluded from Core_Cash_Cost and Net_Cash_Contribution_DSS.
+They are informational/research outputs only.
 
-All components in this module belong to the SoT "Empirically Uncorrelated
-Isolated Components" group (Bagian 5.2) or are ecological/soil flow inputs.
-They MUST NOT participate in the core Profit_net_cash aggregation.
+SoT §10.1 Weeding:
+    k_weeding = 21000 Rp/are/kegiatan
+    R_weeding = 0.77
+    Weeding_residual_per_are_event = 21000 * (1 - 0.77) = 4830
+    Weeding_avoided_per_are_event  = 21000 - 4830 = 16170
+    NOTE: Must NOT be multiplied by frequency without calibrated frequency parameter.
 
-Numerical precision: all engine computations use ``decimal.Decimal`` with
-precision 50 to guarantee IEEE 754 high-precision floating-point compliance.
-No mid-calculation rounding is performed.
+SoT §10.2 Pesticide:
+    Pesticide_reduction_upper_bound = 0.80
+    Non-monetary indicator only. No Rp cost formula.
+
+SoT §10.3 Fertilizer/Material:
+    Research/sandbox only. Magnitude not calibrated locally for Core.
+
+SoT §10.4 Infrastructure:
+    Context/reference only. No production cost formula.
+
+SoT §13: feed=4500, Cost_feed_isolated are BANNED from production path.
 """
 
 from decimal import Decimal
@@ -22,193 +29,116 @@ from app.domain.models import DSSConstants
 
 
 # ---------------------------------------------------------------------------
-# [local-estimate] SoT 4.7 Cost Engine — constants (Decimal)
+# SoT §10.1 Weeding sandbox constants
 # ---------------------------------------------------------------------------
-
-# Tabel 1 SoT: k_weed_hire = Rp26.178/are (Local-estimate)
-K_WEED_HIRE_RP_PER_ARE = Decimal("26178.0")
-
-# Tabel 1 SoT: C_pest_base = Rp2.135/are (Local-estimate)
-C_PEST_BASE_RP_PER_ARE = Decimal("2135.0")
-
-# SoT 4.7: Cost_infra_net = 0,5 * 289.260 * sqrt(A_are)
-INFRA_NET_COEF = Decimal("289260.0")
-
-# SoT 4.7: Cost_infra_cage = Rp175.000/siklus (flat)
-INFRA_CAGE_FLAT_RP = Decimal("175000.0")
-
-# SoT 4.7: C_feed = J * 4.500 * (1 + 0,75*P_over + 0,50*R_age)
-C_FEED_BASE_RP_PER_DUCK = Decimal("4500.0")
-C_FEED_COEFF_P_OVER = Decimal("0.75")
-C_FEED_COEFF_R_AGE = Decimal("0.50")
-
-# SoT 4.7: C_fert = Q_phonska * 1.840 + Q_urea * 1.800 + Q_kcl * 9.500
-# (HET regulatory-locked, see DSSConstants.HET_*)
-
-# SoT 4.7: R_weed(d) = 0,93 * (1 - exp(-0,35*d))
-# SoT 4.7: R_pest(d)  = 0,80 * (1 - exp(-0,35*d))
-R_WEED_ASYMPTOTE = Decimal("0.93")
-R_PEST_ASYMPTOTE = Decimal("0.80")
-R_DECAY_RATE = Decimal("0.35")
-
+K_WEEDING_RP_PER_ARE_EVENT = Decimal("21000")
+R_WEEDING = Decimal("0.77")
+WEEDING_RESIDUAL_PER_ARE_EVENT = K_WEEDING_RP_PER_ARE_EVENT * (Decimal("1") - R_WEEDING)   # 4830
+WEEDING_AVOIDED_PER_ARE_EVENT = K_WEEDING_RP_PER_ARE_EVENT - WEEDING_RESIDUAL_PER_ARE_EVENT  # 16170
 
 # ---------------------------------------------------------------------------
-# [local-calculated] SoT 4.6 Material Engine — kappa constants (Decimal)
+# SoT §10.2 Pesticide upper bound indicator (non-monetary)
 # ---------------------------------------------------------------------------
-# Xiong et al. 2014 (cycle reference 80 days), also used in Tabel 1
-# as literature-anchored base values for the per-ekor nutrient pool.
-KAPPA_N = Decimal("0.049")
-KAPPA_P = Decimal("0.072")
-KAPPA_K = Decimal("0.032")
-
-# [system-design] SoT 4.6 elemental content of Phonska (basis unsur murni)
-PHONSKA_N_FRACTION = Decimal("0.15")
-PHONSKA_P_FRACTION = Decimal("0.04364")   # P2O5 10% * 0.4364
-PHONSKA_K_FRACTION = Decimal("0.09961")   # K2O 12% * 0.8301
-UREA_N_FRACTION = Decimal("0.46")
-KCL_K_FRACTION = Decimal("0.49806")       # K2O 60% * 0.8301
+PESTICIDE_REDUCTION_UPPER_BOUND = Decimal("0.80")
 
 
 def _d(value) -> Decimal:
-    """Coerce value to Decimal for safe arithmetic."""
+    """Coerce to Decimal."""
     if isinstance(value, Decimal):
         return value
     return Decimal(str(value))
 
 
-def _dec_exp(x: Decimal) -> Decimal:
-    """Compute exp(x) for Decimal using high-precision Taylor series."""
-    result = Decimal("1")
-    term = Decimal("1")
-    for i in range(1, 100):
-        term *= x / Decimal(i)
-        result += term
-        if abs(term) < Decimal("1E-45"):
-            break
-    return result
-
-
-def _dec_sqrt(x: Decimal) -> Decimal:
-    """Compute sqrt(x) for Decimal using Newton's method (50-digit precision)."""
-    if x <= 0:
-        return Decimal("0")
-    # Initial guess using float
-    guess = Decimal(str(float(x) ** 0.5))
-    # Newton-Raphson: x_new = (x + x/guess) / 2
-    for _ in range(50):
-        guess = (guess + x / guess) / Decimal("2")
-    return guess
-
-
 # ---------------------------------------------------------------------------
-# [system-design] SoT 4.7 Cost Engine — functions (Isolated Components)
+# SoT §10.1: Weeding sandbox
 # ---------------------------------------------------------------------------
 
-def compute_weed_reduction(density_are) -> Decimal:
-    """[system-design] SoT 4.7: R_weed(d) = 0,93 * (1 - exp(-0,35*d))."""
-    d = _d(density_are)
-    return R_WEED_ASYMPTOTE * (Decimal("1") - _dec_exp(-R_DECAY_RATE * d))
 
+def compute_sandbox_weeding(land_area_are: float) -> dict:
+    """SoT §10.1: Weeding Research/Sandbox output.
 
-def compute_pest_reduction(density_are) -> Decimal:
-    """[system-design] SoT 4.7: R_pest(d) = 0,80 * (1 - exp(-0,35*d))."""
-    d = _d(density_are)
-    return R_PEST_ASYMPTOTE * (Decimal("1") - _dec_exp(-R_DECAY_RATE * d))
+    Returns per-event estimates for ONE weeding event.
+    Must NOT be multiplied by cycle frequency without a calibrated frequency parameter.
 
-
-def compute_weed_hired_cost(land_area_are, density_are) -> Decimal:
-    """[local-estimate] SoT 4.7: Cost_labor_weeding = k_weed_hire * A_are * (1 - R_weed(d))."""
-    a = _d(land_area_are)
-    return K_WEED_HIRE_RP_PER_ARE * a * (Decimal("1") - compute_weed_reduction(density_are))
-
-
-def compute_pesticide_cost(land_area_are, density_are) -> Decimal:
-    """[local-estimate] SoT 4.7: Cost_pesticide = C_pest_base * A_are * (1 - R_pest(d))."""
-    a = _d(land_area_are)
-    return C_PEST_BASE_RP_PER_ARE * a * (Decimal("1") - compute_pest_reduction(density_are))
-
-
-def compute_labor_breakdown(
-    land_area_are,
-    p_over,
-    r_age,
-    density_are,
-) -> dict:
-    """[local-estimate] SoT 4.7 (Isolated): Cost_labor_weeding = k_weed_hire * A_are * (1 - R_weed(d))."""
-    return {
-        "Cost_labor_weeding": compute_weed_hired_cost(land_area_are, density_are),
-    }
-
-
-def compute_infrastructure_breakdown(duck_count: int, land_area_are) -> dict:
-    """[system-design] SoT 4.7 (Isolated): C_infra = Cost_infra_net + Cost_infra_cage.
-
-    Cost_infra_net = 0,5 * 289.260 * sqrt(A_are)
-    Cost_infra_cage = Rp175.000/siklus (flat)
+    Weeding_residual_per_are_event = 21000 * (1 - 0.77) = 4830 Rp/are/event
+    Weeding_avoided_per_are_event  = 21000 - 4830 = 16170 Rp/are/event
     """
     a = _d(land_area_are)
-    if a < 0:
-        a = Decimal("0")
-    # [local-calculated] sqrt via Decimal approximation
-    raw_net = Decimal("0.5") * INFRA_NET_COEF * _dec_sqrt(a)
-    raw_cage = INFRA_CAGE_FLAT_RP
+    residual_total = WEEDING_RESIDUAL_PER_ARE_EVENT * a
+    avoided_total = WEEDING_AVOIDED_PER_ARE_EVENT * a
     return {
-        "Cost_infra_net": raw_net,
-        "Cost_infra_cage": raw_cage,
-        "Cost_infra": raw_net + raw_cage,
+        "k_weeding_rp_per_are_event": float(K_WEEDING_RP_PER_ARE_EVENT),
+        "R_weeding": float(R_WEEDING),
+        "Weeding_residual_per_are_event": float(WEEDING_RESIDUAL_PER_ARE_EVENT),
+        "Weeding_avoided_per_are_event": float(WEEDING_AVOIDED_PER_ARE_EVENT),
+        "Weeding_residual_total_one_event": float(residual_total),
+        "Weeding_avoided_total_one_event": float(avoided_total),
+        "note": "Per-siklus total tidak dihitung karena frekuensi kegiatan penyiangan belum dikalibrasi lokal.",
     }
 
 
-def compute_feed_costs(duck_count: int, p_over, r_age) -> Decimal:
-    """[local-estimate] SoT 4.7 (Isolated): C_feed = J * 4.500 * (1 + 0,75*P_over + 0,50*R_age)."""
-    j = Decimal(duck_count)
-    po = _d(p_over)
-    ra = _d(r_age)
-    return j * C_FEED_BASE_RP_PER_DUCK * (Decimal("1") + C_FEED_COEFF_P_OVER * po + C_FEED_COEFF_R_AGE * ra)
+# ---------------------------------------------------------------------------
+# SoT §10.2: Pesticide sandbox
+# ---------------------------------------------------------------------------
+
+
+def compute_sandbox_pesticide() -> dict:
+    """SoT §10.2: Pesticide Research/Sandbox output.
+
+    Pesticide_reduction_upper_bound = 0.80 (non-monetary indicator only).
+    No Rp cost formula. Not included in Core.
+    """
+    return {
+        "Pesticide_reduction_upper_bound": float(PESTICIDE_REDUCTION_UPPER_BOUND),
+        "note": "Nilai 80% adalah indikator upper bound non-moneter. Tidak ada formula biaya Rp yang dikalibrasi lokal.",
+    }
 
 
 # ---------------------------------------------------------------------------
-# [system-design] SoT 4.6 Material Engine
+# SoT §10.3: Fertilizer/Material sandbox (research reference)
 # ---------------------------------------------------------------------------
 
-def compute_soil_nutrients(
+# Soil nutrient kappa constants (literature-uncalibrated, Xiong et al. 2014)
+KAPPA_N = Decimal("0.049")
+KAPPA_P = Decimal("0.072")
+KAPPA_K = Decimal("0.032")
+
+# Elemental fractions
+PHONSKA_N_FRACTION = Decimal("0.15")
+PHONSKA_P_FRACTION = Decimal("0.04364")
+PHONSKA_K_FRACTION = Decimal("0.09961")
+UREA_N_FRACTION = Decimal("0.46")
+KCL_K_FRACTION = Decimal("0.49806")
+
+
+def compute_sandbox_fertilizer(
     duck_count: int,
     t_active: int,
-    lambda_eff,
-    n_need,
-    p_need,
-    k_need,
+    n_survive: int,
+    land_area_are: float,
     constants: DSSConstants,
 ) -> dict:
-    """[system-design] SoT 4.6 Material Engine.
+    """SoT §10.3: Fertilizer Research/Sandbox output.
 
-    N_duck = max(0, 0,02*t_active - 0,6) * kappa_N * (J * lambda_eff)
-    P_duck = max(0, 0,02*t_active - 0,6) * kappa_P * (J * lambda_eff)
-    K_duck = max(0, 0,02*t_active - 0,6) * kappa_K * (J * lambda_eff)
-
-    Then least-cost mapping:
-        Q_phonska = P_rem / 0.04364
-        Q_urea    = max(0, N_rem - Q_phonska * 0.15) / 0.46
-        Q_kcl     = max(0, K_rem - Q_phonska * 0.09961) / 0.49806
-
-    C_fert = Q_phonska*1.840 + Q_urea*1.800 + Q_kcl*9.500  (via HET_*)
+    Literature-uncalibrated mechanism. Not included in Core_Cash_Cost.
+    N_need = 1.1761 * A_are; P_need = 0.2745 * A_are; K_need = 0.2745 * A_are
     """
+    a = _d(land_area_are)
     t_d = Decimal(t_active)
     sub_base = max(Decimal("0"), Decimal("0.02") * t_d - Decimal("0.6"))
-    le = _d(lambda_eff)
-    survivors = Decimal(duck_count) * le
 
+    survivors = Decimal(n_survive)
     n_duck = sub_base * KAPPA_N * survivors
     p_duck = sub_base * KAPPA_P * survivors
     k_duck = sub_base * KAPPA_K * survivors
 
-    n_need_d = _d(n_need)
-    p_need_d = _d(p_need)
-    k_need_d = _d(k_need)
+    n_need = Decimal("1.1761") * a
+    p_need = Decimal("0.2745") * a
+    k_need = Decimal("0.2745") * a
 
-    n_rem = max(Decimal("0"), n_need_d - n_duck)
-    p_rem = max(Decimal("0"), p_need_d - p_duck)
-    k_rem = max(Decimal("0"), k_need_d - k_duck)
+    n_rem = max(Decimal("0"), n_need - n_duck)
+    p_rem = max(Decimal("0"), p_need - p_duck)
+    k_rem = max(Decimal("0"), k_need - k_duck)
 
     q_phonska = p_rem / PHONSKA_P_FRACTION if p_rem > 0 else Decimal("0")
     q_urea = max(Decimal("0"), n_rem - (q_phonska * PHONSKA_N_FRACTION)) / UREA_N_FRACTION
@@ -224,11 +154,29 @@ def compute_soil_nutrients(
     cost_fertilizer_total = cost_fert_phonska + cost_fert_urea + cost_fert_kcl
 
     return {
-        "Cost_fertilizer_total": cost_fertilizer_total,
-        "Cost_fert_urea": cost_fert_urea,
-        "Cost_fert_phonska": cost_fert_phonska,
-        "Cost_fert_kcl": cost_fert_kcl,
-        "Q_phonska": q_phonska,
-        "Q_urea": q_urea,
-        "Q_kcl": q_kcl,
+        "Cost_fertilizer_total": float(round(cost_fertilizer_total, 2)),
+        "Cost_fert_urea": float(round(cost_fert_urea, 2)),
+        "Cost_fert_phonska": float(round(cost_fert_phonska, 2)),
+        "Cost_fert_kcl": float(round(cost_fert_kcl, 2)),
+        "Q_phonska": float(round(q_phonska, 6)),
+        "Q_urea": float(round(q_urea, 6)),
+        "Q_kcl": float(round(q_kcl, 6)),
+        "note": "Sandbox/research reference only. Tidak termasuk Core_Cash_Cost.",
+    }
+
+
+# ---------------------------------------------------------------------------
+# SoT §10.4: Infrastructure sandbox (context/reference only)
+# ---------------------------------------------------------------------------
+
+def compute_sandbox_infrastructure() -> dict:
+    """SoT §10.4: Infrastructure Research/Sandbox — context/reference only.
+
+    No production cost formula or monetary estimate. Not included in Core.
+    """
+    return {
+        "note": (
+            "Infrastructure hanya context/reference. Tidak ada formula biaya atau "
+            "estimasi moneter production, dan tidak termasuk Core_Cash_Cost."
+        ),
     }

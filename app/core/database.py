@@ -4,45 +4,49 @@ from pathlib import Path
 from app.core.config import settings
 
 
-# Explicit-column schema (v2) — aligned with SoT FINAL (docs/Model_Matematika_..._FINAL.docx).
-#
-# The SoT splits the cost response into two groups (Bagian 5):
-#   - Core Validated: Cost_duck_buy, Cost_total_cash
-#   - Empirically Uncorrelated Isolated: Cost_*_isolated fields
-#
-# Historical legacy columns (cost_labor_base, cost_infra_net, cost_infra_total,
-# cost_fertilizer_total, cost_pesticide, etc.) are NOT recreated — they were
-# replaced by the _isolated group in the SoT FINAL.
-HISTORY_V2_COLUMNS = (
-    # Agronomi & operasional
+# v3 explicit columns — SoT FINAL
+# schema_version=3 rows written by /dss/simulate (authenticated)
+# schema_version<=2 legacy rows remain readable via SimulationHistoryLegacy
+HISTORY_V3_COLUMNS = (
+    # Input snapshot
+    "land_area_are REAL NOT NULL DEFAULT 0",
+    "duck_count INTEGER NOT NULL DEFAULT 0",
+    "rice_variety TEXT NOT NULL DEFAULT ''",
+    "planting_system TEXT NOT NULL DEFAULT ''",
+    "duck_age_days INTEGER NOT NULL DEFAULT 0",
+    "planting_date TEXT NOT NULL DEFAULT ''",
+    "p_duck_buy REAL NOT NULL DEFAULT 0",
+    # Age Engine (SoT §4)
+    "age_flag TEXT NOT NULL DEFAULT ''",
+    # Density Engine (SoT §5)
+    "density_are REAL NOT NULL DEFAULT 0",
+    "density_ha REAL NOT NULL DEFAULT 0",
     "density_status TEXT NOT NULL DEFAULT ''",
-    "age_status TEXT NOT NULL DEFAULT ''",
-    "d_masuk_bebek TEXT NOT NULL DEFAULT ''",
-    "d_tarik_bebek TEXT NOT NULL DEFAULT ''",
-    "d_panen_gabah TEXT NOT NULL DEFAULT ''",
-    "n_survive REAL NOT NULL DEFAULT 0",
-    # Yield
-    "yield_are_predict REAL NOT NULL DEFAULT 0",
-    "yield_total_predict REAL NOT NULL DEFAULT 0",
-    # Revenue
+    # Calendar Engine (SoT §6)
+    "hst_in INTEGER NOT NULL DEFAULT 21",
+    "hst_out INTEGER NOT NULL DEFAULT 65",
+    "t_active INTEGER NOT NULL DEFAULT 44",
+    "d_in TEXT NOT NULL DEFAULT ''",
+    "d_out TEXT NOT NULL DEFAULT ''",
+    "harvest_hst_min INTEGER NOT NULL DEFAULT 0",
+    "harvest_hst_max INTEGER NOT NULL DEFAULT 0",
+    "d_panen_min TEXT NOT NULL DEFAULT ''",
+    "d_panen_max TEXT NOT NULL DEFAULT ''",
+    # Survival Engine (SoT §7)
+    "n_survive INTEGER NOT NULL DEFAULT 0",
+    # Yield Engine (SoT §8)
+    "yield_are_pred REAL NOT NULL DEFAULT 0",
+    "yield_total_pred REAL NOT NULL DEFAULT 0",
+    # Core Economics (SoT §9)
     "revenue_gabah REAL NOT NULL DEFAULT 0",
-    "revenue_duck REAL NOT NULL DEFAULT 0",
-    "total_revenue REAL NOT NULL DEFAULT 0",
-    # Cost detail (Core + Isolated groups)
+    "revenue_duck_potential REAL NOT NULL DEFAULT 0",
     "cost_duck_buy REAL NOT NULL DEFAULT 0",
-    "cost_feed_isolated REAL NOT NULL DEFAULT 0",
-    "cost_weeding_isolated REAL NOT NULL DEFAULT 0",
-    "cost_pesticide_isolated REAL NOT NULL DEFAULT 0",
-    "cost_infra_isolated REAL NOT NULL DEFAULT 0",
-    "cost_fertilizer_isolated REAL NOT NULL DEFAULT 0",
-    "cost_infra_net_isolated REAL NOT NULL DEFAULT 0",
-    "cost_infra_cage_isolated REAL NOT NULL DEFAULT 0",
-    "cost_fert_urea_isolated REAL NOT NULL DEFAULT 0",
-    "cost_fert_phonska_isolated REAL NOT NULL DEFAULT 0",
-    "cost_fert_kcl_isolated REAL NOT NULL DEFAULT 0",
-    "cost_total_cash REAL NOT NULL DEFAULT 0",
-    # Profit
-    "profit_net_cash REAL NOT NULL DEFAULT 0",
+    "cost_feed REAL NOT NULL DEFAULT 0",
+    "core_cash_cost REAL NOT NULL DEFAULT 0",
+    "total_revenue_dss REAL NOT NULL DEFAULT 0",
+    "net_cash_contribution_dss REAL NOT NULL DEFAULT 0",
+    # Warnings
+    "warnings_json TEXT NOT NULL DEFAULT '[]'",
 )
 
 
@@ -71,23 +75,21 @@ def initialize_database() -> None:
             CREATE TABLE IF NOT EXISTS dss_simulation_histories (
                 id TEXT PRIMARY KEY,
                 user_id TEXT NOT NULL,
-                -- Legacy JSON blobs (kept for backward-compat with old rows).
-                input_json TEXT NOT NULL,
-                actual_scenario_json TEXT NOT NULL,
-                recommended_scenario_json TEXT NOT NULL,
-                comparison_json TEXT NOT NULL,
-                risk_json TEXT NOT NULL,
-                trace_json TEXT NOT NULL,
-                notes_json TEXT NOT NULL,
+                -- Legacy JSON blobs (kept for backward-compat with v1/v2 rows).
+                input_json TEXT NOT NULL DEFAULT '{}',
+                actual_scenario_json TEXT NOT NULL DEFAULT '{}',
+                recommended_scenario_json TEXT NOT NULL DEFAULT '{}',
+                comparison_json TEXT NOT NULL DEFAULT '{}',
+                risk_json TEXT NOT NULL DEFAULT '{}',
+                trace_json TEXT NOT NULL DEFAULT '{}',
+                notes_json TEXT NOT NULL DEFAULT '[]',
                 economics_json TEXT NOT NULL DEFAULT '{}',
                 ecology_json TEXT NOT NULL DEFAULT '{}',
                 environment_json TEXT NOT NULL DEFAULT '{}',
                 lookup_json TEXT NOT NULL DEFAULT '{}',
                 validation_json TEXT NOT NULL DEFAULT '{}',
                 data_readiness_json TEXT NOT NULL DEFAULT '{}',
-                -- Fase 5: explicit columns + schema_version.
-                -- 1 = legacy JSON-only row (backward-compat read).
-                -- 2 = explicit-column row written by /dss/simulate.
+                -- schema_version: 1/2=legacy JSON, 3=v3 explicit columns (SoT FINAL)
                 schema_version INTEGER NOT NULL DEFAULT 1,
                 created_at TEXT NOT NULL,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -97,40 +99,37 @@ def initialize_database() -> None:
             ON dss_simulation_histories(user_id, created_at DESC);
             """
         )
+        # Add missing legacy JSON columns
         existing_columns = {
             row["name"]
             for row in connection.execute(
                 "PRAGMA table_info(dss_simulation_histories)"
             ).fetchall()
         }
-        for column_def in (
-            "economics_json",
-            "ecology_json",
-            "environment_json",
-            "lookup_json",
-            "validation_json",
-            "data_readiness_json",
-            "schema_version",
-        ):
-            if column_def not in existing_columns:
-                if column_def == "schema_version":
-                    connection.execute(
-                        "ALTER TABLE dss_simulation_histories "
-                        "ADD COLUMN schema_version INTEGER NOT NULL DEFAULT 1"
-                    )
-                else:
-                    connection.execute(
-                        f"ALTER TABLE dss_simulation_histories "
-                        f"ADD COLUMN {column_def} TEXT NOT NULL DEFAULT '{{}}'"
-                    )
-        # Re-fetch after ALTER.
+        for col_name, col_def in [
+            ("economics_json", "TEXT NOT NULL DEFAULT '{}'"),
+            ("ecology_json", "TEXT NOT NULL DEFAULT '{}'"),
+            ("environment_json", "TEXT NOT NULL DEFAULT '{}'"),
+            ("lookup_json", "TEXT NOT NULL DEFAULT '{}'"),
+            ("validation_json", "TEXT NOT NULL DEFAULT '{}'"),
+            ("data_readiness_json", "TEXT NOT NULL DEFAULT '{}'"),
+            ("schema_version", "INTEGER NOT NULL DEFAULT 1"),
+        ]:
+            if col_name not in existing_columns:
+                connection.execute(
+                    f"ALTER TABLE dss_simulation_histories ADD COLUMN {col_name} {col_def}"
+                )
+
+        # Re-fetch after potential ALTER
         existing_columns = {
             row["name"]
             for row in connection.execute(
                 "PRAGMA table_info(dss_simulation_histories)"
             ).fetchall()
         }
-        for column_def in HISTORY_V2_COLUMNS:
+
+        # Add v3 columns
+        for column_def in HISTORY_V3_COLUMNS:
             column_name = column_def.split()[0]
             if column_name not in existing_columns:
                 connection.execute(

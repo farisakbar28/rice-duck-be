@@ -1,7 +1,7 @@
-"""Fase 7 — deterministic tests for formula_engine and impact_engine.
+"""Tests for formula engines — SoT FINAL.
 
-These tests cover the SoT-aligned core (Tabel 2.2 in
-``Model_Matematika_..._FINAL_terbaru.md``) and Fase 0–6 changes.
+Tests cover SoT §4 Age, §5 Density, §6 Calendar, §7 Survival, §8 Yield, §9 Core Economics.
+All legacy semantics (R_age, F_age, lambda_eff, P_over, F_density_bio, etc.) are absent.
 """
 
 import math
@@ -11,446 +11,414 @@ from decimal import Decimal
 import pytest
 
 from app.engines.formula_engine import (
-    compute_calendar_milestones,
+    T_ACTIVE,
+    Y_BASE,
+    HST_IN,
+    HST_OUT,
+    HST_PANEN_SERTANI_MIN,
+    HST_PANEN_SERTANI_MAX,
+    HST_PANEN_INPARI,
+    compute_age_flag,
+    compute_calendar,
+    compute_core_economics,
     compute_density,
-    compute_duck_age_status,
     compute_surviving_ducks,
-    compute_yield_components,
+    compute_yield,
 )
-from app.engines.impact_engine import (
-    K_WEED_HIRE_RP_PER_ARE,
-    compute_feed_costs,
-    compute_infrastructure_breakdown,
-    compute_labor_breakdown,
-    compute_weed_hired_cost,
-    compute_weed_reduction,
-)
+from app.engines.impact_engine import compute_sandbox_infrastructure
 
 
 # ===========================================================================
-# 1. Age Engine (Tabel 2.2)
+# SoT §4: Age Readiness Engine
 # ===========================================================================
 
 
-def test_age_below_14_high_risk() -> None:
-    out = compute_duck_age_status(10)
-    assert out['R_age'] == Decimal("0.35")
-    assert 'WARNING' in out['age_status']
+class TestAgeFlag:
+    """SoT §4: AgeFlag thresholds 21/30."""
 
+    def test_age_20_too_young(self):
+        r = compute_age_flag(20)
+        assert r["age_flag"] == "TOO_YOUNG"
+        assert len(r["warnings"]) > 0
 
-def test_age_14_to_29_safe_range() -> None:
-    out = compute_duck_age_status(14)
-    assert out['R_age'] == Decimal("0.15")
-    assert out['age_status'] == 'AGE_BUY_RANGE'
-    out29 = compute_duck_age_status(29)
-    assert out29['R_age'] == Decimal("0.15")
+    def test_age_21_recommended(self):
+        r = compute_age_flag(21)
+        assert r["age_flag"] == "RECOMMENDED"
+        assert r["warnings"] == []
 
+    def test_age_25_recommended(self):
+        r = compute_age_flag(25)
+        assert r["age_flag"] == "RECOMMENDED"
 
-def test_age_above_29_warning() -> None:
-    out = compute_duck_age_status(30)
-    assert out['R_age'] == Decimal("0.05")
-    assert 'ADAPTED_FULLY' in out['age_status']
+    def test_age_30_recommended(self):
+        r = compute_age_flag(30)
+        assert r["age_flag"] == "RECOMMENDED"
 
+    def test_age_31_above_recommended(self):
+        r = compute_age_flag(31)
+        assert r["age_flag"] == "ABOVE_RECOMMENDED_AGE"
+        assert len(r["warnings"]) > 0
 
-# ===========================================================================
-# 2. Density Engine (Tabel 2.2)
-# ===========================================================================
+    def test_age_1_too_young(self):
+        r = compute_age_flag(1)
+        assert r["age_flag"] == "TOO_YOUNG"
 
+    def test_age_50_above_recommended(self):
+        r = compute_age_flag(50)
+        assert r["age_flag"] == "ABOVE_RECOMMENDED_AGE"
 
-def test_density_safe_zone() -> None:
-    # Jarwo K_safe=4, d=3 → safe
-    out = compute_density(30, 10, 4.0)
-    assert out["d"] == Decimal("3.0")
-    assert out["P_over"] == Decimal("0")
-    assert out["P_under"] == Decimal("0")
-    assert out["density_status"] == "SAFE"
+    def test_no_r_age_in_output(self):
+        """SoT §13: R_age must NOT be returned."""
+        r = compute_age_flag(21)
+        assert "R_age" not in r
+        assert "r_age" not in r
 
-
-def test_density_above_k_safe_overdensity() -> None:
-    # Jarwo K_safe=4, d=6 → (6-4)/(8-4)=0.5
-    out = compute_density(60, 10, 4.0)
-    assert out["P_over"] == Decimal("0.5")
-    assert out["P_under"] == Decimal("0")
-    assert out["density_status"] == "WARNING_DENSITY"
-
-
-def test_density_underdensity() -> None:
-    out = compute_density(10, 10, 4.0)
-    assert out["P_under"] == Decimal("0.5")
-    assert out["density_status"] == "WARNING_UNDER_DENSITY"
-
-
-def test_density_over_capped_at_1() -> None:
-    out = compute_density(100, 1, 3.0)
-    assert out["P_over"] == Decimal("1")
+    def test_no_f_age_in_output(self):
+        r = compute_age_flag(14)
+        assert "F_age" not in r
+        assert "f_age" not in r
 
 
 # ===========================================================================
-# 3. Survival Engine (Tabel 2.2)
+# SoT §5: Density Engine
 # ===========================================================================
 
 
-def test_lambda_eff_safe() -> None:
-    # U=14 → r_age=0.15, d=5 → p_over=0.25
-    # 0.78125 * (1 - 0.5*0.15) * (1 - 0.45*0.25) = 0.67*0.925*0.8875 = 0.5502...
-    n = compute_surviving_ducks(50, 0.15, 0.25)
-    expected = Decimal("50") * Decimal("0.78125") * Decimal("0.925") * Decimal("0.8875")
-    assert abs(float(n) - float(expected)) < 1e-6
+class TestDensity:
+    """SoT §5: 4-tier density status, no P_over/P_under."""
+
+    def test_under_density(self):
+        # d = 10/10 = 1.0 < 2
+        r = compute_density(10, 10, "jajar_legowo")
+        assert r["density_status"] == "UNDER_DENSITY"
+        assert float(r["d"]) == pytest.approx(1.0)
+
+    def test_under_density_tegel(self):
+        r = compute_density(5, 10, "tegel")
+        assert r["density_status"] == "UNDER_DENSITY"
+
+    def test_jarwo_recommended_lower_bound(self):
+        # d = 20/10 = 2.0 → RECOMMENDED (Jarwo ceiling=4)
+        r = compute_density(20, 10, "jajar_legowo")
+        assert r["density_status"] == "RECOMMENDED"
+
+    def test_jarwo_recommended_upper_bound(self):
+        # d = 40/10 = 4.0 → RECOMMENDED (Jarwo ceiling=4)
+        r = compute_density(40, 10, "jajar_legowo")
+        assert r["density_status"] == "RECOMMENDED"
+
+    def test_jarwo_above_recommended(self):
+        # d = 50/10 = 5.0 > 4 but <= 8
+        r = compute_density(50, 10, "jajar_legowo")
+        assert r["density_status"] == "ABOVE_RECOMMENDED"
+
+    def test_tegel_recommended_lower_bound(self):
+        # d = 20/10 = 2.0 → RECOMMENDED (Tegel ceiling=3)
+        r = compute_density(20, 10, "tegel")
+        assert r["density_status"] == "RECOMMENDED"
+
+    def test_tegel_recommended_upper_bound(self):
+        # d = 30/10 = 3.0 → RECOMMENDED (Tegel ceiling=3)
+        r = compute_density(30, 10, "tegel")
+        assert r["density_status"] == "RECOMMENDED"
+
+    def test_tegel_above_recommended(self):
+        # d = 40/10 = 4.0 > 3 but <= 8
+        r = compute_density(40, 10, "tegel")
+        assert r["density_status"] == "ABOVE_RECOMMENDED"
+
+    def test_overload_high_risk(self):
+        # d = 81/10 = 8.1 > 8
+        r = compute_density(81, 10, "jajar_legowo")
+        assert r["density_status"] == "OVERLOAD_HIGH_RISK"
+        assert len(r["warnings"]) > 0
+
+    def test_overload_boundary(self):
+        # d = 80/10 = 8.0 exactly → NOT overload (Jarwo: ABOVE_RECOMMENDED)
+        r = compute_density(80, 10, "jajar_legowo")
+        assert r["density_status"] == "ABOVE_RECOMMENDED"
+
+    def test_overload_just_above(self):
+        # d > 8 exactly
+        r = compute_density(81, 10, "jajar_legowo")
+        assert r["density_status"] == "OVERLOAD_HIGH_RISK"
+
+    def test_d_ha_equals_100_times_d(self):
+        r = compute_density(20, 10, "jajar_legowo")
+        assert float(r["d_ha"]) == pytest.approx(float(r["d"]) * 100)
+
+    def test_no_p_over_in_output(self):
+        """SoT §13: P_over must NOT be returned."""
+        r = compute_density(50, 10, "jajar_legowo")
+        assert "P_over" not in r
+        assert "p_over" not in r
+
+    def test_no_p_under_in_output(self):
+        r = compute_density(10, 10, "jajar_legowo")
+        assert "P_under" not in r
+
+    def test_density_value_correct(self):
+        r = compute_density(20, 6.35, "jajar_legowo")
+        # d = 20/6.35 ≈ 3.1496
+        assert float(r["d"]) == pytest.approx(20 / 6.35, rel=1e-6)
 
 
-def test_lambda_eff_zero_p_over() -> None:
-    n = compute_surviving_ducks(50, 0.15, 0.0)
-    expected = Decimal("50") * Decimal("0.78125") * Decimal("0.925") * Decimal("1.0")
-    assert abs(float(n) - float(expected)) < 1e-6
+# ===========================================================================
+# SoT §6: Calendar Engine
+# ===========================================================================
 
 
-def test_n_survive_output_uses_floor_not_round_or_int_truncation() -> None:
-    """SoT: N_survive = floor(J * lambda_eff), not round()."""
-    from app.schemas.dss import DSSSimulationRequest
-    from app.services.simulation_service import DSSService
+class TestCalendar:
+    """SoT §6: Calendar constants and date derivation."""
 
-    raw_n_survive = compute_surviving_ducks(50, 0.15, 0.25)
-    assert abs(float(raw_n_survive) - 32.06787109375) < 1e-6
-    assert int(raw_n_survive) == 32
+    def test_hst_constants(self):
+        assert HST_IN == 21
+        assert HST_OUT == 65
+        assert T_ACTIVE == 44
 
-    response = DSSService().simulate(
-        DSSSimulationRequest(
-            land_area_are=10,
-            duck_count=50,
-            rice_variety="sertani",
-            planting_system="jajar_legowo",
-            planting_date=date(2026, 1, 1),
-            duck_age_days=14,
+    def test_sertani_hst_range(self):
+        assert HST_PANEN_SERTANI_MIN == 100
+        assert HST_PANEN_SERTANI_MAX == 110
+
+    def test_inpari_hst(self):
+        assert HST_PANEN_INPARI == 134
+
+    def test_sertani_calendar(self):
+        r = compute_calendar(date(2024, 4, 22), "sertani")
+        assert r["D_in"] == date(2024, 5, 13)       # +21
+        assert r["D_out"] == date(2024, 6, 26)      # +65
+        assert r["harvest_hst_min"] == 100
+        assert r["harvest_hst_max"] == 110
+        assert r["D_panen_min"] == date(2024, 7, 31)   # +100
+        assert r["D_panen_max"] == date(2024, 8, 10)   # +110
+        assert r["t_active"] == 44
+        assert r["HST_in"] == 21
+        assert r["HST_out"] == 65
+        assert r["warnings"] == []
+
+    def test_inpari_calendar(self):
+        r = compute_calendar(date(2024, 4, 12), "inpari")
+        assert r["harvest_hst_min"] == 134
+        assert r["harvest_hst_max"] == 134
+        assert r["D_panen_min"] == date(2024, 8, 24)   # +134
+        assert r["D_panen_max"] == date(2024, 8, 24)
+        assert len(r["warnings"]) > 0
+        assert "generic" in r["warnings"][0].lower() or "kalibrasi" in r["warnings"][0].lower()
+
+    def test_planting_date_2026_01_01_sertani(self):
+        r = compute_calendar(date(2026, 1, 1), "sertani")
+        assert r["D_in"] == date(2026, 1, 22)
+        assert r["D_out"] == date(2026, 3, 7)
+        assert r["D_panen_min"] == date(2026, 4, 11)
+        assert r["D_panen_max"] == date(2026, 4, 21)
+
+
+# ===========================================================================
+# SoT §7: Survival Engine
+# ===========================================================================
+
+
+class TestSurvival:
+    """SoT §7: N_survive = J (d<=8) or floor(0.60*J) (d>8)."""
+
+    def test_d_equals_1_no_mortality(self):
+        d = Decimal("1.0")
+        assert compute_surviving_ducks(50, d) == 50
+
+    def test_d_equals_2_no_mortality(self):
+        d = Decimal("2.0")
+        assert compute_surviving_ducks(50, d) == 50
+
+    def test_d_equals_8_no_mortality(self):
+        """d=8 boundary: NOT overload, N_survive=J."""
+        d = Decimal("8.0")
+        assert compute_surviving_ducks(100, d) == 100
+
+    def test_d_above_8_overload(self):
+        """d>8: N_survive=floor(0.60*J)."""
+        d = Decimal("8.1")
+        assert compute_surviving_ducks(100, d) == 60
+
+    def test_d_above_8_floor_semantics(self):
+        """floor(0.60*81) = floor(48.6) = 48."""
+        d = Decimal("8.1")
+        assert compute_surviving_ducks(81, d) == 48
+
+    def test_d_above_8_exact_overload_B08(self):
+        """B08: A=10, J=81, d=8.1 → OVERLOAD, floor(0.60*81)=48."""
+        d = Decimal("8.1")
+        assert compute_surviving_ducks(81, d) == 48
+
+    def test_normal_survival_full_count(self):
+        """SoT §7: d<=8 → N_survive = full duck_count."""
+        d = Decimal("3.0")
+        assert compute_surviving_ducks(32, d) == 32
+
+    def test_no_lambda_eff(self):
+        """No lambda_eff=0.78125 in production path."""
+        # If d<=8, result must equal duck_count exactly
+        d = Decimal("4.0")
+        result = compute_surviving_ducks(50, d)
+        assert result == 50
+
+    def test_no_r_age_dependency(self):
+        """Survival must not depend on age."""
+        # Same J and d → same result regardless of age
+        d = Decimal("3.0")
+        r1 = compute_surviving_ducks(30, d)
+        r2 = compute_surviving_ducks(30, d)
+        assert r1 == r2 == 30
+
+
+# ===========================================================================
+# SoT §8: Yield Engine
+# ===========================================================================
+
+
+class TestYield:
+    """SoT §8: Constant baseline 47.8767507, system/variety/density neutral."""
+
+    def test_y_base_constant(self):
+        assert Y_BASE == Decimal("47.8767507")
+
+    def test_yield_are_pred_constant(self):
+        r = compute_yield(10.0)
+        assert float(r["Yield_are_pred"]) == pytest.approx(47.8767507, rel=1e-7)
+
+    def test_yield_total_pred(self):
+        r = compute_yield(10.0)
+        assert float(r["Yield_total_pred"]) == pytest.approx(47.8767507 * 10.0, rel=1e-6)
+
+    def test_yield_invariant_density(self):
+        """SoT §8: Yield must not depend on density."""
+        r_low = compute_yield(10.0)
+        r_high = compute_yield(10.0)
+        assert float(r_low["Yield_are_pred"]) == float(r_high["Yield_are_pred"])
+
+    def test_yield_jarwo_equals_tegel(self):
+        """SoT §8: F_sys=1 for both systems — yield identical for same area."""
+        r_jarwo = compute_yield(6.0)
+        r_tegel = compute_yield(6.0)
+        assert float(r_jarwo["Yield_are_pred"]) == float(r_tegel["Yield_are_pred"])
+
+    def test_yield_sertani_equals_inpari(self):
+        """SoT §8: F_var=1 for both varieties — yield identical for same area."""
+        r_s = compute_yield(5.0)
+        r_i = compute_yield(5.0)
+        assert float(r_s["Yield_are_pred"]) == float(r_i["Yield_are_pred"])
+
+    def test_yield_does_not_use_f_density_bio(self):
+        """No F_density_bio in production path."""
+        r = compute_yield(10.0)
+        # Yield_are_pred must be exactly Y_BASE
+        assert float(r["Yield_are_pred"]) == pytest.approx(47.8767507, rel=1e-10)
+
+    def test_yield_total_small_area(self):
+        r = compute_yield(3.45)
+        assert float(r["Yield_total_pred"]) == pytest.approx(47.8767507 * 3.45, rel=1e-6)
+
+
+# ===========================================================================
+# SoT §9: Core Economic Engine
+# ===========================================================================
+
+
+class TestCoreEconomics:
+    """SoT §9: Revenue, Cost, Net_Cash_Contribution_DSS."""
+
+    def _std_yield(self, area=10.0):
+        return compute_yield(area)["Yield_total_pred"]
+
+    def test_revenue_gabah(self):
+        ytp = self._std_yield(10.0)
+        r = compute_core_economics(
+            yield_total_pred=ytp, n_survive=50, duck_count=50, p_duck_buy=0
         )
-    )
-    assert response.N_survive == 32.0
-
-
-# ===========================================================================
-# 4. Yield Engine (Tabel 2.2) — New bio-density formula
-# ===========================================================================
-
-Y0 = Decimal("47.8767507")
-ALPHA_BIO = Decimal("0.15")
-K_OPT = Decimal("4.0")
-BETA_TRAMP = Decimal("0.25")
-K_MAX = Decimal("8.0")
-
-
-def _f_density_bio(d: Decimal) -> Decimal:
-    boost = ALPHA_BIO * (Decimal("1") - (Decimal("1") - (-d / K_OPT).exp()))
-    # The engines use internal Taylor series for exp; the test mirror uses
-    # Python's built-in Decimal.exp() which is exact to the current precision.
-    # Re-derive directly with Decimal.exp():
-    boost = ALPHA_BIO * (Decimal("1") - (-d / K_OPT).exp())
-    trampling = BETA_TRAMP * (max(Decimal("0"), (d - K_MAX) / K_MAX) ** Decimal("2"))
-    return Decimal("1") + boost - trampling
-
-
-def _f_age(r_age: Decimal) -> Decimal:
-    return Decimal("1") - Decimal("0.08") * r_age
-
-
-def test_yield_jarwo_safe() -> None:
-    # Safe density d=3.0 (between 2 and K_safe=4), r_age=0.15, F_sys=1.0, f_var=1.0
-    d = Decimal("3.0")
-    r_age = Decimal("0.15")
-    F_sys = Decimal("1.0")
-    f_var = Decimal("1.0")
-    expected = Y0 * _f_density_bio(d) * _f_age(r_age) * F_sys * f_var
-    y = compute_yield_components(3.0, 0.15, 1.0, 1.0)
-    assert abs(float(y) - float(expected)) < 1e-4
-
-
-def test_yield_tegel_higher_than_jarwo() -> None:
-    d = Decimal("3.0")
-    r_age = Decimal("0.15")
-    f_var = Decimal("1.0")
-    y_jarwo = compute_yield_components(3.0, 0.15, 1.0, 1.0)
-    y_tegel = compute_yield_components(3.0, 0.15, 1.211, 1.0)
-    assert y_tegel > y_jarwo
-    expected_ratio = Decimal("1.211")
-    assert abs(float(y_tegel) - float(y_jarwo * expected_ratio)) < 1e-3
-
-
-def test_yield_density_bio_boost_at_k_opt() -> None:
-    # At d = K_OPT = 4.0, boost = alpha * (1 - exp(-1))
-    d = Decimal("4.0")
-    r_age = Decimal("0.0")
-    F_sys = Decimal("1.0")
-    f_var = Decimal("1.0")
-    expected_boost = ALPHA_BIO * (Decimal("1") - (-d / K_OPT).exp())
-    expected_f_density = Decimal("1") + expected_boost
-    y = compute_yield_components(4.0, 0.0, 1.0, 1.0)
-    expected = Y0 * expected_f_density * _f_age(r_age) * F_sys * f_var
-    assert abs(float(y) - float(expected)) < 1e-4
-
-
-def test_yield_trampling_penalty_above_k_max() -> None:
-    # d = 12 > K_MAX = 8, penalty applies
-    d = Decimal("12.0")
-    r_age = Decimal("0.0")
-    F_sys = Decimal("1.0")
-    f_var = Decimal("1.0")
-    trampling = BETA_TRAMP * ((d - K_MAX) / K_MAX) ** Decimal("2")
-    expected_f_density = (
-        Decimal("1") + ALPHA_BIO * (Decimal("1") - (-d / K_OPT).exp()) - trampling
-    )
-    y = compute_yield_components(12.0, 0.0, 1.0, 1.0)
-    expected = Y0 * expected_f_density * _f_age(r_age) * F_sys * f_var
-    assert abs(float(y) - float(expected)) < 1e-4
-
-
-def test_yield_no_trampling_at_k_max() -> None:
-    # d = 8 == K_MAX, trampling term zero
-    d = Decimal("8.0")
-    r_age = Decimal("0.0")
-    F_sys = Decimal("1.0")
-    f_var = Decimal("1.0")
-    expected_f_density = Decimal("1") + ALPHA_BIO * (Decimal("1") - (-d / K_OPT).exp())
-    y = compute_yield_components(8.0, 0.0, 1.0, 1.0)
-    expected = Y0 * expected_f_density * _f_age(r_age) * F_sys * f_var
-    assert abs(float(y) - float(expected)) < 1e-4
-
-
-# ===========================================================================
-# 5. Calendar Engine (Tabel 2.2 / 2.3)
-# ===========================================================================
-
-
-def test_calendar_d_masuk_21_d_tarik_65() -> None:
-    """Fase 1: D_masuk_bebek = D_tanam + 21, D_tarik_bebek = D_tanam + 65."""
-    m = compute_calendar_milestones(date(2026, 1, 1), 99, 20, 65)
-    assert m["D_masuk_bebek"] == date(2026, 1, 22)
-    assert m["D_tarik_bebek"] == date(2026, 3, 7)
-    assert m["t_active"] == 44
-
-
-def test_calendar_d_panen_sertani_114() -> None:
-    m = compute_calendar_milestones(date(2026, 1, 1), 114, 20, 65)
-    assert m['D_panen_gabah'] == date(2026, 4, 25)
-
-
-def test_calendar_d_panen_inpari_134() -> None:
-    m = compute_calendar_milestones(date(2026, 1, 1), 134, 20, 65)
-    assert m['D_panen_gabah'] == date(2026, 5, 15)
-
-
-# ===========================================================================
-# 6. Cost Engine — Feed (GUARDRAIL: must not change scale)
-# ===========================================================================
-
-
-def test_feed_unchanged_scale() -> None:
-    # SoT example: 50 ducks, p_over=0.25, r_age=0.15 → 284062.5
-    c = compute_feed_costs(50, 0.25, 0.15)
-    expected = Decimal("50") * Decimal("4500") * (
-        Decimal("1") + Decimal("0.75") * Decimal("0.25") + Decimal("0.50") * Decimal("0.15")
-    )
-    assert abs(float(c) - float(expected)) < 1e-2
-    assert abs(float(c) - 284062.5) < 1e-2
-
-
-# ===========================================================================
-# 7. Cost Engine — Labor breakdown (Fase 2)
-# ===========================================================================
-
-
-def test_labor_breakdown_sot_example() -> None:
-    lab = compute_labor_breakdown(10, 0.25, 0.15, 5.0)
-    # R_weed(5) = 0.93 * (1 - exp(-0.35*5)) using Decimal exp
-    r_weed = Decimal("0.93") * (Decimal("1") - (Decimal("-0.35") * Decimal("5")).exp())
-    expected = Decimal("26178.0") * Decimal("10") * (Decimal("1") - r_weed)
-    assert abs(float(lab['Cost_labor_weeding']) - float(expected)) < 1e-2
-
-
-def test_weed_reduction_formula() -> None:
-    # R_weed(5) = 0.93 * (1 - exp(-1.75))
-    r = compute_weed_reduction(5.0)
-    expected = Decimal("0.93") * (Decimal("1") - (Decimal("-0.35") * Decimal("5")).exp())
-    assert abs(float(r) - float(expected)) < 1e-6
-
-
-def test_weed_hired_constant() -> None:
-    assert K_WEED_HIRE_RP_PER_ARE == Decimal("26178.0")
-
-
-# ===========================================================================
-# 8. Cost Engine — Infrastructure (Fase 2)
-# ===========================================================================
-
-
-def test_infra_no_floor_jarwo() -> None:
-    inf = compute_infrastructure_breakdown(50, 10)
-    # Decimal sqrt of 10 via Python's built-in Decimal.sqrt()
-    expected_net = Decimal("0.5") * Decimal("289260.0") * Decimal("10").sqrt()
-    expected_cage = Decimal("175000.0")
-    assert abs(float(inf['Cost_infra_net']) - float(expected_net)) < 1e-2
-    assert abs(float(inf['Cost_infra_cage']) - float(expected_cage)) < 1e-2
-    assert abs(float(inf['Cost_infra']) - float(expected_net + expected_cage)) < 1e-2
-
-
-def test_infra_floor_zero_raw_split_50_50() -> None:
-    inf = compute_infrastructure_breakdown(0, 0)
-    assert inf['Cost_infra'] == Decimal("175000.0")
-
-
-
-
-
-# ===========================================================================
-# 10. Constants — SoT values
-# ===========================================================================
-
-
-def test_HET_pupuk() -> None:
-    from app.domain.models import DSSConstants
-
-    c = DSSConstants(
-        survival_lambda=0.67,
-        t_max_eff_days=45,
-        t_phase_1_days=50,
-        local_feed_warning_phase_days=30,
-        dung_phase_1_total_kg=4.0,
-        dung_phase_2_daily_kg=0.2,
-        minimum_density_are=1.0,
-        p_max=0.8,
-        penalty_gamma=0.5,
-        daily_duck_grazing_hours=10.0,
-        baseline_grazing_hours=10.0,
-        feed_requirement_kg_per_duck_day=0.10,
-        feed_natural_saving_rate=1.0,
-        feed_greedy_kg_per_duck_day=0.15,
-        rice_duck_price_rp_per_kg=6000.0,
-        duck_sale_price_rp_per_duck=35000.0,
-        duck_buy_price_rp_per_duck=25000.0,
-        duck_target_out_max_days=60,
-        duck_buy_price_fallback_min_rp=25000.0,
-        duck_buy_price_fallback_max_rp=25000.0,
-        duck_buy_price_fallback_mid_rp=25000.0,
-        feed_price_rp_per_kg=0.0,
-        nitrogen_price_rp_per_kg=1800.0,
-        potassium_price_rp_per_kg=9500.0,
-        weeding_cost_rp_per_are=15000.0,
-        net_cost_rp=1350000.0,
-        net_lifetime_seasons=3,
-        shelter_cost_rp=600000.0,
-        shelter_lifetime_seasons=4,
-        infrastructure_maintenance_rp_per_season=0.0,
-        additional_cost_rp_per_season=0.0,
-        gwp_ch4=34.0,
-        gwp_n2o=265.0,
-        seasonal_ch4_rice_duck_kg_per_ha=None,
-        seasonal_ch4_conventional_kg_per_ha=None,
-        seasonal_n2o_kg_per_ha=None,
-        calibration_note="",
-    )
-    assert c.HET_urea == 1800.0
-    assert c.HET_phonska == 1840.0
-    assert c.HET_kcl == 9500.0
-
-
-# ===========================================================================
-# 11. Seed — SoT canonical values
-# ===========================================================================
-
-
-def test_seed_sertani_hst_panen_114() -> None:
-    from app.data.seed import RICE_VARIETIES
-
-    sertani = next(v for v in RICE_VARIETIES if v.code == 'sertani')
-    assert sertani.hst_panen == 114
-
-
-def test_seed_inpari_hst_panen_134() -> None:
-    from app.data.seed import RICE_VARIETIES
-
-    inpari = next(v for v in RICE_VARIETIES if v.code == 'inpari')
-    assert inpari.hst_panen == 134
-
-
-def test_seed_tegel_F_sys_1_211() -> None:
-    from app.data.seed import PLANTING_SYSTEMS
-
-    tegel = next(p for p in PLANTING_SYSTEMS if p.code == 'tegel')
-    assert tegel.F_sys == 1.211
-    assert tegel.f_yield == 1.211  # deprecated alias in sync
-
-
-def test_seed_jarwo_k_safe_4_F_sys_1() -> None:
-    from app.data.seed import PLANTING_SYSTEMS
-
-    jarwo = next(p for p in PLANTING_SYSTEMS if p.code == "jajar_legowo")
-    assert jarwo.k_safe_are == 4.0
-    assert jarwo.F_sys == 1.00
-
-
-# ===========================================================================
-# 12. Phase 0 — Optimizer isolation
-# ===========================================================================
-
-
-def test_optimizer_schemas_isolated_from_dss_core() -> None:
-    """Grep-equivalent: optimizer classes must not be in dss.py."""
-    import app.schemas.dss as dss_mod
-
-    dss_attrs = set(dir(dss_mod))
-    forbidden = {
-        "RecommendedScenario",
-        "OptimalityAssessment",
-        "EnvironmentSummary",
-        "ActualScenario",
-        "EconomicsSummary",
-        "EcologySummary",
-        "ComparisonSummary",
-        "RiskSummary",
-        "SoilNutrients",
-        "ValidationSummary",
-        "DataReadinessSummary",
-        "ScenarioEconomics",
-        "ScenarioEcology",
-        "ScenarioEnvironment",
-        "InfrastructureOutput",
-        "PredictedYield",
-        "QualityOutput",
-        "DurationConstraintSummary",
-        "DuckAgeAssessment",
-    }
-    leak = forbidden & dss_attrs
-    assert not leak, f"Optimizer schemas leaked into dss.py: {leak}"
-
-
-def test_optimizer_endpoint_exists() -> None:
-    from app.api.routes.optimizer import router
-
-    paths = [r.path for r in router.routes]
-    assert "/optimizer/recommend" in paths
-
-
-# ===========================================================================
-# 13. Fase 6 — Generasi A artifacts removed from DSSConstants
-# ===========================================================================
-
-
-def test_no_alpha_local_in_DSSConstants() -> None:
-    from app.domain.models import DSSConstants
-    import dataclasses
-
-    fields = {f.name for f in dataclasses.fields(DSSConstants)}
-    assert "alpha_local" not in fields
-    assert "kappa_n" not in fields
-    assert "kappa_p" not in fields
-    assert "kappa_k" not in fields
-    assert "phosphate_price_rp_per_kg" not in fields
-    assert "conventional_rice_price_rp_per_kg" not in fields
-    assert "conventional_yield_kg_per_ha" not in fields
-
-
-def test_no_alpha_local_in_seed_constants() -> None:
-    from app.data.seed import DSS_CONSTANTS
-    import dataclasses
-
-    fields = {f.name for f in dataclasses.fields(type(DSS_CONSTANTS))}
-    assert "alpha_local" not in fields
-    # The default factory should not inject alpha_local either.
-    assert not hasattr(DSS_CONSTANTS, "alpha_local")
+        assert float(r["Revenue_gabah"]) == pytest.approx(float(ytp) * 6000, rel=1e-6)
+
+    def test_revenue_duck_potential(self):
+        ytp = self._std_yield()
+        r = compute_core_economics(
+            yield_total_pred=ytp, n_survive=32, duck_count=50, p_duck_buy=0
+        )
+        assert float(r["Revenue_duck_potential"]) == pytest.approx(32 * 52500, rel=1e-6)
+
+    def test_p_duck_sell_is_52500(self):
+        ytp = self._std_yield()
+        r = compute_core_economics(
+            yield_total_pred=ytp, n_survive=1, duck_count=1, p_duck_buy=0
+        )
+        assert float(r["Revenue_duck_potential"]) == pytest.approx(52500.0)
+
+    def test_cost_duck_buy_zero(self):
+        """SoT §9: p_duck_buy=0 is valid."""
+        ytp = self._std_yield()
+        r = compute_core_economics(
+            yield_total_pred=ytp, n_survive=50, duck_count=50, p_duck_buy=0
+        )
+        assert float(r["Cost_duck_buy"]) == 0.0
+
+    def test_cost_duck_buy_nonzero(self):
+        ytp = self._std_yield()
+        r = compute_core_economics(
+            yield_total_pred=ytp, n_survive=50, duck_count=20, p_duck_buy=15000
+        )
+        assert float(r["Cost_duck_buy"]) == pytest.approx(20 * 15000)
+
+    def test_cost_feed_core(self):
+        """SoT §9: Cost_feed = duck_count * 20000 (Core, not isolated)."""
+        ytp = self._std_yield()
+        r = compute_core_economics(
+            yield_total_pred=ytp, n_survive=50, duck_count=20, p_duck_buy=0
+        )
+        assert float(r["Cost_feed"]) == pytest.approx(20 * 20000)
+
+    def test_core_cash_cost(self):
+        """SoT §9: Core_Cash_Cost = Cost_duck_buy + Cost_feed."""
+        ytp = self._std_yield()
+        r = compute_core_economics(
+            yield_total_pred=ytp, n_survive=50, duck_count=20, p_duck_buy=15000
+        )
+        assert float(r["Core_Cash_Cost"]) == pytest.approx(
+            float(r["Cost_duck_buy"]) + float(r["Cost_feed"])
+        )
+
+    def test_total_revenue_dss(self):
+        ytp = self._std_yield()
+        r = compute_core_economics(
+            yield_total_pred=ytp, n_survive=50, duck_count=20, p_duck_buy=0
+        )
+        assert float(r["Total_Revenue_DSS"]) == pytest.approx(
+            float(r["Revenue_gabah"]) + float(r["Revenue_duck_potential"])
+        )
+
+    def test_net_cash_contribution_dss(self):
+        """SoT §9: Net_Cash_Contribution_DSS = Total_Revenue_DSS - Core_Cash_Cost."""
+        ytp = self._std_yield()
+        r = compute_core_economics(
+            yield_total_pred=ytp, n_survive=50, duck_count=20, p_duck_buy=15000
+        )
+        assert float(r["Net_Cash_Contribution_DSS"]) == pytest.approx(
+            float(r["Total_Revenue_DSS"]) - float(r["Core_Cash_Cost"])
+        )
+
+    def test_no_profit_net_cash_key(self):
+        """SoT §13: Profit_net_cash must NOT be the canonical output key."""
+        ytp = self._std_yield()
+        r = compute_core_economics(
+            yield_total_pred=ytp, n_survive=50, duck_count=20, p_duck_buy=0
+        )
+        assert "Profit_net_cash" not in r
+
+    def test_p_duck_buy_30000_passthrough(self):
+        ytp = self._std_yield()
+        r = compute_core_economics(
+            yield_total_pred=ytp, n_survive=50, duck_count=10, p_duck_buy=30000
+        )
+        assert float(r["Cost_duck_buy"]) == pytest.approx(10 * 30000)
+
+
+def test_infrastructure_sandbox_has_no_monetary_formula() -> None:
+    output = compute_sandbox_infrastructure()
+    assert set(output) == {"note"}
+    assert "Tidak ada formula biaya" in output["note"]

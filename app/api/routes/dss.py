@@ -21,7 +21,10 @@ router = APIRouter(prefix="/dss")
     "/options",
     response_model=DSSOptionsResponse,
     summary="Get DSS dropdown options",
-    description="Mengembalikan dropdown varietas padi dan sistem tanam yang dipakai frontend DSS.",
+    description=(
+        "Mengembalikan dropdown varietas padi dan sistem tanam. "
+        "jajar_legowo hanya mewakili Jajar Legowo 2:1 (SoT §3)."
+    ),
 )
 def get_dss_options() -> DSSOptionsResponse:
     return dss_service.get_options()
@@ -32,14 +35,16 @@ def get_dss_options() -> DSSOptionsResponse:
     response_model=DSSSimulationResponse,
     summary="Run DSS simulation",
     description=(
-        "Menjalankan model matematika deterministik padi-bebek untuk skenario aktual "
-        "dan rekomendasi grid search yang mudah dijelaskan secara akademik."
+        "Menjalankan model matematika deterministik padi-bebek per SoT FINAL. "
+        "7 input wajib. p_duck_buy>=0, tidak ada fallback. "
+        "Output canonical: Net_Cash_Contribution_DSS."
     ),
     responses={
-        401: {"model": ErrorResponse, "description": "Bearer token yang dikirim tidak valid."},
+        400: {"model": ErrorResponse, "description": "Input tidak valid."},
+        401: {"model": ErrorResponse, "description": "Bearer token tidak valid."},
         422: {
             "model": ErrorResponse,
-            "description": "Request tidak valid atau referensi lookup tidak ditemukan.",
+            "description": "Referensi varietas atau sistem tanam tidak ditemukan.",
         },
     },
 )
@@ -47,9 +52,6 @@ def simulate_dss(
     payload: DSSSimulationRequest,
     auth: AuthContext | None = Depends(get_optional_current_user),
 ) -> DSSSimulationResponse:
-    if payload.land_area_are <= 0:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=400, detail="Luas lahan (land_area_are) harus lebih dari 0.")
     return dss_service.simulate(
         payload,
         user_id=auth.user.id if auth is not None else None,
@@ -100,23 +102,17 @@ def delete_history(
 @router.post(
     "/visualize",
     response_model=VisualizationResponse,
-    summary="Get visualization graph series",
+    summary="Get visualization zone series",
     description=(
-        "Menghasilkan titik koordinat visualisasi grafik (density curve, age vulnerability, "
-        "dan financial breakdown) berdasarkan input simulasi."
+        "Menghasilkan data visualisasi grafik zona density, zona umur bebek, "
+        "dan financial waterfall berdasarkan SoT FINAL. "
+        "Tidak menggunakan R_age, F_density_bio, lambda_eff, atau koefisien legacy lainnya."
     ),
     responses={
-        422: {
-            "model": ErrorResponse,
-            "description": "Request tidak valid.",
-        },
+        422: {"model": ErrorResponse, "description": "Request tidak valid."},
     },
 )
 def visualize_dss(
     payload: DSSSimulationRequest,
 ) -> VisualizationResponse:
-    if payload.land_area_are <= 0:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=400, detail="Luas lahan (land_area_are) harus lebih dari 0.")
     return visualization_service.generate_visualization_series(payload)
-

@@ -1,76 +1,54 @@
-"""DSS simulation service.
+"""DSS simulation service — SoT FINAL.
 
-Orchestrates the SoT engines (see docs/Model_Matematika_..._FINAL.docx) in the
-order mandated by the model document:
+Orchestrates engines per docs/Model Matematika Data Collection DSS Padi Bebek FINAL.md:
 
-  1. Age Engine
-  2. Density Engine
-  3. Calendar Engine
-  4. Survival Engine
-  5. Yield Engine
-  6. Material Engine
-  7. Cost Engine (split into Core + Isolated groups)
+  §4  Age Readiness Engine   -> compute_age_flag()
+  §5  Density Engine         -> compute_density()
+  §6  Calendar Engine        -> compute_calendar()
+  §7  Survival Engine        -> compute_surviving_ducks()
+  §8  Yield Engine           -> compute_yield()
+  §9  Core Economic Engine   -> compute_core_economics()
+  §10 Sandbox Engines        -> compute_sandbox_*() [NOT in Core]
 
-Group separation per SoT Bagian 5:
-- Core Validated Output: Cost_duck_buy, Cost_total_cash, Profit_net_cash,
-  plus revenue/calendar/yield values.
-- Empirically Uncorrelated Isolated Output: Cost_*_isolated fields. These
-  components are FULLY EXCLUDED from Cost_total_cash and Profit_net_cash.
-
-Numerical precision: all engine computations use ``decimal.Decimal`` with
-precision 50. No mid-calculation rounding is performed. Conversion to native
-``float`` happens only at the DTO serialisation boundary.
+SoT §13 banned: R_age, F_age, lambda_eff, P_over/P_under, F_density_bio,
+alpha_bio, beta_tramp, F_sys!=1, feed=4500, p_duck_sell=35000, Profit_net_cash
+as canonical, Cost_feed_isolated, p_duck_buy fallback/default.
 """
 
-from decimal import Decimal, ROUND_FLOOR
+import json
+from datetime import date as date_type
 
 from app.core.exceptions import InvalidReferenceError, ResourceNotFoundError
-from app.domain.models import DSSConstants, PlantingSystem, RiceVariety
+from app.domain.models import PlantingSystem, RiceVariety
 from app.engines.formula_engine import (
-    compute_calendar_milestones,
-    compute_duck_age_status,
+    compute_age_flag,
+    compute_calendar,
+    compute_core_economics,
     compute_density,
     compute_surviving_ducks,
-    compute_yield_components,
+    compute_yield,
 )
 from app.engines.impact_engine import (
-    compute_feed_costs,
-    compute_infrastructure_breakdown,
-    compute_labor_breakdown,
-    compute_pesticide_cost,
-    compute_soil_nutrients,
+    compute_sandbox_fertilizer,
+    compute_sandbox_infrastructure,
+    compute_sandbox_pesticide,
+    compute_sandbox_weeding,
 )
 from app.repositories.lookup_repository import lookup_repository
 from app.schemas.dss import (
+    DeleteHistoryResponse,
     DSSOptionsResponse,
     DSSSimulationRequest,
     DSSSimulationResponse,
     HistoryListResponse,
-    DeleteHistoryResponse,
     PlantingSystemOption,
     RiceVarietyOption,
+    SandboxFertilizer,
+    SandboxInfrastructure,
+    SandboxOutputs,
+    SandboxPesticide,
+    SandboxWeeding,
 )
-
-
-# [local-calculated] SoT 4.6: literature-anchored baseline nutrient needs per are.
-# N_need = 1,1761; P_need = 0,2745; K_need = 0,2745 (satuan hara oksida per are).
-N_NEED_PER_ARE = Decimal("1.1761")
-P_NEED_PER_ARE = Decimal("0.2745")
-K_NEED_PER_ARE = Decimal("0.2745")
-
-# [local-validated] SoT 4.5 / Tabel 1: Local-validated market price points.
-P_GABAH_PER_KG = Decimal("6000.0")
-P_DUCK_SELL_PER_DUCK = Decimal("35000.0")
-
-# [local-estimate] SoT 4.7: default p_duck_buy lower-bound per Tabel 1.
-P_DUCK_BUY_DEFAULT = Decimal("25000.0")
-
-
-def _d(value) -> Decimal:
-    """Coerce value to Decimal for safe arithmetic in service layer."""
-    if isinstance(value, Decimal):
-        return value
-    return Decimal(str(value))
 
 
 class DSSService:
@@ -80,21 +58,9 @@ class DSSService:
                 RiceVarietyOption(
                     code=item.code,
                     label=item.label,
-                    # Canonical (SoT) - Fase 1.
-                    hst_panen=item.hst_panen,
-                    # Deprecated, additive (keputusan #2).
-                    hst_masuk=item.hst_masuk,
-                    hst_heading=item.hst_heading,
-                    harvest_age_days=item.harvest_age_days,
+                    hst_panen_min=item.hst_panen_min,
+                    hst_panen_max=item.hst_panen_max,
                     risk_note=item.risk_note,
-                    hst_masuk_range={
-                        "min": item.hst_masuk_min,
-                        "max": item.hst_masuk_max,
-                    },
-                    hst_heading_range={
-                        "min": item.hst_heading_min,
-                        "max": item.hst_heading_max,
-                    },
                     status=item.status,
                 )
                 for item in lookup_repository.list_rice_varieties()
@@ -103,21 +69,9 @@ class DSSService:
                 PlantingSystemOption(
                     code=item.code,
                     label=item.label,
-                    # Canonical (SoT) - Fase 2.
-                    k_safe_are=item.k_safe_are,
-                    F_sys=item.F_sys,
-                    # Deprecated, additive (keputusan #2). Values kept in sync
-                    # with canonical.
-                    k_max_are=item.k_max_are,
-                    f_yield=item.f_yield,
+                    recommended_density_max_are=item.recommended_density_max_are,
+                    recommended_density_min_are=item.recommended_density_min_are,
                     note=item.note,
-                    k_max_range_are={
-                        "min": item.k_max_min_are,
-                        "max": item.k_max_max_are,
-                    },
-                    limited_test_max_are=item.limited_test_max_are,
-                    k_max_status=item.k_max_status,
-                    f_yield_status=item.f_yield_status,
                 )
                 for item in lookup_repository.list_planting_systems()
             ],
@@ -128,168 +82,292 @@ class DSSService:
         payload: DSSSimulationRequest,
         user_id: str | None = None,
     ) -> DSSSimulationResponse:
+        # Lookup validation
         variety = self._find_variety(payload.rice_variety)
         planting_system = self._find_planting_system(payload.planting_system)
         constants = lookup_repository.get_constants()
 
-        # 1. Age Engine (SoT 4.1)
-        duck_age = compute_duck_age_status(payload.duck_age_days)
-        r_age = duck_age["R_age"]
-        age_status = duck_age["age_status"]
+        warnings: list[str] = []
 
-        # 2. Density Engine (SoT 4.2)
-        density = compute_density(
+        if payload.land_area_are < 2.5:
+            warnings.append(
+                "Luas lahan di bawah 2,5 are berada di luar domain numerical validation lokal; "
+                "prediksi tetap dihitung sesuai model production."
+            )
+
+        # SoT §4: Age Readiness Engine — status/warning only, no yield/survival multiplier
+        age_result = compute_age_flag(payload.duck_age_days)
+        age_flag = age_result["age_flag"]
+        warnings.extend(age_result["warnings"])
+
+        # SoT §5: Density Engine — status only, no yield multiplier
+        density_result = compute_density(
             payload.duck_count,
             payload.land_area_are,
-            planting_system.k_safe_are,
+            payload.planting_system,
         )
-        p_over = density["P_over"]
-        p_under = density["P_under"]
-        density_status = density["density_status"]
+        d = density_result["d"]
+        d_ha = density_result["d_ha"]
+        density_status = density_result["density_status"]
+        warnings.extend(density_result["warnings"])
 
-        # 3. Calendar Engine (SoT 4.3)
-        milestones = compute_calendar_milestones(
-            payload.planting_date,
-            variety.hst_panen,
-            variety.hst_masuk,
-            variety.hst_heading,
-        )
-        d_masuk_bebek = milestones["D_masuk_bebek"]
-        d_tarik_bebek = milestones["D_tarik_bebek"]
-        t_active = milestones["t_active"]
-        d_panen_gabah = milestones["D_panen_gabah"]
+        # SoT §6: Calendar Engine
+        calendar_result = compute_calendar(payload.planting_date, payload.rice_variety)
+        warnings.extend(calendar_result["warnings"])
 
-        # 4. Survival Engine (SoT 4.4)
-        n_survive_raw = compute_surviving_ducks(payload.duck_count, r_age, p_over)
-        # [system-design] Floor operation is part of SoT math, not display rounding.
-        n_survive = int(n_survive_raw.to_integral_value(rounding=ROUND_FLOOR))
-        duck_count_d = _d(payload.duck_count)
-        lambda_eff = (
-            n_survive_raw / duck_count_d if duck_count_d > 0 else Decimal("0")
+        # SoT §7: Survival Engine — only d > 8 triggers floor(0.60*J)
+        n_survive = compute_surviving_ducks(payload.duck_count, d)
+
+        # SoT §11.1: survival assumption warning (always)
+        warnings.append(
+            "Estimasi survival mengasumsikan pemeliharaan memadai; actual mortality dapat berbeda "
+            "akibat penyakit, predator, cuaca, atau faktor husbandry lain."
         )
 
-        # 5. Yield Engine (SoT 4.5)
-        # [system-design] F_density_bio with exponential saturation + quadratic trampling.
-        yield_are_predict = compute_yield_components(
-            density["d"], r_age, planting_system.F_sys
-        )
-        land_area_d = _d(payload.land_area_are)
-        yield_total_predict = yield_are_predict * land_area_d
+        # SoT §8: Yield Engine — constant baseline, system/variety/density neutral
+        yield_result = compute_yield(payload.land_area_are)
+        yield_total_pred = yield_result["Yield_total_pred"]
 
-        # 6. Material Engine (SoT 4.6)
-        n_need_total = N_NEED_PER_ARE * land_area_d
-        p_need_total = P_NEED_PER_ARE * land_area_d
-        k_need_total = K_NEED_PER_ARE * land_area_d
-
-        nutrients = compute_soil_nutrients(
+        # SoT §9: Core Economic Engine
+        econ = compute_core_economics(
+            yield_total_pred=yield_total_pred,
+            n_survive=n_survive,
             duck_count=payload.duck_count,
-            t_active=t_active,
-            lambda_eff=lambda_eff,
-            n_need=n_need_total,
-            p_need=p_need_total,
-            k_need=k_need_total,
+            p_duck_buy=payload.p_duck_buy,
+        )
+
+        # SoT §10: Sandbox (fully separated, does NOT affect Core)
+        sandbox_weeding = compute_sandbox_weeding(payload.land_area_are)
+        sandbox_pesticide = compute_sandbox_pesticide()
+        sandbox_fertilizer = compute_sandbox_fertilizer(
+            duck_count=payload.duck_count,
+            t_active=calendar_result["t_active"],
+            n_survive=n_survive,
+            land_area_are=payload.land_area_are,
             constants=constants,
         )
+        sandbox_infra = compute_sandbox_infrastructure()
 
-        # 7. Cost Engine (SoT 4.7 + 5.2)
-        # [local-estimate] Core group: C_duck_buy = J * p_duck_buy.
-        duck_buy_price = _d(
-            payload.duck_buy_price_rp_per_duck
-            if payload.duck_buy_price_rp_per_duck is not None
-            else P_DUCK_BUY_DEFAULT
-        )
-        cost_duck_buy = duck_count_d * duck_buy_price
-
-        # [empirically-uncorrelated] Isolated group (Bagian 5.2):
-        # weeding, pesticide, infrastructure, fertilizer, feed.
-        labor = compute_labor_breakdown(
-            land_area_d,
-            p_over,
-            r_age,
-            density["d"],
-        )
-        cost_pesticide = compute_pesticide_cost(land_area_d, density["d"])
-        infra = compute_infrastructure_breakdown(
-            payload.duck_count, payload.land_area_are
-        )
-        cost_feed = compute_feed_costs(payload.duck_count, p_over, r_age)
-
-        # Ecology Engine removed per SoT - no valuation_weed_eco or profit_net_full
-
-        # [soT-precise] Core Validated Output
-        # Cost_total_cash = Cost_duck_buy (murni terdiri dari pengadaan bibit
-        # unggas - komponen pakan diisolasi penuh ke modul cadangan).
-        cost_total_cash = cost_duck_buy
-
-        n_survive_display = float(n_survive)
-        # [soT-precise] No mid-calculation rounding. Use raw Decimal values.
-        # Display rounding applied only at DTO serialisation below.
-        yield_total_predict_raw = yield_total_predict
-
-        revenue_gabah = yield_total_predict_raw * P_GABAH_PER_KG
-        revenue_duck = n_survive_display * float(P_DUCK_SELL_PER_DUCK)
-        total_revenue = revenue_gabah + _d(revenue_duck)
-
-        profit_net_cash = total_revenue - cost_total_cash
+        # Persist history if user authenticated
+        if user_id is not None:
+            self._save_history(
+                user_id=user_id,
+                payload=payload,
+                age_flag=age_flag,
+                density_result=density_result,
+                calendar_result=calendar_result,
+                n_survive=n_survive,
+                yield_result=yield_result,
+                econ=econ,
+                warnings=warnings,
+            )
 
         return DSSSimulationResponse(
+            # Age
+            age_flag=age_flag,
+            # Density
+            density_are=float(round(d, 7)),
+            density_ha=float(round(d_ha, 5)),
             density_status=density_status,
-            age_status=age_status,
-            D_masuk_bebek=d_masuk_bebek,
-            D_tarik_bebek=d_tarik_bebek,
-            D_panen_gabah=d_panen_gabah,
-            N_survive=n_survive_display,
-            Yield_are_predict=float(round(yield_are_predict, 2)),
-            Yield_total_predict=float(round(yield_total_predict_raw, 1)),
-            Revenue_gabah=float(round(revenue_gabah, 2)),
-            Revenue_duck=float(round(revenue_duck, 2)),
-            Total_Revenue=float(round(total_revenue, 2)),
-            # Core
-            Cost_duck_buy=float(round(cost_duck_buy, 2)),
-            Cost_feed_isolated=float(round(cost_feed, 2)),
-            Cost_total_cash=float(round(cost_total_cash, 2)),
-            # Isolated (Bagian 5.2) - fully separated from core cash flow
-            Cost_weeding_isolated=float(round(labor["Cost_labor_weeding"], 2)),
-            Cost_pesticide_isolated=float(round(cost_pesticide, 2)),
-            Cost_infra_net_isolated=float(round(infra["Cost_infra_net"], 2)),
-            Cost_infra_cage_isolated=float(round(infra["Cost_infra_cage"], 2)),
-            Cost_infra_isolated=float(round(infra["Cost_infra"], 2)),
-            Cost_fert_urea_isolated=float(round(nutrients["Cost_fert_urea"], 2)),
-            Cost_fert_phonska_isolated=float(round(nutrients["Cost_fert_phonska"], 2)),
-            Cost_fert_kcl_isolated=float(round(nutrients["Cost_fert_kcl"], 2)),
-            Cost_fertilizer_isolated=float(round(nutrients["Cost_fertilizer_total"], 2)),
-            # Profit
-            Profit_net_cash=float(round(profit_net_cash, 2)),
-            # Yield factor marker (Fase 4)
-            F_sys=planting_system.F_sys,
+            # Calendar
+            HST_in=calendar_result["HST_in"],
+            HST_out=calendar_result["HST_out"],
+            t_active=calendar_result["t_active"],
+            D_in=calendar_result["D_in"],
+            D_out=calendar_result["D_out"],
+            harvest_hst_min=calendar_result["harvest_hst_min"],
+            harvest_hst_max=calendar_result["harvest_hst_max"],
+            D_panen_min=calendar_result["D_panen_min"],
+            D_panen_max=calendar_result["D_panen_max"],
+            # Survival
+            N_survive=n_survive,
+            # Yield
+            Yield_are_pred=float(round(yield_result["Yield_are_pred"], 7)),
+            Yield_total_pred=float(round(yield_total_pred, 4)),
+            # Economics
+            Revenue_gabah=float(round(econ["Revenue_gabah"], 2)),
+            Revenue_duck_potential=float(round(econ["Revenue_duck_potential"], 2)),
+            Cost_duck_buy=float(round(econ["Cost_duck_buy"], 2)),
+            Cost_feed=float(round(econ["Cost_feed"], 2)),
+            Core_Cash_Cost=float(round(econ["Core_Cash_Cost"], 2)),
+            Total_Revenue_DSS=float(round(econ["Total_Revenue_DSS"], 2)),
+            Net_Cash_Contribution_DSS=float(round(econ["Net_Cash_Contribution_DSS"], 2)),
+            # Warnings
+            warnings=warnings,
+            # Sandbox
+            sandbox=SandboxOutputs(
+                weeding=SandboxWeeding(**sandbox_weeding),
+                pesticide=SandboxPesticide(**sandbox_pesticide),
+                fertilizer=SandboxFertilizer(**sandbox_fertilizer),
+                infrastructure=SandboxInfrastructure(**sandbox_infra),
+            ),
         )
 
     def list_histories(self, user_id: str) -> HistoryListResponse:
-        return HistoryListResponse(data=[])
+        from app.repositories.history_repository import history_repository
+        from app.schemas.dss import HistoryListItem, HistorySummary
+
+        histories = history_repository.list_by_user(user_id)
+        items = []
+        for h in histories:
+            if hasattr(h, "net_cash_contribution_dss"):
+                # v3
+                items.append(
+                    HistoryListItem(
+                        id=h.id,
+                        schema_version=h.schema_version,
+                        created_at=h.created_at.date(),
+                        summary=HistorySummary(
+                            rice_variety=h.rice_variety,
+                            planting_system=h.planting_system,
+                            duck_count=h.duck_count,
+                            land_area_are=h.land_area_are,
+                            density_are=h.density_are,
+                            d_panen_min=date_type.fromisoformat(h.d_panen_min),
+                            d_panen_max=date_type.fromisoformat(h.d_panen_max),
+                            yield_total_pred=h.yield_total_pred,
+                        ),
+                    )
+                )
+        return HistoryListResponse(data=items)
 
     def get_history(self, history_id: str, user_id: str) -> DSSSimulationResponse:
-        raise ResourceNotFoundError(
-            message=f"History '{history_id}' was not found.", field="history_id"
+        from app.repositories.history_repository import history_repository
+
+        history = history_repository.get_by_id_and_user(history_id, user_id)
+        if history is None or not hasattr(history, "net_cash_contribution_dss"):
+            raise ResourceNotFoundError(
+                message=f"History '{history_id}' was not found.", field="history_id"
+            )
+
+        warnings = json.loads(history.warnings_json)
+        constants = lookup_repository.get_constants()
+        sandbox = SandboxOutputs(
+            weeding=SandboxWeeding(**compute_sandbox_weeding(history.land_area_are)),
+            pesticide=SandboxPesticide(**compute_sandbox_pesticide()),
+            fertilizer=SandboxFertilizer(
+                **compute_sandbox_fertilizer(
+                    duck_count=history.duck_count,
+                    t_active=history.t_active,
+                    n_survive=history.n_survive,
+                    land_area_are=history.land_area_are,
+                    constants=constants,
+                )
+            ),
+            infrastructure=SandboxInfrastructure(**compute_sandbox_infrastructure()),
+        )
+        return DSSSimulationResponse(
+            age_flag=history.age_flag,
+            density_are=history.density_are,
+            density_ha=history.density_ha,
+            density_status=history.density_status,
+            HST_in=history.hst_in,
+            HST_out=history.hst_out,
+            t_active=history.t_active,
+            D_in=date_type.fromisoformat(history.d_in),
+            D_out=date_type.fromisoformat(history.d_out),
+            harvest_hst_min=history.harvest_hst_min,
+            harvest_hst_max=history.harvest_hst_max,
+            D_panen_min=date_type.fromisoformat(history.d_panen_min),
+            D_panen_max=date_type.fromisoformat(history.d_panen_max),
+            N_survive=history.n_survive,
+            Yield_are_pred=history.yield_are_pred,
+            Yield_total_pred=history.yield_total_pred,
+            Revenue_gabah=history.revenue_gabah,
+            Revenue_duck_potential=history.revenue_duck_potential,
+            Cost_duck_buy=history.cost_duck_buy,
+            Cost_feed=history.cost_feed,
+            Core_Cash_Cost=history.core_cash_cost,
+            Total_Revenue_DSS=history.total_revenue_dss,
+            Net_Cash_Contribution_DSS=history.net_cash_contribution_dss,
+            warnings=warnings,
+            sandbox=sandbox,
         )
 
     def delete_history(self, history_id: str, user_id: str) -> DeleteHistoryResponse:
+        from app.repositories.history_repository import history_repository
+
+        deleted = history_repository.delete_by_id_and_user(history_id, user_id)
+        if not deleted:
+            raise ResourceNotFoundError(
+                message=f"History '{history_id}' was not found.", field="history_id"
+            )
         return DeleteHistoryResponse(message="Simulation history deleted successfully")
 
     def _find_variety(self, code: str) -> RiceVariety:
         variety = lookup_repository.get_rice_variety(code)
         if variety is None:
             raise InvalidReferenceError(
-                message=f"Unknown rice_variety '{code}'.", field="rice_variety"
+                message=f"Unknown rice_variety '{code}'. Valid values: 'sertani', 'inpari'.",
+                field="rice_variety",
             )
         return variety
 
     def _find_planting_system(self, code: str) -> PlantingSystem:
-        planting_system = lookup_repository.get_planting_system(code)
-        if planting_system is None:
+        ps = lookup_repository.get_planting_system(code)
+        if ps is None:
             raise InvalidReferenceError(
-                message=f"Unknown planting_system '{code}'.", field="planting_system"
+                message=(
+                    f"Unknown planting_system '{code}'. "
+                    "Valid values: 'jajar_legowo' (Jajar Legowo 2:1 only), 'tegel'."
+                ),
+                field="planting_system",
             )
-        return planting_system
+        return ps
+
+    def _save_history(
+        self,
+        user_id: str,
+        payload: DSSSimulationRequest,
+        age_flag: str,
+        density_result: dict,
+        calendar_result: dict,
+        n_survive: int,
+        yield_result: dict,
+        econ: dict,
+        warnings: list[str],
+    ) -> None:
+        from app.repositories.history_repository import history_repository
+        from app.domain.models import SimulationHistory
+
+        history = SimulationHistory(
+            id=history_repository.new_id(),
+            user_id=user_id,
+            schema_version=3,
+            land_area_are=payload.land_area_are,
+            duck_count=payload.duck_count,
+            rice_variety=payload.rice_variety,
+            planting_system=payload.planting_system,
+            duck_age_days=payload.duck_age_days,
+            planting_date=payload.planting_date.isoformat(),
+            p_duck_buy=payload.p_duck_buy,
+            age_flag=age_flag,
+            density_are=float(round(density_result["d"], 7)),
+            density_ha=float(round(density_result["d_ha"], 5)),
+            density_status=density_result["density_status"],
+            hst_in=calendar_result["HST_in"],
+            hst_out=calendar_result["HST_out"],
+            t_active=calendar_result["t_active"],
+            d_in=calendar_result["D_in"].isoformat(),
+            d_out=calendar_result["D_out"].isoformat(),
+            harvest_hst_min=calendar_result["harvest_hst_min"],
+            harvest_hst_max=calendar_result["harvest_hst_max"],
+            d_panen_min=calendar_result["D_panen_min"].isoformat(),
+            d_panen_max=calendar_result["D_panen_max"].isoformat(),
+            n_survive=n_survive,
+            yield_are_pred=float(round(yield_result["Yield_are_pred"], 7)),
+            yield_total_pred=float(round(yield_result["Yield_total_pred"], 4)),
+            revenue_gabah=float(round(econ["Revenue_gabah"], 2)),
+            revenue_duck_potential=float(round(econ["Revenue_duck_potential"], 2)),
+            cost_duck_buy=float(round(econ["Cost_duck_buy"], 2)),
+            cost_feed=float(round(econ["Cost_feed"], 2)),
+            core_cash_cost=float(round(econ["Core_Cash_Cost"], 2)),
+            total_revenue_dss=float(round(econ["Total_Revenue_DSS"], 2)),
+            net_cash_contribution_dss=float(round(econ["Net_Cash_Contribution_DSS"], 2)),
+            warnings_json=json.dumps(warnings, ensure_ascii=False),
+            created_at=history_repository.now(),
+        )
+        history_repository.create_v3(user_id=user_id, history=history)
 
 
 dss_service = DSSService()

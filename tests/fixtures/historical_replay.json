@@ -1,0 +1,13 @@
+[
+  {"id":"H01","land_area_are":6.35,"duck_count":20,"rice_variety":"sertani","planting_system":"jajar_legowo","duck_age_days":21,"planting_date":"2024-02-19","p_duck_buy":15000,"actual_yield_are":45.82677165},
+  {"id":"H02","land_area_are":10.21,"duck_count":32,"rice_variety":"sertani","planting_system":"jajar_legowo","duck_age_days":21,"planting_date":"2024-04-15","p_duck_buy":12000,"actual_yield_are":50.0},
+  {"id":"H03","land_area_are":6.6,"duck_count":19,"rice_variety":"inpari","planting_system":"tegel","duck_age_days":21,"planting_date":"2024-04-12","p_duck_buy":12000,"actual_yield_are":47.1969697},
+  {"id":"H04","land_area_are":4.8,"duck_count":9,"rice_variety":"sertani","planting_system":"tegel","duck_age_days":21,"planting_date":"2024-04-23","p_duck_buy":0,"actual_yield_are":60.41666667},
+  {"id":"H05","land_area_are":10.0,"duck_count":32,"rice_variety":"sertani","planting_system":"jajar_legowo","duck_age_days":21,"planting_date":"2024-04-22","p_duck_buy":0,"actual_yield_are":53.4},
+  {"id":"H06","land_area_are":5.5,"duck_count":18,"rice_variety":"sertani","planting_system":"jajar_legowo","duck_age_days":21,"planting_date":"2024-04-15","p_duck_buy":12000,"actual_yield_are":47.0},
+  {"id":"H07","land_area_are":3.6,"duck_count":15,"rice_variety":"sertani","planting_system":"jajar_legowo","duck_age_days":21,"planting_date":"2024-10-01","p_duck_buy":0,"actual_yield_are":40.41666667},
+  {"id":"H08","land_area_are":10.0,"duck_count":29,"rice_variety":"inpari","planting_system":"tegel","duck_age_days":21,"planting_date":"2024-09-28","p_duck_buy":0,"actual_yield_are":38.65},
+  {"id":"H09","land_area_are":4.81,"duck_count":10,"rice_variety":"sertani","planting_system":"jajar_legowo","duck_age_days":21,"planting_date":"2025-04-09","p_duck_buy":25000,"actual_yield_are":43.45114345},
+  {"id":"H10","land_area_are":4.8,"duck_count":10,"rice_variety":"sertani","planting_system":"jajar_legowo","duck_age_days":21,"planting_date":"2025-04-09","p_duck_buy":25000,"actual_yield_are":40.10416667},
+  {"id":"H11","land_area_are":3.45,"duck_count":7,"rice_variety":"sertani","planting_system":"jajar_legowo","duck_age_days":21,"planting_date":"2025-04-19","p_duck_buy":25000,"actual_yield_are":7.53623188}
+]

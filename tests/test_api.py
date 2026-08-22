@@ -1,9 +1,4 @@
-"""Fase 7 — end-to-end API tests for /api/v1/dss/simulate.
-
-These exercise the full simulate() path with SoT-aligned inputs.
-"""
-
-from datetime import date
+"""HTTP contract tests for the final DSS SoT."""
 
 import pytest
 from fastapi.testclient import TestClient
@@ -13,220 +8,157 @@ from app.main import create_app
 
 @pytest.fixture
 def client() -> TestClient:
-    app = create_app()
-    return TestClient(app)
+    return TestClient(create_app())
 
 
-# ---------------------------------------------------------------------------
-# 1. SoT example (Tabel 2.2): A=10, J=50, V=Sertani, S=Jarwo, U=14
-# ---------------------------------------------------------------------------
-
-
-def test_sot_example_jarwo(client: TestClient) -> None:
-    payload = {
-        'duck_count': 50,
-        'land_area_are': 10,
-        'planting_date': '2026-01-01',
-        'rice_variety': 'sertani',
-        'planting_system': 'jajar_legowo',
-        'duck_age_days': 14,
+def payload(**overrides: object) -> dict:
+    value = {
+        "land_area_are": 10,
+        "duck_count": 20,
+        "rice_variety": "sertani",
+        "planting_system": "jajar_legowo",
+        "duck_age_days": 21,
+        "planting_date": "2026-01-01",
+        "p_duck_buy": 15000,
     }
-    r = client.post('/api/v1/dss/simulate', json=payload)
-    assert r.status_code == 200, r.text
-    body = r.json()
-
-    assert body['D_masuk_bebek'] == '2026-01-22'
-    assert body['D_tarik_bebek'] == '2026-03-07'
-    assert body['D_panen_gabah'] == '2026-04-25'
-
-    assert body['Yield_are_predict'] == 52.36
-    assert body['Cost_total_cash'] == 1250000.0
-    assert body['Cost_feed_isolated'] == 284062.5
-    assert body['Cost_weeding_isolated'] == 60630.8
-    assert body['F_sys'] == 1.0
+    value.update(overrides)
+    return value
 
 
-# ---------------------------------------------------------------------------
-# 2. Tegel MUST receive a penalty (Fase 2 critical)
-# ---------------------------------------------------------------------------
+def test_simulate_returns_canonical_sot_output(client: TestClient) -> None:
+    response = client.post("/api/v1/dss/simulate", json=payload())
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["age_flag"] == "RECOMMENDED"
+    assert body["density_are"] == 2.0
+    assert body["density_ha"] == 200.0
+    assert body["density_status"] == "RECOMMENDED"
+    assert body["HST_in"] == 21 and body["HST_out"] == 65 and body["t_active"] == 44
+    assert body["D_in"] == "2026-01-22" and body["D_out"] == "2026-03-07"
+    assert body["harvest_hst_min"] == 100 and body["harvest_hst_max"] == 110
+    assert body["D_panen_min"] == "2026-04-11" and body["D_panen_max"] == "2026-04-21"
+    assert body["N_survive"] == 20
+    assert body["Yield_are_pred"] == pytest.approx(47.8767507)
+    assert body["Yield_total_pred"] == pytest.approx(478.7675)
+    assert body["Revenue_gabah"] == pytest.approx(2872605.04)
+    assert body["Revenue_duck_potential"] == 1050000.0
+    assert body["Cost_duck_buy"] == 300000.0 and body["Cost_feed"] == 400000.0
+    assert body["Core_Cash_Cost"] == 700000.0
+    assert body["Total_Revenue_DSS"] == pytest.approx(3922605.04)
+    assert body["Net_Cash_Contribution_DSS"] == pytest.approx(3222605.04)
+    assert set(body["sandbox"]["infrastructure"]) == {"note"}
 
 
-def test_tegel_yield_higher_than_jarwo(client: TestClient) -> None:
-    base = {
-        'duck_count': 50,
-        'land_area_are': 10,
-        'planting_date': '2026-01-01',
-        'rice_variety': 'sertani',
-        'duck_age_days': 14,
-    }
-    r_jarwo = client.post(
-        '/api/v1/dss/simulate', json={**base, 'planting_system': 'jajar_legowo'}
+@pytest.mark.parametrize(("duck_age_days", "expected"), [(20, "TOO_YOUNG"), (30, "RECOMMENDED"), (31, "ABOVE_RECOMMENDED_AGE")])
+def test_age_boundaries(client: TestClient, duck_age_days: int, expected: str) -> None:
+    body = client.post("/api/v1/dss/simulate", json=payload(duck_age_days=duck_age_days)).json()
+    assert body["age_flag"] == expected
+    assert body["Yield_are_pred"] == pytest.approx(47.8767507)
+    assert body["N_survive"] == 20
+
+
+@pytest.mark.parametrize(
+    ("planting_system", "duck_count", "expected_status", "expected_survivors"),
+    [
+        ("jajar_legowo", 10, "UNDER_DENSITY", 10), ("jajar_legowo", 20, "RECOMMENDED", 20),
+        ("jajar_legowo", 40, "RECOMMENDED", 40), ("jajar_legowo", 50, "ABOVE_RECOMMENDED", 50),
+        ("jajar_legowo", 81, "OVERLOAD_HIGH_RISK", 48), ("tegel", 20, "RECOMMENDED", 20),
+        ("tegel", 30, "RECOMMENDED", 30), ("tegel", 40, "ABOVE_RECOMMENDED", 40),
+    ],
+)
+def test_density_and_survival_boundaries(client: TestClient, planting_system: str, duck_count: int, expected_status: str, expected_survivors: int) -> None:
+    body = client.post("/api/v1/dss/simulate", json=payload(planting_system=planting_system, duck_count=duck_count)).json()
+    assert body["density_status"] == expected_status
+    assert body["N_survive"] == expected_survivors
+    assert body["Yield_are_pred"] == pytest.approx(47.8767507)
+
+
+def test_purchase_price_zero_and_passthrough(client: TestClient) -> None:
+    zero = client.post("/api/v1/dss/simulate", json=payload(p_duck_buy=0)).json()
+    paid = client.post("/api/v1/dss/simulate", json=payload(p_duck_buy=30000)).json()
+    assert zero["Cost_duck_buy"] == 0
+    assert paid["Cost_duck_buy"] == 600000
+
+
+def test_inpari_uses_generic_harvest_warning(client: TestClient) -> None:
+    body = client.post("/api/v1/dss/simulate", json=payload(rice_variety="inpari")).json()
+    assert body["harvest_hst_min"] == body["harvest_hst_max"] == 134
+    assert body["D_panen_min"] == body["D_panen_max"] == "2026-05-15"
+    assert any("generic" in warning.lower() for warning in body["warnings"])
+
+
+def test_options_expose_only_sot_domains(client: TestClient) -> None:
+    body = client.get("/api/v1/dss/options").json()
+    assert {item["code"] for item in body["rice_varieties"]} == {"sertani", "inpari"}
+    assert {item["code"] for item in body["planting_systems"]} == {"jajar_legowo", "tegel"}
+    assert all("F_sys" not in item for item in body["planting_systems"])
+    assert next(item for item in body["planting_systems"] if item["code"] == "jajar_legowo")["label"] == "Jajar Legowo 2:1"
+
+
+@pytest.mark.parametrize("missing", ["planting_date", "duck_age_days", "p_duck_buy"])
+def test_required_input_rejected(client: TestClient, missing: str) -> None:
+    request = payload()
+    request.pop(missing)
+    response = client.post("/api/v1/dss/simulate", json=request)
+    assert response.status_code == 400
+    assert any(issue["field"] == missing for issue in response.json()["error"]["issues"])
+
+
+@pytest.mark.parametrize("field", ["land_area_are", "duck_count"])
+def test_positive_area_and_duck_count_required(client: TestClient, field: str) -> None:
+    response = client.post("/api/v1/dss/simulate", json=payload(**{field: 0}))
+    assert response.status_code == 400
+    assert any(issue["field"] == field for issue in response.json()["error"]["issues"])
+
+
+@pytest.mark.parametrize(
+    ("field", "raw_value"),
+    [
+        ("land_area_are", "NaN"),
+        ("land_area_are", "Infinity"),
+        ("p_duck_buy", "NaN"),
+        ("p_duck_buy", "Infinity"),
+    ],
+)
+def test_non_finite_numeric_inputs_are_rejected(
+    client: TestClient, field: str, raw_value: str
+) -> None:
+    """Non-finite JSON numbers must not reach Decimal-based Core engines."""
+    import json
+
+    request_body = json.dumps(payload()).replace(
+        f'"{field}": {json.dumps(payload()[field])}',
+        f'"{field}": {raw_value}',
+        1,
     )
-    r_tegel = client.post(
-        '/api/v1/dss/simulate', json={**base, 'planting_system': 'tegel'}
+    response = client.post(
+        "/api/v1/dss/simulate",
+        content=request_body,
+        headers={"content-type": "application/json"},
     )
-    assert r_jarwo.status_code == 200
-    assert r_tegel.status_code == 200
-    y_jarwo = r_jarwo.json()['Yield_are_predict']
-    y_tegel = r_tegel.json()['Yield_are_predict']
-    assert y_tegel > y_jarwo
-    assert r_tegel.json()['F_sys'] == 1.211
-    assert r_jarwo.json()['F_sys'] == 1.0
+    assert response.status_code == 400
+    assert any(issue["field"] == field for issue in response.json()["error"]["issues"])
 
 
-# ---------------------------------------------------------------------------
-# 3. Inpari D_panen_gabah = +134
-# ---------------------------------------------------------------------------
+def test_non_jarwo_2_1_category_is_rejected(client: TestClient) -> None:
+    response = client.post("/api/v1/dss/simulate", json=payload(planting_system="jajar_legowo_4_1"))
+    assert response.status_code == 422
+    assert response.json()["error"]["field"] == "planting_system"
 
 
-def test_inpari_d_panen_gabah_134(client: TestClient) -> None:
-    payload = {
-        'duck_count': 50,
-        'land_area_are': 10,
-        'planting_date': '2026-01-01',
-        'rice_variety': 'inpari',
-        'planting_system': 'jajar_legowo',
-        'duck_age_days': 14,
-    }
-    r = client.post('/api/v1/dss/simulate', json=payload)
-    assert r.status_code == 200
-    assert r.json()['D_panen_gabah'] == '2026-05-15'
+def test_zero_age_is_classified_by_age_engine(client: TestClient) -> None:
+    response = client.post("/api/v1/dss/simulate", json=payload(duck_age_days=0))
+    assert response.status_code == 200
+    assert response.json()["age_flag"] == "TOO_YOUNG"
 
 
-def test_visualize_endpoint(client: TestClient) -> None:
-    payload = {
-        'duck_count': 50,
-        'land_area_are': 10,
-        'planting_date': '2026-01-01',
-        'rice_variety': 'sertani',
-        'planting_system': 'jajar_legowo',
-        'duck_age_days': 14,
-    }
-    r = client.post('/api/v1/dss/visualize', json=payload)
-    assert r.status_code == 200, r.text
-    body = r.json()
-
-    assert 'density_curve' in body
-    assert len(body['density_curve']) in (51, 100, 101)  # 0.0 to 10.0 step 0.2 or 0.1
-    assert 'age_vulnerability' in body
-    assert len(body['age_vulnerability']) == 45
-    assert body['age_vulnerability'][0]['age_days'] == 1
-
-    assert body['reference_benchmarks']['k_safe_jarwo'] == 4.0
-    assert body['reference_benchmarks']['k_safe_tegel'] == 3.0
-    assert body['reference_benchmarks']['k_max_saturation'] == 8.0
-
-    assert 'visualizations' in body
-    assert body['visualizations'] is not None
-    assert len(body['visualizations']['density_curve']) == 100
-    assert 'is_safe_jarwo' in body['visualizations']['density_curve'][0]
-    assert len(body['visualizations']['financial_waterfall']) > 0
+def test_small_area_has_validation_domain_warning(client: TestClient) -> None:
+    body = client.post("/api/v1/dss/simulate", json=payload(land_area_are=1)).json()
+    assert any("di bawah 2,5 are" in warning for warning in body["warnings"])
 
 
-    assert 'financial_absorption' in body
-    assert body['financial_absorption']['core_validated_liquid_cash'] == 1250000.0
-
-
-
-# ---------------------------------------------------------------------------
-# 4. Deprecation — f_yield and hst_masuk still present and synced
-# ---------------------------------------------------------------------------
-
-
-def test_options_include_deprecated_aliases(client: TestClient) -> None:
-    r = client.get('/api/v1/dss/options')
-    assert r.status_code == 200
-    body = r.json()
-    tegel = next(p for p in body['planting_systems'] if p['code'] == 'tegel')
-    # Canonical + deprecated
-    assert tegel['F_sys'] == 1.211
-    sertani = next(v for v in body['rice_varieties'] if v['code'] == 'sertani')
-    assert sertani['hst_panen'] == 114
-    assert sertani['harvest_age_days'] == 114  # deprecated alias in sync
-
-
-# ---------------------------------------------------------------------------
-# 5. Fase 0 — optimizer endpoint exists and is isolated
-# ---------------------------------------------------------------------------
-
-
-def test_optimizer_endpoint_responds(client: TestClient) -> None:
-    payload = {
-        "duck_count": 50,
-        "land_area_are": 10,
-        "planting_date": "2026-01-01",
-        "rice_variety": "sertani",
-        "planting_system": "jajar_legowo",
-        "duck_age_days": 14,
-    }
-    r = client.post("/api/v1/optimizer/recommend", json=payload)
-    assert r.status_code == 200
-    body = r.json()
-    # Optimizer output is marked as out-of-scope of SoT
-    assert "scope_notice" in body
-    assert "FINAL_BANGET" in body["scope_notice"]
-
-
-def test_dss_simulate_response_has_no_optimizer_fields(client: TestClient) -> None:
-    """Fase 0 DoD: /dss/simulate must not leak optimizer fields."""
-    payload = {
-        "duck_count": 50,
-        "land_area_are": 10,
-        "planting_date": "2026-01-01",
-        "rice_variety": "sertani",
-        "planting_system": "jajar_legowo",
-        "duck_age_days": 14,
-    }
-    r = client.post("/api/v1/dss/simulate", json=payload)
-    assert r.status_code == 200
-    body = r.json()
-    forbidden = {
-        "Score_safety", "F_active", "J_rekomendasi", "DeltaProfit", "REY",
-        "actual_scenario", "recommended_scenario", "comparison", "optimality",
-        "validation", "data_readiness", "x_base", "d_lit_ha",
-    }
-    leak = forbidden & set(body.keys())
-    assert not leak, f"Optimizer fields leaked into /dss/simulate: {leak}"
-
-
-# ---------------------------------------------------------------------------
-# 6. Guardrail: Cost_feed unchanged regardless of Fase 2 refactor
-# ---------------------------------------------------------------------------
-
-
-def test_cost_feed_invariant(client: TestClient) -> None:
-    """Feed cost formula must produce exactly 284062.5 for SoT example."""
-    payload = {
-        "duck_count": 50,
-        "land_area_are": 10,
-        "planting_date": "2026-01-01",
-        "rice_variety": "sertani",
-        "planting_system": "jajar_legowo",
-        "duck_age_days": 14,
-    }
-    r = client.post("/api/v1/dss/simulate", json=payload)
-    assert r.status_code == 200
-    assert r.json()['Cost_feed_isolated'] == pytest.approx(284062.5)
-
-
-# ---------------------------------------------------------------------------
-# 7. Guardrail: Cost_infra total scale unchanged
-# ---------------------------------------------------------------------------
-
-
-def test_cost_infra_total_matches_legacy_formula(client: TestClient) -> None:
-    """Cost_infra = max(58333, raw_net + raw_cage). SoT example 286488."""
-    payload = {
-        "duck_count": 50,
-        "land_area_are": 10,
-        "planting_date": "2026-01-01",
-        "rice_variety": "sertani",
-        "planting_system": "jajar_legowo",
-        "duck_age_days": 14,
-    }
-    r = client.post("/api/v1/dss/simulate", json=payload)
-    assert r.status_code == 200
-    assert r.json()['Cost_infra_isolated'] == pytest.approx(632360.22, rel=1e-3)
-
-
-
+def test_optimizer_remains_isolated(client: TestClient) -> None:
+    request = {key: value for key, value in payload().items() if key != "p_duck_buy"}
+    response = client.post("/api/v1/optimizer/recommend", json=request)
+    assert response.status_code == 200
+    assert "scope_notice" in response.json()

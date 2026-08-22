@@ -1,185 +1,291 @@
-"""SoT formula engines (see docs/Model_Matematika_..._FINAL.docx).
+"""SoT formula engines — docs/Model Matematika Data Collection DSS Padi Bebek FINAL.md
 
 Each function maps 1:1 to a numbered engine in the SoT document:
-  - compute_duck_age_status   -> 4.1 Age Engine
-  - compute_density           -> 4.2 Density Engine
-  - compute_calendar_milestones -> 4.3 Calendar Engine
-  - compute_surviving_ducks   -> 4.4 Survival Engine
-  - compute_yield_components  -> 4.5 Yield Engine
+  - compute_age_flag          -> §4  Age Readiness Engine
+  - compute_density           -> §5  Density Engine
+  - compute_calendar          -> §6  Calendar Engine
+  - compute_surviving_ducks   -> §7  Survival Engine
+  - compute_yield             -> §8  Yield Engine
 
-Numerical precision: all engine computations use ``decimal.Decimal`` with
-precision ``getcontext().prec = 50`` to guarantee IEEE 754 high-precision
-floating-point compliance. No mid-calculation rounding is performed.
+SoT §13 Legacy Semantics yang Dilarang pada Production Path:
+  R_age, F_age, lambda_eff=0.78125, P_over/P_under as yield multiplier,
+  F_density_bio, alpha_bio, beta_tramp, F_sys != 1, feed=4500,
+  p_duck_sell=35000, survival floor(J*0.90) for d<=8, etc.
+
+Numerical precision: all computations use decimal.Decimal with prec=50.
+No mid-calculation rounding. Conversion to float only at DTO boundary.
 """
 
-from decimal import Decimal, getcontext, ROUND_FLOOR
+from datetime import date, timedelta
+from decimal import ROUND_FLOOR, Decimal, getcontext
 
-# Set Decimal precision for high-precision financial computation
 getcontext().prec = 50
 
+# ---------------------------------------------------------------------------
+# SoT §8: Yield Engine — baseline empiris lokal (local-validated)
+# ---------------------------------------------------------------------------
+Y_BASE = Decimal("47.8767507")
 
-def compute_duck_age_status(duck_age_days: int) -> dict:
-    """[local-estimate] SoT 4.1 Age Engine: piecewise R_age by ontogenic stage.
+# ---------------------------------------------------------------------------
+# SoT §6: Calendar Engine — fixed HST constants
+# ---------------------------------------------------------------------------
+HST_IN = 21
+HST_OUT = 65
+T_ACTIVE = 44  # 65 - 21
 
-    R_age = 0.35 if U_duck < 14
-          = 0.15 if 14 <= U_duck <= 29
-          = 0.05 if U_duck >= 30
+# Sertani harvest window
+HST_PANEN_SERTANI_MIN = 100
+HST_PANEN_SERTANI_MAX = 110
+
+# Generic Inpari harvest
+HST_PANEN_INPARI = 134
+
+# ---------------------------------------------------------------------------
+# SoT §9: Core Economic Engine — production backend constants (not user input)
+# ---------------------------------------------------------------------------
+P_GABAH_RP_PER_KG = Decimal("6000")
+P_DUCK_SELL_RP_PER_DUCK = Decimal("52500")
+C_FEED_RP_PER_DUCK_CYCLE = Decimal("20000")
+
+# ---------------------------------------------------------------------------
+# SoT §4: Age Readiness Engine
+# ---------------------------------------------------------------------------
+
+
+def compute_age_flag(duck_age_days: int) -> dict:
+    """SoT §4: Age Readiness Engine.
+
+    AgeFlag(U_duck) =
+        TOO_YOUNG               jika U_duck < 21
+        RECOMMENDED             jika 21 <= U_duck <= 30
+        ABOVE_RECOMMENDED_AGE   jika U_duck > 30
+
+    Returns dict with 'age_flag' and 'warnings'.
+    No R_age, no F_age, no yield/survival/feed multiplier.
     """
-    if duck_age_days < 14:
-        r_age = Decimal("0.35")
-        age_status = "AGE_BUY_RANGE_WARNING"
-    elif duck_age_days <= 29:
-        r_age = Decimal("0.15")
-        age_status = "AGE_BUY_RANGE"
+    if duck_age_days < 21:
+        age_flag = "TOO_YOUNG"
+        warnings = [
+            "Umur bebek di bawah 21 hari (terlalu muda / di bawah rentang readiness)."
+        ]
+    elif duck_age_days <= 30:
+        age_flag = "RECOMMENDED"
+        warnings: list[str] = []
     else:
-        r_age = Decimal("0.05")
-        age_status = "ADAPTED_FULLY"
+        age_flag = "ABOVE_RECOMMENDED_AGE"
+        warnings = [
+            "Umur bebek di atas 30 hari (di atas rentang umur yang direkomendasikan)."
+        ]
+    return {"age_flag": age_flag, "warnings": warnings}
+
+
+# ---------------------------------------------------------------------------
+# SoT §5: Density Engine
+# ---------------------------------------------------------------------------
+
+
+def compute_density(duck_count: int, land_area_are: float, planting_system: str) -> dict:
+    """SoT §5: Density Engine.
+
+    d    = duck_count / land_area_are   (ekor/are)
+    d_ha = 100 * d                      (ekor/ha)
+
+    DensityStatus:
+        d < 2                              -> UNDER_DENSITY
+        jajar_legowo dan 2 <= d <= 4       -> RECOMMENDED
+        tegel dan 2 <= d <= 3              -> RECOMMENDED
+        di atas ceiling sistem tetapi d <= 8 -> ABOVE_RECOMMENDED
+        d > 8                              -> OVERLOAD_HIGH_RISK
+
+    No P_over, no P_under, no yield multiplier.
+    """
+    d = Decimal(duck_count) / Decimal(str(land_area_are))
+    d_ha = Decimal("100") * d
+
+    warnings: list[str] = []
+
+    if d > Decimal("8"):
+        density_status = "OVERLOAD_HIGH_RISK"
+        warnings.append(
+            "Kepadatan > 8 ekor/are: OVERLOAD_HIGH_RISK — pengaruh numerik diterapkan pada Survival Engine."
+        )
+    elif d < Decimal("2"):
+        density_status = "UNDER_DENSITY"
+    else:
+        # 2 <= d <= 8
+        sys = planting_system.strip().lower()
+        if sys == "jajar_legowo":
+            ceiling = Decimal("4")
+        else:
+            ceiling = Decimal("3")
+
+        if d <= ceiling:
+            density_status = "RECOMMENDED"
+        else:
+            density_status = "ABOVE_RECOMMENDED"
 
     return {
-        "R_age": r_age,
-        "age_status": age_status,
-    }
-
-
-def compute_density(duck_count: int, land_area_are: float, k_safe: float) -> dict:
-    """[local-calculated] SoT 4.2 Density Engine.
-
-    d       = J / A_are
-    P_over  = max(0, min(1, (d - K_safe) / (8 - K_safe)))
-    P_under = max(0, (2 - d) / 2)
-    """
-    density_are = Decimal(duck_count) / Decimal(str(land_area_are))
-    k_safe_dec = Decimal(str(k_safe))
-    p_over = max(
-        Decimal("0"),
-        min(Decimal("1"), (density_are - k_safe_dec) / (Decimal("8") - k_safe_dec)),
-    )
-    p_under = max(Decimal("0"), (Decimal("2") - density_are) / Decimal("2"))
-
-    if p_over > Decimal("0"):
-        density_status = "WARNING_DENSITY"
-    elif p_under > Decimal("0"):
-        density_status = "WARNING_UNDER_DENSITY"
-    else:
-        density_status = "SAFE"
-
-    return {
-        "d": density_are,
-        "P_over": p_over,
-        "P_under": p_under,
+        "d": d,
+        "d_ha": d_ha,
         "density_status": density_status,
+        "warnings": warnings,
     }
 
 
-def compute_surviving_ducks(duck_count: int, r_age: float, p_over: float) -> Decimal:
-    """[local-validated] SoT 4.4 Survival Engine.
+# ---------------------------------------------------------------------------
+# SoT §6: Calendar Engine
+# ---------------------------------------------------------------------------
 
-    lambda_eff = 0.78125 * (1 - 0.50*R_age) * (1 - 0.45*P_over)
-    N_survive  = floor(J * lambda_eff)
-    Returns the pre-floor lambda*J; the service layer floors it.
+
+def compute_calendar(planting_date: date, rice_variety: str) -> dict:
+    """SoT §6: Calendar Engine.
+
+    D_in  = planting_date + 21
+    D_out = planting_date + 65
+
+    Sertani:
+        D_panen_min = planting_date + 100
+        D_panen_max = planting_date + 110
+        harvest_hst_min = 100
+        harvest_hst_max = 110
+
+    Generic Inpari:
+        D_panen     = planting_date + 134
+        harvest_hst = 134
+        + warning generic estimate
+
+    No planting_date fallback, no midpoint, no synthetic date.
     """
-    r_age_d = Decimal(str(r_age))
-    p_over_d = Decimal(str(p_over))
-    lambda_eff = Decimal("0.78125") * (Decimal("1") - Decimal("0.50") * r_age_d) * (
-        Decimal("1") - Decimal("0.45") * p_over_d
-    )
-    return Decimal(duck_count) * lambda_eff
+    d_in = planting_date + timedelta(days=HST_IN)
+    d_out = planting_date + timedelta(days=HST_OUT)
+    warnings: list[str] = []
 
+    variety = rice_variety.strip().lower()
+    if variety == "inpari":
+        harvest_hst_min = HST_PANEN_INPARI
+        harvest_hst_max = HST_PANEN_INPARI
+        d_panen_min = planting_date + timedelta(days=HST_PANEN_INPARI)
+        d_panen_max = d_panen_min
+        warnings.append(
+            "HST panen Inpari masih generic estimate (134 HST) dan membutuhkan kalibrasi varietas/subvarietas lebih lanjut."
+        )
+    else:
+        # sertani (default)
+        harvest_hst_min = HST_PANEN_SERTANI_MIN
+        harvest_hst_max = HST_PANEN_SERTANI_MAX
+        d_panen_min = planting_date + timedelta(days=HST_PANEN_SERTANI_MIN)
+        d_panen_max = planting_date + timedelta(days=HST_PANEN_SERTANI_MAX)
 
-def compute_surviving_ducks_floored(duck_count: int, r_age: float, p_over: float) -> int:
-    """[local-validated] SoT 4.4 Survival Engine with N_survive = floor(J * lambda_eff)."""
-    raw = compute_surviving_ducks(duck_count, r_age, p_over)
-    return int(raw.to_integral_value(rounding=ROUND_FLOOR))
-
-
-def compute_calendar_milestones(
-    planting_date,
-    hst_panen: int,
-    hst_masuk_legacy: int = 20,
-    hst_heading_legacy: int = 65,
-):
-    """[local-estimate] SoT 4.3 Calendar Engine.
-
-    t_active       = 65 - 21 = 44 hari
-    D_panen_gabah  = D_tanam + HST_panen
-    D_masuk_bebek  = D_tanam + 21
-    D_tarik_bebek  = D_tanam + 65
-    """
-    from datetime import timedelta
-
-    d_masuk_bebek = planting_date + timedelta(days=21)
-    d_tarik_bebek = planting_date + timedelta(days=65)
-    t_active = 44
-    d_panen_gabah = planting_date + timedelta(days=hst_panen)
     return {
-        "D_masuk_bebek": d_masuk_bebek,
-        "D_tarik_bebek": d_tarik_bebek,
-        "t_active": t_active,
-        "D_panen_gabah": d_panen_gabah,
-        "hst_masuk_legacy": hst_masuk_legacy,
-        "hst_heading_legacy": hst_heading_legacy,
+        "HST_in": HST_IN,
+        "HST_out": HST_OUT,
+        "t_active": T_ACTIVE,
+        "D_in": d_in,
+        "D_out": d_out,
+        "harvest_hst_min": harvest_hst_min,
+        "harvest_hst_max": harvest_hst_max,
+        "D_panen_min": d_panen_min,
+        "D_panen_max": d_panen_max,
+        "warnings": warnings,
     }
 
 
-# [local-validated] SoT 4.5 Yield Engine: Y0 = 47,8767507 kg/are (Local-validated, Tabel 1)
-Y0 = Decimal("47.8767507")
-
-# [empirical-correction] SoT 4.5: F_var = 1.00 (override old 0.80)
-F_VAR = Decimal("1.00")
+# ---------------------------------------------------------------------------
+# SoT §7: Survival Engine
+# ---------------------------------------------------------------------------
 
 
-def _dec_exp(x: Decimal) -> Decimal:
-    """Compute exp(x) for Decimal using high precision series."""
-    # Use the math library for exp but cast back to Decimal for consistency.
-    # Decimal does not have built-in exp; use float then convert.
-    # For high-precision, implement Taylor series up to 50 terms.
-    getcontext().prec = 50
-    # Use Taylor series: e^x = 1 + x + x^2/2! + x^3/3! + ...
-    result = Decimal("1")
-    term = Decimal("1")
-    for i in range(1, 100):
-        term *= x / Decimal(i)
-        result += term
-        if abs(term) < Decimal("1E-45"):
-            break
-    return result
+def compute_surviving_ducks(duck_count: int, d: Decimal) -> int:
+    """SoT §7: Survival Engine.
 
+    N_survive =
+        duck_count              jika d <= 8
+        floor(0.60 * duck_count) jika d > 8
 
-def compute_yield_components(
-    d: float,
-    r_age: float,
-    F_sys: float,
-    f_var: float = float(F_VAR),
-) -> Decimal:
-    """[system-design] SoT 4.5 Yield Engine.
-
-    F_density_bio(d) = 1 + alpha_bio * (1 - exp(-d / K_opt))
-                       - beta_tramp * (max(0, (d - K_max) / K_max))**2
-    where alpha_bio = 0.15, K_opt = 4, beta_tramp = 0.25, K_max = 8.
-    F_age = 1 - 0.08 * R_age
-    F_sys = system factor (Jarwo=1.00, Tegel=1.211)
-    F_var = 1.00 (override old 0.80)
-    Yield_are = Y0 * F_density_bio * F_age * F_sys * F_var
+    No lambda_eff, no 0.78125, no R_age multiplier, no P_over multiplier.
+    No 90% normal survival.
     """
-    # [local-estimate] Bio-density parameters per SoT 4.5
-    alpha_bio = Decimal("0.15")
-    k_opt = Decimal("4.0")
-    beta_tramp = Decimal("0.25")
-    k_max = Decimal("8.0")
+    if d > Decimal("8"):
+        raw = Decimal("0.60") * Decimal(duck_count)
+        return int(raw.to_integral_value(rounding=ROUND_FLOOR))
+    else:
+        return duck_count
 
-    d_d = Decimal(str(d))
-    r_age_d = Decimal(str(r_age))
-    F_sys_d = Decimal(str(F_sys))
-    f_var_d = Decimal(str(f_var))
 
-    # [system-design] Exponential saturation boost
-    boost = alpha_bio * (Decimal("1") - _dec_exp(-d_d / k_opt))
-    # [system-design] Quadratic trampling penalty
-    trampling = beta_tramp * (max(Decimal("0"), (d_d - k_max) / k_max) ** Decimal("2"))
-    f_density_bio = Decimal("1") + boost - trampling
+# ---------------------------------------------------------------------------
+# SoT §8: Yield Engine
+# ---------------------------------------------------------------------------
 
-    # [system-design] Age factor
-    f_age = Decimal("1") - Decimal("0.08") * r_age_d
 
-    yield_are = Y0 * f_density_bio * f_age * F_sys_d * f_var_d
-    return yield_are
+def compute_yield(land_area_are: float) -> dict:
+    """SoT §8: Yield Engine.
+
+    Y_base = 47.8767507 kg/are (local-validated baseline)
+
+    F_sys_JARWO_2_1 = 1  (system-neutral)
+    F_sys_TEGEL     = 1  (system-neutral)
+    F_var_SERTANI   = 1  (variety-neutral)
+    F_var_INPARI    = 1  (variety-neutral)
+
+    Yield_are_pred   = 47.8767507
+    Yield_total_pred = 47.8767507 * land_area_are
+
+    No F_density_bio, no F_age, no alpha_bio, no beta_tramp.
+    No density yield multiplier. No variety yield multiplier.
+    """
+    land_area_d = Decimal(str(land_area_are))
+    yield_are_pred = Y_BASE
+    yield_total_pred = yield_are_pred * land_area_d
+    return {
+        "Yield_are_pred": yield_are_pred,
+        "Yield_total_pred": yield_total_pred,
+    }
+
+
+# ---------------------------------------------------------------------------
+# SoT §9: Core Economic Engine
+# ---------------------------------------------------------------------------
+
+
+def compute_core_economics(
+    *,
+    yield_total_pred: Decimal,
+    n_survive: int,
+    duck_count: int,
+    p_duck_buy: float,
+) -> dict:
+    """SoT §9: Core Economic Engine.
+
+    Revenue_gabah          = Yield_total_pred * 6000
+    Revenue_duck_potential = N_survive * 52500
+    Cost_duck_buy          = duck_count * p_duck_buy
+    Cost_feed              = duck_count * 20000
+    Core_Cash_Cost         = Cost_duck_buy + Cost_feed
+    Total_Revenue_DSS      = Revenue_gabah + Revenue_duck_potential
+    Net_Cash_Contribution_DSS = Total_Revenue_DSS - Core_Cash_Cost
+
+    p_duck_buy=0 is valid (no current-cycle cash purchase).
+    No fallback Rp25000. No fertilizer/pesticide/infrastructure in Core.
+    """
+    p_buy_d = Decimal(str(p_duck_buy))
+    duck_count_d = Decimal(duck_count)
+
+    revenue_gabah = yield_total_pred * P_GABAH_RP_PER_KG
+    revenue_duck_potential = Decimal(n_survive) * P_DUCK_SELL_RP_PER_DUCK
+
+    cost_duck_buy = duck_count_d * p_buy_d
+    cost_feed = duck_count_d * C_FEED_RP_PER_DUCK_CYCLE
+
+    core_cash_cost = cost_duck_buy + cost_feed
+    total_revenue_dss = revenue_gabah + revenue_duck_potential
+    net_cash_contribution_dss = total_revenue_dss - core_cash_cost
+
+    return {
+        "Revenue_gabah": revenue_gabah,
+        "Revenue_duck_potential": revenue_duck_potential,
+        "Cost_duck_buy": cost_duck_buy,
+        "Cost_feed": cost_feed,
+        "Core_Cash_Cost": core_cash_cost,
+        "Total_Revenue_DSS": total_revenue_dss,
+        "Net_Cash_Contribution_DSS": net_cash_contribution_dss,
+    }
