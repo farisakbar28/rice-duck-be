@@ -747,7 +747,7 @@ Catat:
 n_historical_replay: 11
 MAE_y: 8.45622456 kg/are
 RMSE_y: 13.63764667 kg/are
-MedAE_y: 7.46008403 kg/are
+MedAE_y: 5.52324930 kg/are
 ```
 
 Metrik ini adalah **runtime replay diagnostic terhadap production backend**. Ia tidak menggantikan numerical validation penelitian LOFO-CV.
@@ -920,11 +920,10 @@ Temuan hanya dianggap bug jika memengaruhi production path, active docs/schema, 
 ## 16. Ringkasan Eksekusi
 
 ```text
-backend_commit: 78f46ebd8004b8ebfdd7559a1c0648482d3eeeaa (worktree memiliki perubahan SoT yang belum di-commit)
+backend_commit: ff9b347adfffb885fc94964457a6e39c7ed1c73c (clean checkout; rerun evidence)
 backend_start_command: python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 base_url: http://127.0.0.1:8000
-execution_started_at: 2026-08-22T12:01:25.5856294Z
-execution_finished_at: 2026-08-22T12:01:26.2703503Z
+execution_rerun_completed_at: 2026-08-22T15:32:52.5803802Z
 
 historical_replay:
   total: 11
@@ -932,7 +931,7 @@ historical_replay:
   failed: 0
   MAE_y: 8.45622456 kg/are
   RMSE_y: 13.63764667 kg/are
-  MedAE_y: 7.46008403 kg/are
+  MedAE_y: 5.52324930 kg/are
 
 calendar_comparison:
   result: completed; Sertani 4 IN_WINDOW dan 5 BELOW_WINDOW, Inpari generic error +18 dan +22 HST
@@ -967,9 +966,11 @@ Jangan menandai seluruh pengujian PASS sebelum backend dan seluruh HTTP request 
 
 ---
 
-## 17. Runtime Evidence — 22 Agustus 2026
+## 17. Runtime Evidence — 22 Agustus 2026 (rerun clean commit)
 
-Execution ini dijalankan terhadap service HTTP nyata dengan perintah berikut:
+Evidence HTTP pada section ini telah dijalankan ulang terhadap clean checkout `ff9b347adfffb885fc94964457a6e39c7ed1c73c` dan selesai pada `2026-08-22T15:32:52.5803802Z`. Provenance eksekusi lama pada 12:01 UTC tidak dapat diatribusikan ke commit final: Git hanya mencatat base commit `78f46ebd...`, sedangkan `ff9b347...` memiliki perubahan production yang besar dan tidak ada hash/artifact snapshot working tree lama untuk membuktikan identitas byte atau semantiknya.
+
+Execution rerun ini dijalankan terhadap service HTTP nyata dengan perintah berikut:
 
 ```text
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
@@ -996,7 +997,7 @@ Setiap request H01–H11 memakai payload aktual yang sudah tercantum pada sectio
 n_historical_replay: 11
 MAE_y: 8.45622456 kg/are
 RMSE_y: 13.63764667 kg/are
-MedAE_y: 7.46008403 kg/are
+MedAE_y: 5.52324930 kg/are
 ```
 
 Calendar diagnostic: Sertani H05, H07, H09, dan H10 berada pada window 100–110; H01, H02, H04, H06, dan H11 berada di bawah window. H03 menghasilkan Inpari generic 134 HST (error +18 terhadap aktual 116); H08 menghasilkan 134 HST (error +22 terhadap aktual 112). Nilai ekonomi bebek dan Net Cash dicatat sebagai context, bukan accuracy metric.
