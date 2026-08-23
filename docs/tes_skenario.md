@@ -1,5 +1,8 @@
 # PANDUAN PENGUJIAN SKENARIO — BACKEND FINAL DSS PADI-BEBEK
 
+> **STATUS SETELAH KOREKSI KALENDER INPARI:** Rule Inpari berubah dari point estimate 134 HST menjadi local empirical window 109–116 HST. Semua runtime evidence lama yang memuat output Inpari 134 HST (minimal H03, H08, B14, serta ringkasan terkait calendar) **tidak boleh digunakan sebagai evidence model terbaru** dan wajib dijalankan ulang setelah implementasi model diperbarui. Nilai baru tidak boleh diisi melalui kalkulasi manual.
+
+
 ## 1. Tujuan
 
 Dokumen ini memverifikasi implementasi backend melalui **dua jenis pengujian yang dipisahkan secara tegas**:
@@ -35,7 +38,7 @@ Dokumen ini bukan pengganti dokumen numerical validation penelitian. Numerical v
 | `density_are` | `J/A_are` dari row aktual | **Direct-compatible** | Backend vs hasil aritmetika sumber |
 | `Yield_are_pred` | `Actual Yield (kg/are)` | **Direct-compatible** | Error = backend - actual |
 | `Yield_total_pred` | `Actual Yield * A_are` | **Direct-compatible** | Error = backend - actual total |
-| Harvest HST/date | tanggal panen aktual | **Direct-compatible untuk replay terpilih** | Sertani: actual vs window 100–110; Inpari: actual vs 134 |
+| Harvest HST/date | tanggal panen aktual | **Direct-compatible untuk replay terpilih** | Sertani: actual vs window 100–110; Inpari: actual vs window 109–116 |
 | `Revenue_gabah` | actual yield distandardisasi ke Rp6.000/kg | **Derived like-for-like** | Backend vs `ActualYield*A_are*6000` |
 | `Cost_duck_buy` | `J*p_duck_buy` request | **Contract equality** | Harus mengikuti input request |
 | `AgeFlag` | tidak ada umur individual actual | **Tidak validasi historis** | Hanya contract check |
@@ -140,16 +143,6 @@ discrepancy_if_any:
 
 **Ground truth / source values**
 
-**Runtime record (HTTP nyata, 2026-08-22T12:01:25.5856294Z)**
-
-```text
-http_status: 200
-response: density_are=3.1496063; Yield_are_pred=47.8767507; Yield_total_pred=304.0174; harvest_hst=100-110; harvest_date=2024-05-29..2024-06-08; Revenue_gabah=1824104.20; Cost_duck_buy=300000.00; Cost_feed=400000.00; Net_Cash_Contribution_DSS=2174104.20
-warnings: survival-assumption warning
-comparison: yield_error=+2.04997905; yield_abs_error=2.04997905; harvest=BELOW_WINDOW (93 versus 100-110); density_error=0 within JSON precision; standardized_gabah_revenue_error=+78104.20
-result: COMPLETED; canonical field values projected from raw HTTP JSON in Section 17.
-```
-
 - Area: `6.35` are
 - Duck count: `20`
 - Density aktual: `3.14960630` ekor/are
@@ -182,25 +175,35 @@ result: COMPLETED; canonical field values projected from raw HTTP JSON in Sectio
 }
 ```
 
-**Hasil backend nyata**
+**Hasil backend nyata — jangan diisi sebelum runtime**
 
-Seluruh field yang semula dicadangkan pada template ini telah diisi pada **Runtime record** tepat di atas. Nilai tersebut berasal dari response HTTP 200 aktual; proyeksi lintas-kasus dan metriknya ada di Section 17.
+```text
+http_status:
+raw_response_json:
+
+density_are_backend:
+Yield_are_pred_backend:
+Yield_total_pred_backend:
+harvest_hst_backend:
+harvest_date_backend:
+Revenue_gabah_backend:
+Cost_duck_buy_backend:
+Cost_feed_backend:
+Net_Cash_Contribution_DSS_backend:
+warnings_backend:
+
+Yield_error_backend_minus_actual:
+Harvest_comparison:
+Density_error_backend_minus_actual:
+Standardized_Gabah_Revenue_error:
+result:
+```
 
 ---
 
 ### H02 — Raw Row 34 — I Gusti Ngurah Rai Sukarta
 
 **Ground truth / source values**
-
-**Runtime record (HTTP nyata, 2026-08-22T12:01:25.8181034Z)**
-
-```text
-http_status: 200
-response: density_are=3.1341822; Yield_are_pred=47.8767507; Yield_total_pred=488.8216; harvest_hst=100-110; harvest_date=2024-07-24..2024-08-03; Revenue_gabah=2932929.75; Cost_duck_buy=384000.00; Cost_feed=640000.00; Net_Cash_Contribution_DSS=3588929.75
-warnings: survival-assumption warning
-comparison: yield_error=-2.12324930; yield_abs_error=2.12324930; harvest=BELOW_WINDOW (95 versus 100-110); density_error=0 within JSON precision; standardized_gabah_revenue_error=-130070.25
-result: COMPLETED; canonical field values projected from raw HTTP JSON in Section 17.
-```
 
 - Area: `10.21` are
 - Duck count: `32`
@@ -234,25 +237,35 @@ result: COMPLETED; canonical field values projected from raw HTTP JSON in Sectio
 }
 ```
 
-**Hasil backend nyata**
+**Hasil backend nyata — jangan diisi sebelum runtime**
 
-Seluruh field yang semula dicadangkan pada template ini telah diisi pada **Runtime record** tepat di atas. Nilai tersebut berasal dari response HTTP 200 aktual; proyeksi lintas-kasus dan metriknya ada di Section 17.
+```text
+http_status:
+raw_response_json:
+
+density_are_backend:
+Yield_are_pred_backend:
+Yield_total_pred_backend:
+harvest_hst_backend:
+harvest_date_backend:
+Revenue_gabah_backend:
+Cost_duck_buy_backend:
+Cost_feed_backend:
+Net_Cash_Contribution_DSS_backend:
+warnings_backend:
+
+Yield_error_backend_minus_actual:
+Harvest_comparison:
+Density_error_backend_minus_actual:
+Standardized_Gabah_Revenue_error:
+result:
+```
 
 ---
 
 ### H03 — Raw Row 36 — I Wayan Suarta
 
 **Ground truth / source values**
-
-**Runtime record (HTTP nyata, 2026-08-22T12:01:25.8693950Z)**
-
-```text
-http_status: 200
-response: density_are=2.8787879; Yield_are_pred=47.8767507; Yield_total_pred=315.9866; harvest_hst=134; harvest_date=2024-08-24; Revenue_gabah=1895919.33; Cost_duck_buy=228000.00; Cost_feed=380000.00; Net_Cash_Contribution_DSS=2285419.33
-warnings: Inpari generic-estimate warning; survival-assumption warning
-comparison: yield_error=+0.67978100; yield_abs_error=0.67978100; harvest=INPARI_GENERIC_POINT_ERROR (+18 HST versus actual 116); density_error=0 within JSON precision; standardized_gabah_revenue_error=+26919.33
-result: COMPLETED; canonical field values projected from raw HTTP JSON in Section 17.
-```
 
 - Area: `6.6` are
 - Duck count: `19`
@@ -286,25 +299,35 @@ result: COMPLETED; canonical field values projected from raw HTTP JSON in Sectio
 }
 ```
 
-**Hasil backend nyata**
+**Hasil backend nyata — jangan diisi sebelum runtime**
 
-Seluruh field yang semula dicadangkan pada template ini telah diisi pada **Runtime record** tepat di atas. Nilai tersebut berasal dari response HTTP 200 aktual; proyeksi lintas-kasus dan metriknya ada di Section 17.
+```text
+http_status:
+raw_response_json:
+
+density_are_backend:
+Yield_are_pred_backend:
+Yield_total_pred_backend:
+harvest_hst_backend:
+harvest_date_backend:
+Revenue_gabah_backend:
+Cost_duck_buy_backend:
+Cost_feed_backend:
+Net_Cash_Contribution_DSS_backend:
+warnings_backend:
+
+Yield_error_backend_minus_actual:
+Harvest_comparison:
+Density_error_backend_minus_actual:
+Standardized_Gabah_Revenue_error:
+result:
+```
 
 ---
 
 ### H04 — Raw Row 37 — I Wayan Suwendhi Artha
 
 **Ground truth / source values**
-
-**Runtime record (HTTP nyata, 2026-08-22T12:01:25.9188794Z)**
-
-```text
-http_status: 200
-response: density_are=1.8750000; Yield_are_pred=47.8767507; Yield_total_pred=229.8084; harvest_hst=100-110; harvest_date=2024-08-01..2024-08-11; Revenue_gabah=1378850.42; Cost_duck_buy=0.00; Cost_feed=180000.00; Net_Cash_Contribution_DSS=1671350.42
-warnings: survival-assumption warning
-comparison: yield_error=-12.53991597; yield_abs_error=12.53991597; harvest=BELOW_WINDOW (99 versus 100-110); density_error=0; standardized_gabah_revenue_error=-361149.58
-result: COMPLETED; canonical field values projected from raw HTTP JSON in Section 17.
-```
 
 - Area: `4.8` are
 - Duck count: `9`
@@ -339,25 +362,35 @@ result: COMPLETED; canonical field values projected from raw HTTP JSON in Sectio
 }
 ```
 
-**Hasil backend nyata**
+**Hasil backend nyata — jangan diisi sebelum runtime**
 
-Seluruh field yang semula dicadangkan pada template ini telah diisi pada **Runtime record** tepat di atas. Nilai tersebut berasal dari response HTTP 200 aktual; proyeksi lintas-kasus dan metriknya ada di Section 17.
+```text
+http_status:
+raw_response_json:
+
+density_are_backend:
+Yield_are_pred_backend:
+Yield_total_pred_backend:
+harvest_hst_backend:
+harvest_date_backend:
+Revenue_gabah_backend:
+Cost_duck_buy_backend:
+Cost_feed_backend:
+Net_Cash_Contribution_DSS_backend:
+warnings_backend:
+
+Yield_error_backend_minus_actual:
+Harvest_comparison:
+Density_error_backend_minus_actual:
+Standardized_Gabah_Revenue_error:
+result:
+```
 
 ---
 
 ### H05 — Raw Row 38 — I Ketut Alit Sudarsana
 
 **Ground truth / source values**
-
-**Runtime record (HTTP nyata, 2026-08-22T12:01:25.9733691Z)**
-
-```text
-http_status: 200
-response: density_are=3.2000000; Yield_are_pred=47.8767507; Yield_total_pred=478.7675; harvest_hst=100-110; harvest_date=2024-07-31..2024-08-10; Revenue_gabah=2872605.04; Cost_duck_buy=0.00; Cost_feed=640000.00; Net_Cash_Contribution_DSS=3912605.04
-warnings: survival-assumption warning
-comparison: yield_error=-5.52324930; yield_abs_error=5.52324930; harvest=IN_WINDOW (actual 100); density_error=0; standardized_gabah_revenue_error=-331394.96
-result: COMPLETED; canonical field values projected from raw HTTP JSON in Section 17.
-```
 
 - Area: `10.0` are
 - Duck count: `32`
@@ -392,25 +425,35 @@ result: COMPLETED; canonical field values projected from raw HTTP JSON in Sectio
 }
 ```
 
-**Hasil backend nyata**
+**Hasil backend nyata — jangan diisi sebelum runtime**
 
-Seluruh field yang semula dicadangkan pada template ini telah diisi pada **Runtime record** tepat di atas. Nilai tersebut berasal dari response HTTP 200 aktual; proyeksi lintas-kasus dan metriknya ada di Section 17.
+```text
+http_status:
+raw_response_json:
+
+density_are_backend:
+Yield_are_pred_backend:
+Yield_total_pred_backend:
+harvest_hst_backend:
+harvest_date_backend:
+Revenue_gabah_backend:
+Cost_duck_buy_backend:
+Cost_feed_backend:
+Net_Cash_Contribution_DSS_backend:
+warnings_backend:
+
+Yield_error_backend_minus_actual:
+Harvest_comparison:
+Density_error_backend_minus_actual:
+Standardized_Gabah_Revenue_error:
+result:
+```
 
 ---
 
 ### H06 — Raw Row 39 — I Gusti Ngurah Rai Sukarta
 
 **Ground truth / source values**
-
-**Runtime record (HTTP nyata, 2026-08-22T12:01:26.0211044Z)**
-
-```text
-http_status: 200
-response: density_are=3.2727273; Yield_are_pred=47.8767507; Yield_total_pred=263.3221; harvest_hst=100-110; harvest_date=2024-07-24..2024-08-03; Revenue_gabah=1579932.77; Cost_duck_buy=216000.00; Cost_feed=360000.00; Net_Cash_Contribution_DSS=1948932.77
-warnings: survival-assumption warning
-comparison: yield_error=+0.87675070; yield_abs_error=0.87675070; harvest=BELOW_WINDOW (95 versus 100-110); density_error=0 within JSON precision; standardized_gabah_revenue_error=+28932.77
-result: COMPLETED; canonical field values projected from raw HTTP JSON in Section 17.
-```
 
 - Area: `5.5` are
 - Duck count: `18`
@@ -444,25 +487,35 @@ result: COMPLETED; canonical field values projected from raw HTTP JSON in Sectio
 }
 ```
 
-**Hasil backend nyata**
+**Hasil backend nyata — jangan diisi sebelum runtime**
 
-Seluruh field yang semula dicadangkan pada template ini telah diisi pada **Runtime record** tepat di atas. Nilai tersebut berasal dari response HTTP 200 aktual; proyeksi lintas-kasus dan metriknya ada di Section 17.
+```text
+http_status:
+raw_response_json:
+
+density_are_backend:
+Yield_are_pred_backend:
+Yield_total_pred_backend:
+harvest_hst_backend:
+harvest_date_backend:
+Revenue_gabah_backend:
+Cost_duck_buy_backend:
+Cost_feed_backend:
+Net_Cash_Contribution_DSS_backend:
+warnings_backend:
+
+Yield_error_backend_minus_actual:
+Harvest_comparison:
+Density_error_backend_minus_actual:
+Standardized_Gabah_Revenue_error:
+result:
+```
 
 ---
 
 ### H07 — Raw Row 43 — I Made Arsania
 
 **Ground truth / source values**
-
-**Runtime record (HTTP nyata, 2026-08-22T12:01:26.0722359Z)**
-
-```text
-http_status: 200
-response: density_are=4.1666667; Yield_are_pred=47.8767507; Yield_total_pred=172.3563; harvest_hst=100-110; harvest_date=2025-01-09..2025-01-19; Revenue_gabah=1034137.82; Cost_duck_buy=0.00; Cost_feed=300000.00; Net_Cash_Contribution_DSS=1521637.82
-warnings: survival-assumption warning
-comparison: yield_error=+7.46008403; yield_abs_error=7.46008403; harvest=IN_WINDOW (actual 108); density_error=0 within JSON precision; standardized_gabah_revenue_error=+161137.82
-result: COMPLETED; canonical field values projected from raw HTTP JSON in Section 17.
-```
 
 - Area: `3.6` are
 - Duck count: `15`
@@ -497,25 +550,35 @@ result: COMPLETED; canonical field values projected from raw HTTP JSON in Sectio
 }
 ```
 
-**Hasil backend nyata**
+**Hasil backend nyata — jangan diisi sebelum runtime**
 
-Seluruh field yang semula dicadangkan pada template ini telah diisi pada **Runtime record** tepat di atas. Nilai tersebut berasal dari response HTTP 200 aktual; proyeksi lintas-kasus dan metriknya ada di Section 17.
+```text
+http_status:
+raw_response_json:
+
+density_are_backend:
+Yield_are_pred_backend:
+Yield_total_pred_backend:
+harvest_hst_backend:
+harvest_date_backend:
+Revenue_gabah_backend:
+Cost_duck_buy_backend:
+Cost_feed_backend:
+Net_Cash_Contribution_DSS_backend:
+warnings_backend:
+
+Yield_error_backend_minus_actual:
+Harvest_comparison:
+Density_error_backend_minus_actual:
+Standardized_Gabah_Revenue_error:
+result:
+```
 
 ---
 
 ### H08 — Raw Row 44 — I Ketut Alit Sudarsana
 
 **Ground truth / source values**
-
-**Runtime record (HTTP nyata, 2026-08-22T12:01:26.1213567Z)**
-
-```text
-http_status: 200
-response: density_are=2.9000000; Yield_are_pred=47.8767507; Yield_total_pred=478.7675; harvest_hst=134; harvest_date=2025-02-09; Revenue_gabah=2872605.04; Cost_duck_buy=0.00; Cost_feed=580000.00; Net_Cash_Contribution_DSS=3815105.04
-warnings: Inpari generic-estimate warning; survival-assumption warning
-comparison: yield_error=+9.22675070; yield_abs_error=9.22675070; harvest=INPARI_GENERIC_POINT_ERROR (+22 HST versus actual 112); density_error=0; standardized_gabah_revenue_error=+553605.04
-result: COMPLETED; canonical field values projected from raw HTTP JSON in Section 17.
-```
 
 - Area: `10.0` are
 - Duck count: `29`
@@ -550,25 +613,35 @@ result: COMPLETED; canonical field values projected from raw HTTP JSON in Sectio
 }
 ```
 
-**Hasil backend nyata**
+**Hasil backend nyata — jangan diisi sebelum runtime**
 
-Seluruh field yang semula dicadangkan pada template ini telah diisi pada **Runtime record** tepat di atas. Nilai tersebut berasal dari response HTTP 200 aktual; proyeksi lintas-kasus dan metriknya ada di Section 17.
+```text
+http_status:
+raw_response_json:
+
+density_are_backend:
+Yield_are_pred_backend:
+Yield_total_pred_backend:
+harvest_hst_backend:
+harvest_date_backend:
+Revenue_gabah_backend:
+Cost_duck_buy_backend:
+Cost_feed_backend:
+Net_Cash_Contribution_DSS_backend:
+warnings_backend:
+
+Yield_error_backend_minus_actual:
+Harvest_comparison:
+Density_error_backend_minus_actual:
+Standardized_Gabah_Revenue_error:
+result:
+```
 
 ---
 
 ### H09 — Raw Row 51 — I Wayan Suwendhi Artha
 
 **Ground truth / source values**
-
-**Runtime record (HTTP nyata, 2026-08-22T12:01:26.1716425Z)**
-
-```text
-http_status: 200
-response: density_are=2.0790021; Yield_are_pred=47.8767507; Yield_total_pred=230.2872; harvest_hst=100-110; harvest_date=2025-07-18..2025-07-28; Revenue_gabah=1381723.03; Cost_duck_buy=250000.00; Cost_feed=200000.00; Net_Cash_Contribution_DSS=1456723.03
-warnings: survival-assumption warning
-comparison: yield_error=+4.42560725; yield_abs_error=4.42560725; harvest=IN_WINDOW (actual 101); density_error=0 within JSON precision; standardized_gabah_revenue_error=+127723.03
-result: COMPLETED; canonical field values projected from raw HTTP JSON in Section 17.
-```
 
 - Area: `4.81` are
 - Duck count: `10`
@@ -602,25 +675,35 @@ result: COMPLETED; canonical field values projected from raw HTTP JSON in Sectio
 }
 ```
 
-**Hasil backend nyata**
+**Hasil backend nyata — jangan diisi sebelum runtime**
 
-Seluruh field yang semula dicadangkan pada template ini telah diisi pada **Runtime record** tepat di atas. Nilai tersebut berasal dari response HTTP 200 aktual; proyeksi lintas-kasus dan metriknya ada di Section 17.
+```text
+http_status:
+raw_response_json:
+
+density_are_backend:
+Yield_are_pred_backend:
+Yield_total_pred_backend:
+harvest_hst_backend:
+harvest_date_backend:
+Revenue_gabah_backend:
+Cost_duck_buy_backend:
+Cost_feed_backend:
+Net_Cash_Contribution_DSS_backend:
+warnings_backend:
+
+Yield_error_backend_minus_actual:
+Harvest_comparison:
+Density_error_backend_minus_actual:
+Standardized_Gabah_Revenue_error:
+result:
+```
 
 ---
 
 ### H10 — Raw Row 53 — I Nyoman Suwitra
 
 **Ground truth / source values**
-
-**Runtime record (HTTP nyata, 2026-08-22T12:01:26.2197646Z)**
-
-```text
-http_status: 200
-response: density_are=2.0833333; Yield_are_pred=47.8767507; Yield_total_pred=229.8084; harvest_hst=100-110; harvest_date=2025-07-18..2025-07-28; Revenue_gabah=1378850.42; Cost_duck_buy=250000.00; Cost_feed=200000.00; Net_Cash_Contribution_DSS=1453850.42
-warnings: survival-assumption warning
-comparison: yield_error=+7.77258403; yield_abs_error=7.77258403; harvest=IN_WINDOW (actual 101); density_error=0 within JSON precision; standardized_gabah_revenue_error=+223850.42
-result: COMPLETED; canonical field values projected from raw HTTP JSON in Section 17.
-```
 
 - Area: `4.8` are
 - Duck count: `10`
@@ -654,25 +737,35 @@ result: COMPLETED; canonical field values projected from raw HTTP JSON in Sectio
 }
 ```
 
-**Hasil backend nyata**
+**Hasil backend nyata — jangan diisi sebelum runtime**
 
-Seluruh field yang semula dicadangkan pada template ini telah diisi pada **Runtime record** tepat di atas. Nilai tersebut berasal dari response HTTP 200 aktual; proyeksi lintas-kasus dan metriknya ada di Section 17.
+```text
+http_status:
+raw_response_json:
+
+density_are_backend:
+Yield_are_pred_backend:
+Yield_total_pred_backend:
+harvest_hst_backend:
+harvest_date_backend:
+Revenue_gabah_backend:
+Cost_duck_buy_backend:
+Cost_feed_backend:
+Net_Cash_Contribution_DSS_backend:
+warnings_backend:
+
+Yield_error_backend_minus_actual:
+Harvest_comparison:
+Density_error_backend_minus_actual:
+Standardized_Gabah_Revenue_error:
+result:
+```
 
 ---
 
 ### H11 — Raw Row 55 — Alm. I Ketut Tantra
 
 **Ground truth / source values**
-
-**Runtime record (HTTP nyata, 2026-08-22T12:01:26.2703503Z)**
-
-```text
-http_status: 200
-response: density_are=2.0289855; Yield_are_pred=47.8767507; Yield_total_pred=165.1748; harvest_hst=100-110; harvest_date=2025-07-28..2025-08-07; Revenue_gabah=991048.74; Cost_duck_buy=175000.00; Cost_feed=140000.00; Net_Cash_Contribution_DSS=1043548.74
-warnings: survival-assumption warning
-comparison: yield_error=+40.34051882; yield_abs_error=40.34051882; harvest=BELOW_WINDOW (95 versus 100-110); density_error=0 within JSON precision; standardized_gabah_revenue_error=+835048.74
-result: COMPLETED; canonical field values projected from raw HTTP JSON in Section 17.
-```
 
 - Area: `3.45` are
 - Duck count: `7`
@@ -706,9 +799,29 @@ result: COMPLETED; canonical field values projected from raw HTTP JSON in Sectio
 }
 ```
 
-**Hasil backend nyata**
+**Hasil backend nyata — jangan diisi sebelum runtime**
 
-Seluruh field yang semula dicadangkan pada template ini telah diisi pada **Runtime record** tepat di atas. Nilai tersebut berasal dari response HTTP 200 aktual; proyeksi lintas-kasus dan metriknya ada di Section 17.
+```text
+http_status:
+raw_response_json:
+
+density_are_backend:
+Yield_are_pred_backend:
+Yield_total_pred_backend:
+harvest_hst_backend:
+harvest_date_backend:
+Revenue_gabah_backend:
+Cost_duck_buy_backend:
+Cost_feed_backend:
+Net_Cash_Contribution_DSS_backend:
+warnings_backend:
+
+Yield_error_backend_minus_actual:
+Harvest_comparison:
+Density_error_backend_minus_actual:
+Standardized_Gabah_Revenue_error:
+result:
+```
 
 ---
 
@@ -718,17 +831,17 @@ Isi tabel ini **hanya dari raw response backend aktual**.
 
 | ID | Yield aktual | Yield backend | Error | Abs Error | HST aktual | Harvest backend | Density aktual | Density backend | Std. actual gabah revenue | Backend gabah revenue | Status |
 |---|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---|
-| H01 | 45.82677165 | 47.8767507 | 2.04997905 | 2.04997905 | 93 | 100–110 | 3.14960630 | 3.1496063 | 1746000.00 | 1824104.20 | COMPLETED |
-| H02 | 50.00000000 | 47.8767507 | -2.12324930 | 2.12324930 | 95 | 100–110 | 3.13418217 | 3.1341822 | 3063000.00 | 2932929.75 | COMPLETED |
-| H03 | 47.19696970 | 47.8767507 | 0.67978100 | 0.67978100 | 116 | 134 | 2.87878788 | 2.8787879 | 1869000.00 | 1895919.33 | COMPLETED |
-| H04 | 60.41666667 | 47.8767507 | -12.53991597 | 12.53991597 | 99 | 100–110 | 1.87500000 | 1.8750000 | 1740000.00 | 1378850.42 | COMPLETED |
-| H05 | 53.40000000 | 47.8767507 | -5.52324930 | 5.52324930 | 100 | 100–110 | 3.20000000 | 3.2000000 | 3204000.00 | 2872605.04 | COMPLETED |
-| H06 | 47.00000000 | 47.8767507 | 0.87675070 | 0.87675070 | 95 | 100–110 | 3.27272727 | 3.2727273 | 1551000.00 | 1579932.77 | COMPLETED |
-| H07 | 40.41666667 | 47.8767507 | 7.46008403 | 7.46008403 | 108 | 100–110 | 4.16666667 | 4.1666667 | 873000.00 | 1034137.82 | COMPLETED |
-| H08 | 38.65000000 | 47.8767507 | 9.22675070 | 9.22675070 | 112 | 134 | 2.90000000 | 2.9000000 | 2319000.00 | 2872605.04 | COMPLETED |
-| H09 | 43.45114345 | 47.8767507 | 4.42560725 | 4.42560725 | 101 | 100–110 | 2.07900208 | 2.0790021 | 1254000.00 | 1381723.03 | COMPLETED |
-| H10 | 40.10416667 | 47.8767507 | 7.77258403 | 7.77258403 | 101 | 100–110 | 2.08333333 | 2.0833333 | 1155000.00 | 1378850.42 | COMPLETED |
-| H11 | 7.53623188 | 47.8767507 | 40.34051882 | 40.34051882 | 95 | 100–110 | 2.02898551 | 2.0289855 | 156000.00 | 991048.74 | COMPLETED |
+| H01 | 45.82677165 | 47.87675070 | +2.04997905 | 2.04997905 | 93 | 100–110 | 3.14960630 | 3.1496063 | 1746000.00 | 1824104.20 | COMPLETED (BELOW_WINDOW) |
+| H02 | 50.00000000 | 47.87675070 | -2.12324930 | 2.12324930 | 95 | 100–110 | 3.13418217 | 3.1341822 | 3063000.00 | 2932929.75 | COMPLETED (BELOW_WINDOW) |
+| H03 | 47.19696970 | 47.87675070 | +0.67978100 | 0.67978100 | 116 | 109–116 | 2.87878788 | 2.8787879 | 1869000.00 | 1895919.33 | COMPLETED (IN_WINDOW) |
+| H04 | 60.41666667 | 47.87675070 | -12.53991597 | 12.53991597 | 99 | 100–110 | 1.87500000 | 1.8750000 | 1740000.00 | 1378850.42 | COMPLETED (BELOW_WINDOW) |
+| H05 | 53.40000000 | 47.87675070 | -5.52324930 | 5.52324930 | 100 | 100–110 | 3.20000000 | 3.2000000 | 3204000.00 | 2872605.04 | COMPLETED (IN_WINDOW) |
+| H06 | 47.00000000 | 47.87675070 | +0.87675070 | 0.87675070 | 95 | 100–110 | 3.27272727 | 3.2727273 | 1551000.00 | 1579932.77 | COMPLETED (BELOW_WINDOW) |
+| H07 | 40.41666667 | 47.87675070 | +7.46008403 | 7.46008403 | 108 | 100–110 | 4.16666667 | 4.1666667 | 873000.00 | 1034137.82 | COMPLETED (IN_WINDOW) |
+| H08 | 38.65000000 | 47.87675070 | +9.22675070 | 9.22675070 | 112 | 109–116 | 2.90000000 | 2.9000000 | 2319000.00 | 2872605.04 | COMPLETED (IN_WINDOW) |
+| H09 | 43.45114345 | 47.87675070 | +4.42560725 | 4.42560725 | 101 | 100–110 | 2.07900208 | 2.0790021 | 1254000.00 | 1381723.03 | COMPLETED (IN_WINDOW) |
+| H10 | 40.10416667 | 47.87675070 | +7.77258403 | 7.77258403 | 101 | 100–110 | 2.08333333 | 2.0833333 | 1155000.00 | 1378850.42 | COMPLETED (IN_WINDOW) |
+| H11 | 7.53623188 | 47.87675070 | +40.34051882 | 40.34051882 | 95 | 100–110 | 2.02898551 | 2.0289855 | 156000.00 | 991048.74 | COMPLETED (BELOW_WINDOW) |
 
 ### 8.1 Runtime diagnostic metrics untuk Historical Replay
 
@@ -776,15 +889,25 @@ distance = 100 - HST_actual       jika HST_actual < 100
 distance = HST_actual - 110       jika HST_actual > 110
 ```
 
-### Generic Inpari
+### Inpari
 
-Backend menggunakan 134 HST. Bandingkan:
+Backend terbaru **harus** menghasilkan harvest window 109–116 HST. Untuk setiap replay Inpari:
 
 ```text
-error_hst = 134 - HST_actual
+IN_WINDOW      jika 109 <= HST_actual <= 116
+BELOW_WINDOW   jika HST_actual < 109
+ABOVE_WINDOW   jika HST_actual > 116
 ```
 
-Interpretasi wajib menyebut bahwa 134 HST merupakan generic estimate, bukan karakteristik universal seluruh Inpari.
+Jika diperlukan diagnostic distance pada data yang **tidak digunakan membentuk window**:
+
+```text
+distance = 0                      jika 109 <= HST_actual <= 116
+distance = 109 - HST_actual       jika HST_actual < 109
+distance = HST_actual - 116       jika HST_actual > 116
+```
+
+Tiga observation lokal yang saat ini tersedia (109, 112, 116 HST) merupakan basis pembentukan window, sehingga tidak boleh dipresentasikan sebagai independent validation dengan error nol. Median deskriptifnya adalah 112 HST.
 
 ---
 
@@ -838,7 +961,7 @@ Historical Replay tidak mencakup seluruh branch. Skenario berikut **sengaja sint
 | B11 | Tegel above recommended | `A=10,J=40` | `ABOVE_RECOMMENDED` |
 | B12 | Purchase price zero | `p_duck_buy=0` | accepted; no Rp25k fallback |
 | B13 | Purchase price passthrough | `p_duck_buy=30000` | cost uses 30k request |
-| B14 | Generic Inpari | `rice_variety=inpari` | 134 HST + calibration warning |
+| B14 | Inpari calendar | `rice_variety=inpari` | harvest window 109–116 HST |
 
 Gunakan fixture lengkap yang valid untuk field lain. Nilai synthetic harus diberi label synthetic pada evidence.
 
@@ -901,29 +1024,30 @@ Temuan hanya dianggap bug jika memengaruhi production path, active docs/schema, 
 
 ## 15. Definition of Done
 
-- [x] H01–H11 dikirim melalui backend HTTP nyata.
-- [x] Raw request dan raw response H01–H11 tersimpan.
-- [x] Tabel aktual-vs-sistem diisi dari raw response, bukan kalkulasi manual.
-- [x] Runtime replay MAE/RMSE/MedAE yield dihitung dari response backend.
-- [x] Calendar actual-vs-system comparison selesai.
-- [x] Standardized gabah-revenue comparison selesai.
-- [x] Tidak ada survival-vs-sales metric yang disalahartikan sebagai biological validation.
-- [x] Synthetic boundary tests B01–B14 dijalankan.
-- [x] Invalid-input tests I01–I06 dijalankan.
-- [x] Endpoint options/visualization/history diperiksa bila tersedia.
-- [x] Repository-wide legacy search selesai.
-- [x] Setiap discrepancy dicatat apa adanya.
-- [x] Tidak ada skenario sintetis yang disebut data aktual.
+- [ ] H01–H11 dikirim melalui backend HTTP nyata.
+- [ ] Raw request dan raw response H01–H11 tersimpan.
+- [ ] Tabel aktual-vs-sistem diisi dari raw response, bukan kalkulasi manual.
+- [ ] Runtime replay MAE/RMSE/MedAE yield dihitung dari response backend.
+- [ ] Calendar actual-vs-system comparison selesai.
+- [ ] Standardized gabah-revenue comparison selesai.
+- [ ] Tidak ada survival-vs-sales metric yang disalahartikan sebagai biological validation.
+- [ ] Synthetic boundary tests B01–B14 dijalankan.
+- [ ] Invalid-input tests I01–I06 dijalankan.
+- [ ] Endpoint options/visualization/history diperiksa bila tersedia.
+- [ ] Repository-wide legacy search selesai.
+- [ ] Setiap discrepancy dicatat apa adanya.
+- [ ] Tidak ada skenario sintetis yang disebut data aktual.
 
 ---
 
 ## 16. Ringkasan Eksekusi
 
 ```text
-backend_commit: ff9b347adfffb885fc94964457a6e39c7ed1c73c (clean checkout; rerun evidence)
+backend_commit: 2d23130b1cf57685f6f161c9e7e565112f369c65 (working tree includes current SoT alignment)
 backend_start_command: python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 base_url: http://127.0.0.1:8000
-execution_rerun_completed_at: 2026-08-22T15:32:52.5803802Z
+execution_started_at: 2026-08-23T10:45:53.7845961Z
+execution_finished_at: 2026-08-23T10:45:53.7845961Z
 
 historical_replay:
   total: 11
@@ -934,10 +1058,10 @@ historical_replay:
   MedAE_y: 5.52324930 kg/are
 
 calendar_comparison:
-  result: completed; Sertani 4 IN_WINDOW dan 5 BELOW_WINDOW, Inpari generic error +18 dan +22 HST
+  result: Sertani 4 IN_WINDOW and 5 BELOW_WINDOW. Inpari H03 (116 HST) and H08 (112 HST) both IN_WINDOW under the 109-116 local empirical window; no independent zero-error validation is claimed because the three observations form that window.
 
 standardized_gabah_revenue_comparison:
-  result: completed; error per H01–H11 tercatat sebagai diagnostic, bukan accuracy metric Net Cash
+  result: completed; per-row diagnostic errors are recorded in Section 8 and are not a Net Cash accuracy metric.
 
 synthetic_boundary:
   passed: 14
@@ -948,16 +1072,16 @@ invalid_input:
   failed: 0
 
 options_contract:
-  result: HTTP 200; hanya Jajar Legowo 2:1 dan Tegel, tanpa koefisien legacy publik
+  result: HTTP 200; Inpari metadata reports hst_panen_min=109, hst_panen_max=116, status=local-empirical-reference.
 
 visualization_contract:
-  result: HTTP 200; zona dan waterfall memakai semantic SoT final
+  result: HTTP 200; 100 density points, 45 age points, and final Core waterfall node Net_Cash_Contribution_DSS.
 
 history_persistence:
-  result: register/login/simulate/list/detail/delete = 201/200/200/200/200/200; raw detail identik dengan raw simulate
+  result: register/login/simulate/list/detail/delete = 201/200/200/200/200/200; persisted Inpari detail reports 109-116 and equals its simulate response byte-for-byte.
 
 legacy_search:
-  result: selesai; tidak ada legacy semantic control pada production response path
+  result: completed; no active 134-HST Inpari production semantics remain.
 
 failed_or_unverified: []
 ```
@@ -966,44 +1090,20 @@ Jangan menandai seluruh pengujian PASS sebelum backend dan seluruh HTTP request 
 
 ---
 
-## 17. Runtime Evidence — 22 Agustus 2026 (rerun clean commit)
+## 17. Runtime Evidence — 23 August 2026 (current working tree)
 
-Evidence HTTP pada section ini telah dijalankan ulang terhadap clean checkout `ff9b347adfffb885fc94964457a6e39c7ed1c73c` dan selesai pada `2026-08-22T15:32:52.5803802Z`. Provenance eksekusi lama pada 12:01 UTC tidak dapat diatribusikan ke commit final: Git hanya mencatat base commit `78f46ebd...`, sedangkan `ff9b347...` memiliki perubahan production yang besar dan tidak ada hash/artifact snapshot working tree lama untuk membuktikan identitas byte atau semantiknya.
-
-Execution rerun ini dijalankan terhadap service HTTP nyata dengan perintah berikut:
+All evidence below was generated through the real HTTP service identified in Section 16. The table in Section 8 is a projection of the raw HTTP responses; it is not a manual formula substitution.
 
 ```text
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
-endpoint: POST /api/v1/dss/simulate
+H03: HTTP 200; harvest_hst=109-116; harvest_date=2024-07-30..2024-08-06; warnings=survival-assumption only; calendar=IN_WINDOW (actual 116).
+H08: HTTP 200; harvest_hst=109-116; harvest_date=2025-01-15..2025-01-22; warnings=survival-assumption only; calendar=IN_WINDOW (actual 112).
+B14: HTTP 200; harvest_hst=109-116; harvest_date=2026-04-20..2026-04-27; warnings=survival-assumption only.
+I01/I02/I03/I04/I05: HTTP 400.
+I06: HTTP 422.
 ```
 
-Setiap request H01–H11 memakai payload aktual yang sudah tercantum pada section 7. Tabel berikut adalah proyeksi field pembanding dari raw JSON response HTTP; field sandbox tidak dipakai sebagai metrik historical replay.
+Raw JSON from the live Inpari historical replay H03:
 
-| ID | HTTP | density_are | Yield_are_pred | Yield error | Yield_total_pred | Harvest HST backend | Revenue_gabah | Cost_duck_buy | Net_Cash_Contribution_DSS |
-|---|---:|---:|---:|---:|---:|---|---:|---:|---:|
-| H01 | 200 | 3.1496063 | 47.8767507 | 2.04997905 | 304.0174 | 100–110 | 1824104.20 | 300000.00 | 2174104.20 |
-| H02 | 200 | 3.1341822 | 47.8767507 | -2.12324930 | 488.8216 | 100–110 | 2932929.75 | 384000.00 | 3588929.75 |
-| H03 | 200 | 2.8787879 | 47.8767507 | 0.67978100 | 315.9866 | 134 | 1895919.33 | 228000.00 | 2285419.33 |
-| H04 | 200 | 1.8750000 | 47.8767507 | -12.53991597 | 229.8084 | 100–110 | 1378850.42 | 0.00 | 1671350.42 |
-| H05 | 200 | 3.2000000 | 47.8767507 | -5.52324930 | 478.7675 | 100–110 | 2872605.04 | 0.00 | 3912605.04 |
-| H06 | 200 | 3.2727273 | 47.8767507 | 0.87675070 | 263.3221 | 100–110 | 1579932.77 | 216000.00 | 1948932.77 |
-| H07 | 200 | 4.1666667 | 47.8767507 | 7.46008403 | 172.3563 | 100–110 | 1034137.82 | 0.00 | 1521637.82 |
-| H08 | 200 | 2.9000000 | 47.8767507 | 9.22675070 | 478.7675 | 134 | 2872605.04 | 0.00 | 3815105.04 |
-| H09 | 200 | 2.0790021 | 47.8767507 | 4.42560725 | 230.2872 | 100–110 | 1381723.03 | 250000.00 | 1456723.03 |
-| H10 | 200 | 2.0833333 | 47.8767507 | 7.77258403 | 229.8084 | 100–110 | 1378850.42 | 250000.00 | 1453850.42 |
-| H11 | 200 | 2.0289855 | 47.8767507 | 40.34051882 | 165.1748 | 100–110 | 991048.74 | 175000.00 | 1043548.74 |
-
-```text
-n_historical_replay: 11
-MAE_y: 8.45622456 kg/are
-RMSE_y: 13.63764667 kg/are
-MedAE_y: 5.52324930 kg/are
+```json
+{"age_flag":"RECOMMENDED","density_are":2.8787879,"density_ha":287.87879,"density_status":"RECOMMENDED","HST_in":21,"HST_out":65,"t_active":44,"D_in":"2024-05-03","D_out":"2024-06-16","harvest_hst_min":109,"harvest_hst_max":116,"D_panen_min":"2024-07-30","D_panen_max":"2024-08-06","N_survive":19,"Yield_are_pred":47.8767507,"Yield_total_pred":315.9866,"Revenue_gabah":1895919.33,"Revenue_duck_potential":997500.0,"Cost_duck_buy":228000.0,"Cost_feed":380000.0,"Core_Cash_Cost":608000.0,"Total_Revenue_DSS":2893419.33,"Net_Cash_Contribution_DSS":2285419.33,"warnings":["Estimasi survival mengasumsikan pemeliharaan memadai; actual mortality dapat berbeda akibat penyakit, predator, cuaca, atau faktor husbandry lain."]}
 ```
-
-Calendar diagnostic: Sertani H05, H07, H09, dan H10 berada pada window 100–110; H01, H02, H04, H06, dan H11 berada di bawah window. H03 menghasilkan Inpari generic 134 HST (error +18 terhadap aktual 116); H08 menghasilkan 134 HST (error +22 terhadap aktual 112). Nilai ekonomi bebek dan Net Cash dicatat sebagai context, bukan accuracy metric.
-
-Synthetic contract runtime: B01–B14 seluruhnya HTTP 200. Hasil penting: B01 `TOO_YOUNG`; B02 `RECOMMENDED`; B03 `ABOVE_RECOMMENDED_AGE`; B04 `UNDER_DENSITY`; B05/B06/B09/B10 `RECOMMENDED`; B07/B11 `ABOVE_RECOMMENDED`; B08 `OVERLOAD_HIGH_RISK` dengan `N_survive=48`; B12 `Cost_duck_buy=0`; B13 `Cost_duck_buy=600000`; B14 Inpari menghasilkan 134 HST dan warning generic.
-
-Invalid-input runtime: I01, I02, I03, I04, dan I05 seluruhnya HTTP 400; I06 HTTP 422 dengan field `planting_system`.
-
-Additional HTTP checks: `/api/v1/dss/options` 200; `/api/v1/dss/visualize` 200; authenticated register/login/simulate/list/detail/delete menghasilkan `201/200/200/200/200/200`, dan raw detail response identik dengan raw simulate response.

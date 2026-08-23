@@ -17,7 +17,7 @@
         {
           "name": "Options — SoT domains only",
           "request": {"method": "GET", "url": "{{base_url}}/api/v1/dss/options"},
-          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));", "const json = pm.response.json();", "pm.test('Jarwo is 2:1 and no legacy coefficient', () => { pm.expect(json.planting_systems.find(x => x.code === 'jajar_legowo').label).to.eql('Jajar Legowo 2:1'); pm.expect(json.planting_systems.every(x => !Object.hasOwn(x, 'F_sys'))).to.be.true; });"]}}]
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));", "const json = pm.response.json();", "pm.test('Jarwo is 2:1 and no legacy coefficient', () => { pm.expect(json.planting_systems.find(x => x.code === 'jajar_legowo').label).to.eql('Jajar Legowo 2:1'); pm.expect(json.planting_systems.every(x => !Object.hasOwn(x, 'F_sys'))).to.be.true; });", "pm.test('Inpari exposes the local empirical window', () => { const inpari = json.rice_varieties.find(x => x.code === 'inpari'); pm.expect([inpari.hst_panen_min, inpari.hst_panen_max]).to.eql([109, 116]); pm.expect(inpari.status).to.eql('local-empirical-reference'); });"]}}]
         },
         {
           "name": "Simulate — canonical Core",

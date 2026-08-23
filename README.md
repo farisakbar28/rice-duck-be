@@ -67,7 +67,7 @@ Yield_are_pred = 47.8767507 kg/are
 Yield_total_pred = Yield_are_pred * land_area_are
 ```
 
-Sertani memiliki jendela panen 100–110 HST; Inpari memakai 134 HST generic dan mengembalikan warning kalibrasi. Age dan density tidak mengalikan yield. Density hanya memengaruhi survival ketika `d > 8`.
+Sertani memiliki jendela panen 100–110 HST; Inpari memakai reference window empiris lokal 109–116 HST. Window Inpari dibentuk dari tiga observasi lokal (109, 112, dan 116 HST; median deskriptif 112) dan bukan generalisasi seluruh subvarietas. Age dan density tidak mengalikan yield. Density hanya memengaruhi survival ketika `d > 8`.
 
 ```text
 Revenue_gabah = Yield_total_pred * 6000

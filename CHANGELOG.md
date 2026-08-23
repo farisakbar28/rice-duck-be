@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Aligned the Inpari harvest calendar with the latest local empirical reference window of 109–116 HST, including date derivation, options metadata, HTTP responses, persistence of new simulations, tests, and active API documentation. The prior 134-HST generic estimate is no longer used for new calculations.
 - Migrated DSS Core to the 22 August 2026 Source of Truth: seven mandatory inputs, readiness-only age status, system-neutral yield baseline, density-triggered overload survival, Core feed cost, and `Net_Cash_Contribution_DSS`.
 - Removed public `F_sys` and monetary infrastructure outputs; infrastructure is now context-only sandbox information.
 - Restored v3 history detail read-back using persisted canonical values and deterministic sandbox context.

@@ -25,7 +25,7 @@ def test_historical_replay_contract(scenario: dict) -> None:
     assert body["Revenue_gabah"] == pytest.approx(47.8767507 * scenario["land_area_are"] * 6000, abs=0.01)
     assert body["Cost_duck_buy"] == pytest.approx(scenario["duck_count"] * scenario["p_duck_buy"])
     if scenario["rice_variety"] == "inpari":
-        assert body["harvest_hst_min"] == body["harvest_hst_max"] == 134
+        assert (body["harvest_hst_min"], body["harvest_hst_max"]) == (109, 116)
     else:
         assert (body["harvest_hst_min"], body["harvest_hst_max"]) == (100, 110)
 

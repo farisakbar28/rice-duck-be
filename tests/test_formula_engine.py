@@ -17,7 +17,8 @@ from app.engines.formula_engine import (
     HST_OUT,
     HST_PANEN_SERTANI_MIN,
     HST_PANEN_SERTANI_MAX,
-    HST_PANEN_INPARI,
+    HST_PANEN_INPARI_MIN,
+    HST_PANEN_INPARI_MAX,
     compute_age_flag,
     compute_calendar,
     compute_core_economics,
@@ -180,8 +181,9 @@ class TestCalendar:
         assert HST_PANEN_SERTANI_MIN == 100
         assert HST_PANEN_SERTANI_MAX == 110
 
-    def test_inpari_hst(self):
-        assert HST_PANEN_INPARI == 134
+    def test_inpari_hst_window(self):
+        assert HST_PANEN_INPARI_MIN == 109
+        assert HST_PANEN_INPARI_MAX == 116
 
     def test_sertani_calendar(self):
         r = compute_calendar(date(2024, 4, 22), "sertani")
@@ -198,12 +200,16 @@ class TestCalendar:
 
     def test_inpari_calendar(self):
         r = compute_calendar(date(2024, 4, 12), "inpari")
-        assert r["harvest_hst_min"] == 134
-        assert r["harvest_hst_max"] == 134
-        assert r["D_panen_min"] == date(2024, 8, 24)   # +134
-        assert r["D_panen_max"] == date(2024, 8, 24)
-        assert len(r["warnings"]) > 0
-        assert "generic" in r["warnings"][0].lower() or "kalibrasi" in r["warnings"][0].lower()
+        assert r["harvest_hst_min"] == 109
+        assert r["harvest_hst_max"] == 116
+        assert r["D_panen_min"] == date(2024, 7, 30)   # +109
+        assert r["D_panen_max"] == date(2024, 8, 6)    # +116
+        assert r["warnings"] == []
+
+    def test_inpari_calendar_handles_leap_year_boundary(self):
+        r = compute_calendar(date(2024, 11, 15), "inpari")
+        assert r["D_panen_min"] == date(2025, 3, 4)
+        assert r["D_panen_max"] == date(2025, 3, 11)
 
     def test_planting_date_2026_01_01_sertani(self):
         r = compute_calendar(date(2026, 1, 1), "sertani")

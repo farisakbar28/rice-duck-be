@@ -159,14 +159,17 @@ D_panen_min = planting_date + 100 hari
 D_panen_max = planting_date + 110 hari
 ```
 
-Generic Inpari:
+Inpari:
 
 ```text
-HST_panen = 134
-D_panen   = planting_date + 134 hari
+HST_panen_min = 109
+HST_panen_max = 116
+
+D_panen_min = planting_date + 109 hari
+D_panen_max = planting_date + 116 hari
 ```
 
-Output Inpari harus membawa warning singkat bahwa HST panen Inpari masih **generic estimate** dan membutuhkan kalibrasi varietas/subvarietas lebih lanjut.
+Rentang 109–116 HST berasal dari tiga observasi lokal yang memiliki tanggal tanam dan panen langsung (109, 112, dan 116 HST; median deskriptif 112 HST). Karena jumlah observasi masih terbatas dan mencakup kategori Inpari umum serta Inpari 32, rentang ini diperlakukan sebagai **reference window empiris lokal**, bukan klaim fenologis universal seluruh subvarietas Inpari.
 
 Production model tidak boleh membuat `planting_date` fallback, current-date fallback, midpoint tanggal, atau tanggal sintetik.
 
@@ -331,7 +334,7 @@ Backend harus menyediakan informasi semantik berikut, walaupun struktur nesting/
 | `t_active` | 44 |
 | `D_in` | `planting_date + 21` |
 | `D_out` | `planting_date + 65` |
-| `harvest_hst` | Sertani 100–110; generic Inpari 134 |
+| `harvest_hst` | Sertani 100–110; Inpari 109–116 |
 | `harvest_date` | Diturunkan dari `planting_date` |
 | `N_survive` | Survival Engine |
 | `Yield_are_pred` | 47.8767507 kg/are |
@@ -349,7 +352,6 @@ Backend harus menyediakan informasi semantik berikut, walaupun struktur nesting/
 - `U_duck < 21`: terlalu muda / di bawah rentang readiness.
 - `U_duck > 30`: di atas rentang umur yang direkomendasikan.
 - `d > 8`: overload/high-risk.
-- generic Inpari: HST panen masih generik dan perlu kalibrasi lebih lanjut.
 - survival normal: estimation mengasumsikan pemeliharaan memadai; actual mortality dapat berbeda.
 
 Nama literal warning string boleh mengikuti conventions repository, tetapi maknanya tidak boleh berubah.
@@ -362,7 +364,7 @@ Nama literal warning string boleh mengikuti conventions repository, tetapi makna
 - Dataset kalibrasi/validasi lokal clean menggunakan `A_are >= 2.5`.
 - Karena itu prediction untuk `0 < land_area_are < 2.5` berada di luar domain numerical validation lokal.
 - `jajar_legowo` dalam production model hanya mewakili **Jajar Legowo 2:1**.
-- Generic Inpari bukan subvarietas spesifik.
+- Kategori Inpari masih menggabungkan observasi Inpari umum dan Inpari 32; window 109–116 HST karena itu merupakan reference lokal dengan dukungan sampel terbatas, bukan generalisasi seluruh subvarietas.
 - Final economic output tidak memiliki historical endpoint yang semantik-identik dengan raw farmer profit.
 - `N_sold_actual` tidak boleh dipakai sebagai biological ground truth untuk `N_survive`.
 
@@ -417,7 +419,7 @@ Implementasi final harus memenuhi seluruh invariants berikut:
 7. `d > 8` menghasilkan `N_survive = floor(0.60J)`.
 8. Yield selalu memakai baseline `47.8767507 kg/are`.
 9. `planting_date` wajib dan seluruh tanggal kalender diturunkan darinya.
-10. Sertani memakai 100–110 HST; generic Inpari memakai 134 HST + warning.
+10. Sertani memakai 100–110 HST; Inpari memakai local empirical window 109–116 HST.
 11. Feed adalah Core `J * 20000`.
 12. Harga jual bebek production adalah Rp52.500/ekor.
 13. Final output canonical adalah `Net_Cash_Contribution_DSS`.

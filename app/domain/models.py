@@ -9,7 +9,7 @@ class RiceVariety:
     label: str
     # SoT §6.1 — harvest HST range
     # Sertani: hst_panen_min=100, hst_panen_max=110
-    # Inpari:  hst_panen_min=134, hst_panen_max=134 (single point + generic warning)
+    # Inpari:  hst_panen_min=109, hst_panen_max=116 (local empirical window)
     hst_panen_min: int
     hst_panen_max: int
     risk_note: str

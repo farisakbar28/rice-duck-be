@@ -80,11 +80,11 @@ def test_purchase_price_zero_and_passthrough(client: TestClient) -> None:
     assert paid["Cost_duck_buy"] == 600000
 
 
-def test_inpari_uses_generic_harvest_warning(client: TestClient) -> None:
+def test_inpari_uses_local_empirical_harvest_window(client: TestClient) -> None:
     body = client.post("/api/v1/dss/simulate", json=payload(rice_variety="inpari")).json()
-    assert body["harvest_hst_min"] == body["harvest_hst_max"] == 134
-    assert body["D_panen_min"] == body["D_panen_max"] == "2026-05-15"
-    assert any("generic" in warning.lower() for warning in body["warnings"])
+    assert (body["harvest_hst_min"], body["harvest_hst_max"]) == (109, 116)
+    assert (body["D_panen_min"], body["D_panen_max"]) == ("2026-04-20", "2026-04-27")
+    assert not any("generic" in warning.lower() for warning in body["warnings"])
 
 
 def test_options_expose_only_sot_domains(client: TestClient) -> None:
@@ -93,6 +93,9 @@ def test_options_expose_only_sot_domains(client: TestClient) -> None:
     assert {item["code"] for item in body["planting_systems"]} == {"jajar_legowo", "tegel"}
     assert all("F_sys" not in item for item in body["planting_systems"])
     assert next(item for item in body["planting_systems"] if item["code"] == "jajar_legowo")["label"] == "Jajar Legowo 2:1"
+    inpari = next(item for item in body["rice_varieties"] if item["code"] == "inpari")
+    assert (inpari["hst_panen_min"], inpari["hst_panen_max"]) == (109, 116)
+    assert inpari["status"] == "local-empirical-reference"
 
 
 @pytest.mark.parametrize("missing", ["planting_date", "duck_age_days", "p_duck_buy"])

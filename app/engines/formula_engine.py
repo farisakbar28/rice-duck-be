@@ -37,8 +37,9 @@ T_ACTIVE = 44  # 65 - 21
 HST_PANEN_SERTANI_MIN = 100
 HST_PANEN_SERTANI_MAX = 110
 
-# Generic Inpari harvest
-HST_PANEN_INPARI = 134
+# Inpari local empirical harvest window
+HST_PANEN_INPARI_MIN = 109
+HST_PANEN_INPARI_MAX = 116
 
 # ---------------------------------------------------------------------------
 # SoT §9: Core Economic Engine — production backend constants (not user input)
@@ -149,10 +150,11 @@ def compute_calendar(planting_date: date, rice_variety: str) -> dict:
         harvest_hst_min = 100
         harvest_hst_max = 110
 
-    Generic Inpari:
-        D_panen     = planting_date + 134
-        harvest_hst = 134
-        + warning generic estimate
+    Inpari:
+        D_panen_min = planting_date + 109
+        D_panen_max = planting_date + 116
+        harvest_hst_min = 109
+        harvest_hst_max = 116
 
     No planting_date fallback, no midpoint, no synthetic date.
     """
@@ -162,13 +164,10 @@ def compute_calendar(planting_date: date, rice_variety: str) -> dict:
 
     variety = rice_variety.strip().lower()
     if variety == "inpari":
-        harvest_hst_min = HST_PANEN_INPARI
-        harvest_hst_max = HST_PANEN_INPARI
-        d_panen_min = planting_date + timedelta(days=HST_PANEN_INPARI)
-        d_panen_max = d_panen_min
-        warnings.append(
-            "HST panen Inpari masih generic estimate (134 HST) dan membutuhkan kalibrasi varietas/subvarietas lebih lanjut."
-        )
+        harvest_hst_min = HST_PANEN_INPARI_MIN
+        harvest_hst_max = HST_PANEN_INPARI_MAX
+        d_panen_min = planting_date + timedelta(days=HST_PANEN_INPARI_MIN)
+        d_panen_max = planting_date + timedelta(days=HST_PANEN_INPARI_MAX)
     else:
         # sertani (default)
         harvest_hst_min = HST_PANEN_SERTANI_MIN

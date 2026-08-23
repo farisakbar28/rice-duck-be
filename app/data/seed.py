@@ -2,7 +2,7 @@
 
 SoT §3: rice_variety values: 'sertani', 'inpari'
 SoT §6.1: Sertani HST_panen_min=100, HST_panen_max=110
-          Inpari  HST_panen=134 (generic estimate)
+          Inpari  HST_panen_min=109, HST_panen_max=116 (local empirical window)
 SoT §5.1: jajar_legowo recommended ceiling=4 ekor/are (Jajar Legowo 2:1 only)
           tegel recommended ceiling=3 ekor/are
 SoT §9: p_duck_sell=52500
@@ -39,21 +39,21 @@ RICE_VARIETIES = [
     RiceVariety(
         code="inpari",
         label="Inpari (Generic)",
-        hst_panen_min=134,
-        hst_panen_max=134,
-        hst_panen=134,
+        hst_panen_min=109,
+        hst_panen_max=116,
+        hst_panen=109,
         hst_masuk=21,
         hst_heading=65,
-        harvest_age_days=134,
+        harvest_age_days=109,
         risk_note=(
-            "HST panen Inpari masih generic estimate (134 HST). "
-            "Membutuhkan kalibrasi varietas/subvarietas lebih lanjut."
+            "Panen Inpari: reference window empiris lokal 109–116 HST dari tanggal tanam "
+            "(observasi terbatas; bukan generalisasi seluruh subvarietas)."
         ),
         hst_masuk_min=21,
         hst_masuk_max=21,
         hst_heading_min=65,
         hst_heading_max=65,
-        status="generic-estimate",
+        status="local-empirical-reference",
     ),
 ]
 

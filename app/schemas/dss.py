@@ -21,7 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class RiceVarietyOption(BaseModel):
     code: str
     label: str
-    # SoT §6.1: Sertani 100–110, Inpari 134
+    # SoT §6.1: Sertani 100–110, Inpari 109–116
     hst_panen_min: int
     hst_panen_max: int
     risk_note: str
@@ -161,8 +161,8 @@ class DSSSimulationResponse(BaseModel):
     t_active: int                   # 44
     D_in: date                      # planting_date + 21
     D_out: date                     # planting_date + 65
-    harvest_hst_min: int            # Sertani: 100; Inpari: 134
-    harvest_hst_max: int            # Sertani: 110; Inpari: 134
+    harvest_hst_min: int            # Sertani: 100; Inpari: 109
+    harvest_hst_max: int            # Sertani: 110; Inpari: 116
     D_panen_min: date               # planting_date + harvest_hst_min
     D_panen_max: date               # planting_date + harvest_hst_max
 

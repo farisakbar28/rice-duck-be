@@ -196,15 +196,18 @@ Distance-to-window bernilai 0 jika HST aktual berada di dalam rentang 100–110.
 
 ### 7.3 Inpari
 
-Reference model: **134 HST** dengan status generic estimate.
+Direct observations n = **3**: 116, 109, dan 112 HST.
 
-Observed n = **3**: 116, 109, 112.
+Current local empirical reference:
 
-- MAE terhadap 134: **21.6667 hari**
-- RMSE terhadap 134: **21.8556 hari**
-- MedAE terhadap 134: **22.0000 hari**
+- minimum observed: **109 HST**
+- maximum observed: **116 HST**
+- descriptive median: **112 HST**
+- model harvest window: **109–116 HST**
 
-Seluruh observation Inpari lokal pada subset ini berada di bawah 134 HST. Hasil tersebut dicatat sebagai limitation diagnostic dan tidak digunakan untuk mengganti parameter tanpa keputusan penelitian baru.
+Rentang 109–116 HST dibentuk langsung dari tiga observation lokal yang memiliki pasangan tanggal tanam dan panen yang kompatibel. Karena observation yang sama digunakan untuk membentuk window tersebut, **MAE/RMSE/MedAE terhadap window tidak dilaporkan sebagai validation performance**; melaporkan error nol pada data pembentuk window akan bersifat sirkular dan tidak memberikan bukti independen.
+
+Subset ini mencakup kategori Inpari umum dan satu record Inpari 32. Karena n masih kecil, window 109–116 HST diperlakukan sebagai **reference empiris lokal saat ini**, sementara validasi subvarietas dan perluasan sampel tetap diperlukan.
 
 ## 8. Descriptive Numerical Checks untuk Parameter Ekonomi
 
