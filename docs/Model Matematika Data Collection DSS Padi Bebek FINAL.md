@@ -1,9 +1,9 @@
 # MODEL MATEMATIKA EKONOMI DSS PADI-BEBEK
 
-## Versi A - Strict Separation + Evidence Reset
+## Versi C - Farmer-Grouped Calibration/Validation Split + Retain and Calibrate
 
-> **STATUS IMPLEMENTASI:** Source of Truth (SoT) untuk backend branch **A — Strict Separation + Evidence Reset**.  
-> **Sumber model akademik:** `Model Matematika Ekonomi DSS Padi Bebek - Versi A Final.docx` (versi **non-revisi/pure** yang dipilih untuk implementasi).  
+> **STATUS IMPLEMENTASI:** Source of Truth (SoT) untuk backend branch **C — Farmer-Grouped Calibration/Validation Split**.  
+> **Sumber model akademik:** `Model Matematika Ekonomi DSS Padi Bebek - Versi C Final.docx` (versi **non-revisi/pure** yang dipilih untuk implementasi).  
 > Dokumen `.docx ... Revisi` hanya arsip dan **bukan** acuan implementasi branch ini.  
 > Jika kode, schema, test, README, persistence, visualization, atau dokumentasi lama bertentangan dengan dokumen ini, implementasi harus mengikuti dokumen ini.
 
@@ -11,245 +11,278 @@
 
 Catatan Finalisasi:
 
-- Recap Data CRS Bebek dan seluruh dataset turunannya hanya berfungsi sebagai test/validation evidence. Tidak ada angka dari 36 siklus bersih yang boleh membentuk parameter production model.
-- Formula hasil konversi kualitatif-ke-numerik pada model ekonomi lama dihapus dari production path. Formula hanya dipertahankan jika merupakan arithmetic/system rule yang transparan atau persamaan referensi yang benar-benar eksplisit.
-- Yield backbone yang disetujui adalah persamaan Xiong et al. (2014) dengan status literature-uncalibrated dan validity guard. Model tidak mengekstrapolasi persamaan tersebut secara diam-diam ke rentang lokal yang berada di luar domain artikel.
-- Mortalitas biologis tidak dimodelkan secara numerik. Hanya ketika d_are > 8, sistem mengaktifkan survival-risk/status tanpa menetapkan persentase survival.
-- Output ekonomi menggunakan istilah kontribusi kas/estimasi skenario, bukan laba bersih final, karena penjualan bebek, pakan, infrastruktur, dan biaya lain tidak seluruhnya memiliki pencatatan yang konsisten.
+- 36 clean cycles dibagi pada level petani menjadi 25 calibration/development cycles dari 13 petani dan 11 untouched holdout cycles dari 6 petani. Tidak ada petani yang muncul pada kedua partition.
+- Model selection dilakukan hanya di calibration partition menggunakan Leave-One-Farmer-Out (LOFO). Untouched holdout dibuka setelah formula dan model selection freeze.
+- Formula lama boleh dipertahankan sebagai candidate jika endpoint-nya identifiable. Jika data tidak mengandung target/variation yang diperlukan, formula tidak dipaksakan menghasilkan coefficient.
+- Hasil model selection memilih C0 (constant local baseline 50 kg/are) melalui one-standard-error rule. Candidate density/system/variety tidak memperoleh bukti cukup untuk dipromosikan ke production model.
+- Output ekonomi tetap partial/scenario cash contribution. Survival biologis tidak di-fit dari duck-sale records karena jumlah terjual tidak identik dengan jumlah hidup.
 ## 1. Ringkasan Eksekutif
 
-Versi A adalah cabang metodologis paling ketat. Data rekap historis Astungkara Way tidak digunakan untuk fitting, kalibrasi, pemilihan koefisien, atau tuning setelah hasil test terlihat. Konsekuensinya, sejumlah formula lama yang sebelumnya terlihat lokal harus dihapus. Model final berfungsi sebagai DSS berbasis rule lokal untuk density, kalender, umur, dan survival-risk gate; sedangkan yield numerik hanya boleh dihitung ketika input berada di domain persamaan literatur yang dipakai.
+Versi C mempertahankan kemungkinan local calibration, tetapi memisahkan development dan final validation secara ketat pada level petani. Cabang ini menguji apakah bentuk nonlinear density yang sebelumnya dibuat internal benar-benar memberi nilai prediktif setelah dicegah dari farmer leakage. Hasilnya: C3 memiliki LOFO macro-MAE terendah, tetapi improvement-nya berada dalam uncertainty satu standard error; karena seluruh kandidat termasuk C0 masih berada dalam one-SE threshold, model paling sederhana C0 dipilih sebelum holdout dibuka.
 
-Hasil audit menunjukkan incompatibility yang substantif: persamaan Xiong menetapkan 50 <= t <= 80 hari dan 0 < d <= 600 ducks/ha, sedangkan data collection Astungkara Way menempatkan durasi lokal bebek aktif sekitar 28-40 hari. Karena itu, untuk skenario lokal tipikal model harus mengembalikan status OUTSIDE_LITERATURE_DOMAIN, bukan memaksakan angka yield. Ini merupakan konsekuensi langsung pilihan strict separation + evidence reset, bukan kegagalan komputasi.
+Production Yield Engine Versi C akhirnya tidak menggunakan density, sistem tanam, varietas, umur, atau durasi sebagai multiplier yield numerik. Parameter aktif adalah Y0_C = 50 kg/are, hasil median/calibration objective pada 25 calibration cycles. Density dan kalender tetap penting sebagai DSS risk/recommendation gates, bukan sebagai coefficient yield yang tidak didukung data.
 
-## 2. Status Klaim dan Prinsip Metodologi
+## 2. Metodologi Split dan Anti-Leakage
 
+**Formula:** `[system-design] Partition = 13 farmer calibration/development + 6 farmer untouched holdout`
 
-| Status tag | Definisi pemakaian Versi A |
-| --- | --- |
-| local-calibrated | Tidak digunakan untuk parameter yang berasal dari Recap pada Versi A. Hanya boleh dipakai bila ada data lokal independen yang memang menjadi calibration source. |
-| local-estimate | Boundary/range dari data collection atau expert judgement yang belum menjadi pengukuran numerik lengkap. |
-| literature-uncalibrated | Persamaan/angka artikel Scopus yang dipertahankan tetapi belum dikalibrasi terhadap kondisi Astungkara Way. |
-| system-design | Arithmetic, gate, status rule, atau keputusan DSS yang dibuat eksplisit dan tidak diklaim sebagai hukum biologis. |
-| regulatory-locked | Tidak ada parameter aktif pada versi ini. |
-| mixed | Output yang menggabungkan runtime input, local-estimate, dan/atau formula berstatus berbeda. |
+Unit split adalah identitas petani, bukan baris, sehingga cycle dari petani yang sama tidak bocor ke kedua sisi.
 
+Untouched holdout farmers: I Gusti Ngurah Putu Suka Nada; I Ketut Alit Sudarsana; I Made Arsania; I Made Suardika; I Nyoman Ranes; I Wayan Sadia.
 
-Rule anti-leakage: I3 (Dataset Actual Bersih) baru boleh dibuka untuk evaluasi setelah struktur dan parameter Versi A dibekukan. Hasil test tidak digunakan untuk mengubah formula atau parameter pada cabang ini.
+Calibration/development terdiri dari 25 cycles; holdout 11 cycles (30,6% dari 36 clean cycles). Assignment disetujui sebelum fitting dan tidak diubah berdasarkan yield/error.
+
+**Formula:** `[system-design] Inner validation = Leave-One-Farmer-Out pada 13 calibration farmers`
+
+Satu petani beserta seluruh cycle miliknya ditahan pada setiap inner fold.
+
+**Formula:** `[system-design] Model selection = one-standard-error rule; pilih model paling sederhana dengan LOFO macro-MAE <= best_MAE + SE_best`
+
+Rule ditetapkan sebelum holdout final dibuka; holdout tidak digunakan memilih model.
 
 ## 3. Input Model
 
 
 | Nama masukan | Simbol | Satuan | Status input | Catatan |
 | --- | --- | --- | --- | --- |
-| Luas area aktif bebek | A_are | are | Wajib | Luas petak yang benar-benar diakses bebek; bukan total kepemilikan lahan. Sumber I1 No.24. |
-| Jumlah bebek ditebar | J | ekor | Wajib | Bilangan bulat >=0. |
-| Sistem tanam | S | kategori | Wajib | Scope aktif: Jajar Legowo/Jarwo atau Tegel/Konvensional. |
-| Varietas padi | V | kategori | Wajib | Scope aktif: Sertani/Seratih atau Inpari. |
-| Tanggal tanam | TD | tanggal | Wajib jika output kalender | Jangkar kalender; tidak langsung mengubah yield. |
-| Umur bebek saat masuk | U_bebek | hari | Wajib | Dipakai sebagai quality/status gate; tidak menjadi multiplier yield/survival/feed. |
-| Harga gabah | p_gabah | Rp/kg | Runtime / fallback | Harga periode aktual diprioritaskan. Fallback referensi lokal hanya jika eksplisit diberi label. |
-| Harga beli bebek | p_duck_buy | Rp/ekor | Runtime / fallback | Harga aktual diprioritaskan; fallback lokal Rp25.000/ekor berada dalam range I1 No.39. |
-| Harga jual bebek | p_duck_sell | Rp/ekor | Runtime / scenario | Jika tidak tersedia, Rp45.000/ekor hanya local-estimate berbasis expert judgement, bukan harga universal. |
+| Luas area aktif bebek | A_are | are | Wajib | Area interaksi bebek. |
+| Jumlah bebek | J | ekor | Wajib | Integer >=0. |
+| Sistem tanam | S | kategori | Wajib | Jarwo/Tegel untuk risk lookup; candidate yield factor diuji tetapi tidak dipromosikan. |
+| Varietas | V | kategori | Wajib | Sertani/Seratih atau Inpari; candidate factor diuji tetapi tidak dipromosikan. |
+| Tanggal tanam | TD | tanggal | Wajib jika kalender | Tidak langsung mengubah yield. |
+| Umur bebek | U_bebek | hari | Wajib | Quality gate; tidak dapat dikalibrasi terhadap clean dataset karena nilai 21 adalah imputasi. |
+| Harga gabah | p_gabah | Rp/kg | Runtime / default | Default C=Rp6.000/kg dari median 25 calibration cycles; runtime aktual prioritas. |
+| Harga beli bebek | p_duck_buy | Rp/ekor | Runtime / default | Default C=Rp25.000 dari median 21 positive calibration records; runtime aktual prioritas. |
+| Harga jual bebek | p_duck_sell | Rp/ekor | Runtime / scenario | Tidak dapat dikalibrasi dari sale revenue karena N_sold tidak tersedia; expert scenario Rp45.000. |
 
 
-## 4. Mesin Komputasi Matematis
+## 4. Candidate Yield Models yang Diuji
 
-### 4.1 Age/Readiness Gate
+**Formula:** `[local-calibrated candidate C0] Y_hat = Y0`
 
-**Formula:** `[system-design] age_status = NOT_RECOMMENDED jika U_bebek < 21; LOCAL_READY jika 21 <= U_bebek <= 30; OLDER_CONSERVATIVE jika U_bebek > 30`
+Baseline constant/intercept-only. Y0 diestimasi dari calibration partition.
 
-Threshold 21-30 hari berasal dari data collection lokal (I1 No.25). Status ini tidak mengubah yield, survival, feed, atau profit secara numerik.
+**Formula:** `[local-calibrated candidate C1] Y_hat = Y0 * (1 + alpha*(1-exp(-d_are/4)))`
 
-Formula R_age = 0,35/0,15/0,05 dan F_age = 1 - 0,08*R_age dari model lama dikeluarkan dari production path karena magnitude penalti tersebut tidak memiliki kalibrasi numerik lokal yang memadai (audit I4 Bagian 4.1 dan 4.5).
+K_opt=4 fixed sebagai local boundary; Y0 dan alpha di-fit. alpha>=0.
 
-### 4.2 Density Engine
+**Formula:** `[system-design candidate C2] Y_hat = C1 - beta*(max(0,(d_are-8)/8))^2`
+
+Tidak di-fit: hanya 1 calibration cycle memiliki d_are>8, sehingga beta tidak identifiable secara defensible.
+
+**Formula:** `[local-calibrated candidate C3] Y_hat = C1 * F_sys; F_sys=1 untuk Jarwo dan F_Tegel untuk Tegel`
+
+F_Tegel di-fit hanya menggunakan rows dengan sistem tanam eksplisit; Null(default Jarwo) tidak dipakai sebagai evidence numerik F_sys.
+
+**Formula:** `[local-calibrated candidate C4] Y_hat = C3 * F_var; F_var=1 untuk Sertani dan F_Inpari untuk Inpari`
+
+F_Inpari di-fit pada explicit-system fitting subset; jumlah Inpari kecil sehingga complexity penalty penting.
+
+R_age/F_age tidak diuji karena U_bebek pada clean workbook adalah estimasi 21 hari, bukan variation observasi. Efek t juga tidak di-fit karena t_duck=45 adalah estimasi kualitatif. Survival tidak di-fit karena N_sold tidak identik dengan N_survive (I2 Bagian 4.2).
+
+## 5. Hasil Inner LOFO dan Model Selection
+
+
+| Candidate | Final calibration params | n fit | LOFO macro MAE | SE | LOFO pooled MAE | Holdout MAE* |
+| --- | --- | --- | --- | --- | --- | --- |
+| C0 baseline | 50.0000 | 25 | 11.852 | 2.770 | 9.644 | 11.979 |
+| C1 density | 37.8797, 0.4794 | 25 | 11.128 | 2.636 | 9.666 | 11.687 |
+| C3 density+system | 35.1289, 0.5845, 1.4112 | 19 | 10.441 | 2.613 | 9.580 | 13.298 |
+| C4 density+system+variety | 35.1289, 0.5845, 1.4112, 1.1102 | 19 | 11.321 | 2.663 | 10.816 | 14.377 |
+
+
+*Kolom holdout hanya dilaporkan setelah freeze dan tidak digunakan untuk model selection.
+
+**Formula:** `[system-design] best inner model by macro-MAE = C3; one-SE threshold = 13.055 kg/are`
+
+C3 memiliki macro-MAE terendah, tetapi bukan otomatis production winner.
+
+**Formula:** `[system-design] selected production model = C0`
+
+C0 adalah model paling sederhana yang masih berada di bawah one-SE threshold. Pemilihan ini menolak complexity yang tidak memperoleh improvement stabil.
+
+## 6. Production Yield Engine Versi C
+
+**Formula:** `[local-calibrated] Y0_C = 50.0 kg/are`
+
+Median/MAE-compatible local baseline dari 25 calibration cycles setelah farmer-grouped split.
+
+**Formula:** `[local-calibrated] Yield_are = Y0_C`
+
+Production yield tidak memakai alpha, F_sys, F_var, R_age, atau t multiplier.
+
+**Formula:** `[system-design] Yield_total_kg = Yield_are * A_are`
+
+Konversi dari per-are ke total area aktif.
+
+Farmer-cluster bootstrap pada calibration partition memberi interval deskriptif 95% untuk Y0 sekitar 42.81 sampai 55.78 kg/are (median bootstrap 50.00). Interval ini adalah uncertainty parameter baseline, bukan prediction interval individual untuk satu petak.
+
+## 7. Density, Calendar, Age, dan Survival Gates
 
 **Formula:** `[system-design] d_are = J / A_are`
 
-Rumus arithmetic langsung. A_are wajib > 0 dan d_are menggunakan area aktif bebek (I1 No.24).
+Area aktif bebek wajib >0.
 
-**Formula:** `[system-design] d_ha = 100 * d_are`
+**Formula:** `[mixed] density_status = UNDER jika d_are<2; RECOMMENDED jika Jarwo 2-4 atau Tegel 2-3; WARNING sampai 8; HIGH_RISK jika >8`
 
-Konversi hanya untuk kompatibilitas dengan persamaan literatur yang memakai ducks/ha.
+Boundary lokal I1/I2. Tidak memodifikasi Yield_are production C0.
 
-**Formula:** `[mixed] density_status = UNDER jika d_are < 2; RECOMMENDED jika Jarwo: 2<=d_are<=4 atau Tegel: 2<=d_are<=3; WARNING_ABOVE_RECOMMENDED jika di atas rentang sistem sampai 8; HIGH_RISK jika d_are > 8`
+**Formula:** `[system-design] age_status = NOT_RECOMMENDED jika U_bebek<21; LOCAL_READY jika 21<=U_bebek<=30; OLDER_CONSERVATIVE jika >30`
 
-Range rekomendasi berasal dari I1 No.20-22 dan expert judgement I2 Bagian 4.1. Bentuk status merupakan system-design; tidak dikonversi menjadi probabilitas kerusakan.
+Tidak masuk yield/profit multiplier.
 
-P_over dan P_under kontinu dari model lama dihapus. Batas lokal dipertahankan sebagai classification/risk gate, bukan sebagai probabilitas biologis.
+**Formula:** `[local-estimate] HST_release_rec in [21,30]; HST_withdraw mengikuti heading sekitar 56-60 HST`
 
-### 4.3 Calendar Engine
-
-**Formula:** `[local-estimate] HST_release_rec in [21,30]`
-
-Data collection I1 No.12; 14 HST tidak dijadikan default lokal.
-
-**Formula:** `[local-estimate] HST_withdraw_rec mengikuti fase heading/berbunga; acuan lokal sekitar 56-60 HST`
-
-Data collection I1 No.13 dan No.26. Fase tanaman lebih penting daripada hard-code tanggal tunggal.
-
-**Formula:** `[system-design] t_local = HST_withdraw - HST_release`
-
-Durasi lokal yang terkumpul sekitar 28-40 hari; contoh praktis 60-28 = 32 hari (I1 No.27).
-
-**Formula:** `[system-design] D_release = TD + HST_release; D_withdraw = TD + HST_withdraw`
-
-Transformasi kalender saja; TD bukan penyebab langsung perubahan yield.
-
-Hard constant t_active=44 (65-21) dari model lama tidak dipertahankan. Sistem menyimpan window/range dan fase heading sebagai trigger penarikan.
-
-### 4.4 Survival Risk Gate
+I1 No.12-13,26. t lokal sekitar 28-40 hari.
 
 **Formula:** `[system-design] survival_risk = HIGH jika d_are > 8`
 
-Expert judgement menempatkan >8 ekor/are sebagai zona risiko jauh lebih serius, tetapi tidak menetapkan fungsi atau persentase mortalitas final (I2 Bagian 4.1). Pada d_are <= 8 tidak ada koreksi survival dalam model karena mortalitas diperlakukan sebagai faktor pengelolaan petani di luar scope.
+Boundary expert untuk kondisi berisiko tinggi. Pada d_are <= 8 tidak ada koreksi survival dalam model; jumlah bebek terjual tetap tidak diprediksi.
 
-Model tidak memprediksi N_survive maupun N_sold. Expert judgement menyatakan bebek hidup tidak selalu dijual (I2 Bagian 4.2). Karena itu, revenue penjualan bebek hanya boleh dibaca sebagai skenario all-sold atau menggunakan angka penjualan aktual jika tersedia.
+## 8. Economic Differential-Costing Engine Versi C
 
-### 4.5 Yield Engine - Literature Backbone dengan Validity Guard
+**Formula:** `[local-calibrated] p_gabah_default_C = Rp6.000/kg`
 
-**Formula:** `[literature-uncalibrated] x_kg_ha(d,t) = (-0.0103*d_ha^2 + 2.6314*d_ha + 7569.4) * exp(-((t-80)^2)/(2*80^2))`
+Median seluruh 25 calibration price records; runtime price aktual tetap prioritas.
 
-Persamaan eksplisit Xiong et al. (2014), E1/I5. d menggunakan ducks/ha dan x menghasilkan kg/ha.
+**Formula:** `[local-calibrated] p_duck_buy_default_C = Rp25.000/ekor`
 
-**Formula:** `[system-design] x_kg_are = x_kg_ha / 100`
+Median 21 positive calibration records; actual purchase price dapat override.
 
-Konversi satuan dari kg/ha menjadi kg/are.
+**Formula:** `[local-estimate] p_duck_sell_scenario = Rp45.000/ekor`
 
-**Formula:** `[system-design] yield_valid = TRUE hanya jika 0 < d_ha <= 600 dan 50 <= t <= 80; selain itu yield_status = OUTSIDE_LITERATURE_DOMAIN`
+Tidak di-fit dari duck sale revenue karena jumlah yang terjual tidak tersedia; expert judgement menolak Rp35.000 sebagai nilai normal.
 
-Validity guard mengikuti domain yang dinyatakan eksplisit oleh Xiong. Sistem tidak melakukan clamp atau extrapolation sebagai output production.
+**Formula:** `[mixed] Revenue_gabah = Yield_are * A_are * p_gabah`
 
-Konsekuensi lokal: t_local Astungkara Way sekitar 28-40 hari tidak overlap dengan 50-80 hari pada E1. Maka skenario lokal tipikal tidak memperoleh angka yield production dari Versi A. Nilai hasil extrapolation boleh dihitung hanya sebagai diagnostic sensitivity dan wajib diberi label out-of-domain.
-
-### 4.6 Economic Differential-Costing Engine
-
-**Formula:** `[mixed] Revenue_gabah = x_kg_are * A_are * p_gabah`
-
-Hanya dihitung bila yield_valid=TRUE. p_gabah runtime diprioritaskan.
+Yield_are production C0; runtime p_gabah diprioritaskan.
 
 **Formula:** `[system-design] C_duck_buy = J * p_duck_buy`
 
-Arithmetic costing; tidak memodelkan mortalitas.
+Arithmetic cash cost.
 
 **Formula:** `[mixed] Revenue_duck_all_sold_scenario = J * p_duck_sell`
 
-Skenario maksimum sederhana, bukan prediksi jumlah terjual. Field ini dinonaktifkan jika d_are > 8 karena survival berada pada zona risiko tinggi dan tidak dimodelkan secara numerik.
+Potential scenario, bukan predicted realized sale. Dinonaktifkan jika d_are>8 karena survival tidak dimodelkan secara numerik pada zona high-risk.
 
 **Formula:** `[mixed] CashContribution_before_optional = Revenue_gabah + Revenue_duck_all_sold_scenario - C_duck_buy`
 
-Disebut kontribusi kas skenario, bukan laba bersih.
+Tidak disebut net profit final.
 
 **Formula:** `[system-design] C_infra_cycle = C_jaring_purchase/n_jaring_cycles + C_kandang_purchase/n_kandang_cycles`
 
-Hanya aktif jika nilai aktual/default scenario dipilih. I1 No.48-55 memberi range lokal, bukan biaya universal per are.
+Aktif bila data infrastruktur tersedia/dipilih.
 
 **Formula:** `[mixed] CashContribution_after_optional = CashContribution_before_optional - C_feed_scenario - C_infra_cycle`
 
-C_feed_scenario dan infrastruktur ditampilkan sebagai komponen terpisah; jika tidak tersedia, output tidak menyamarkan nilainya sebagai nol terukur.
+Feed dan infra selalu tampil sebagai child component; missing tidak disamarkan sebagai measured zero.
 
-Fallback economic evidence: p_duck_buy sekitar Rp25.000-Rp28.000/ekor (I1 No.39); expert judgement menilai harga jual normal minimal sekitar Rp45.000/ekor dan mixed-feed sekitar Rp20.000/ekor/siklus sebagai lower-bound scenario (I2 Bagian 4.5-4.6). Nilai feed tersebut tidak menjadi hidden default production karena I1 No.43-47 menunjukkan variasi dan ketiadaan standar lokal yang stabil.
+Calibration diagnostic feed: median positive recorded feed/J adalah sekitar Rp4.464/ekor/siklus (n=16; IQR Rp1.929-Rp8.500). Nilai ini TIDAK dipromosikan sebagai production default karena pencatatan feed tidak konsisten dan expert judgement memberi lower-bound mixed-feed sekitar Rp20.000/ekor/siklus. Dengan demikian feed tetap scenario/runtime input.
 
-## 5. Parameter Final Versi A
+## 9. Untouched Holdout Evaluation
+
+Setelah C0 dipilih dan parameter freeze, 11 cycles dari 6 holdout farmers dibuka. Hasil final: MAE 11.979 kg/are; RMSE 15.990 kg/are; MedAE 9.583 kg/are; bias 7.307 kg/are. Bias positif berarti baseline 50 kg/are cenderung over-predict pada holdout secara rata-rata.
+
+
+| Farmer | A are | J | d/are | Varietas | Sistem | Actual | Pred | Error |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| I Made Arsania | 3.60 | 13 | 3.611 | Sertani | DefaultJarwo | 45.83 | 50.00 | 4.17 |
+| I Nyoman Ranes | 5.10 | 5 | 0.980 | Sertani | DefaultJarwo | 48.04 | 50.00 | 1.96 |
+| I Ketut Alit Sudarsana | 10.00 | 65 | 6.500 | Sertani | DefaultJarwo | 60.50 | 50.00 | -10.50 |
+| I Wayan Sadia | 7.26 | 9 | 1.240 | Sertani | DefaultJarwo | 59.37 | 50.00 | -9.37 |
+| I Nyoman Ranes | 5.10 | 10 | 1.961 | Inpari | Jarwo | 21.02 | 50.00 | 28.98 |
+| I Ketut Alit Sudarsana | 14.41 | 30 | 2.082 | Sertani | Jarwo | 52.43 | 50.00 | -2.43 |
+| I Ketut Alit Sudarsana | 10.00 | 32 | 3.200 | Sertani | Jarwo | 53.40 | 50.00 | -3.40 |
+| I Made Arsania | 3.60 | 15 | 4.167 | Sertani | Jarwo | 40.42 | 50.00 | 9.58 |
+| I Ketut Alit Sudarsana | 10.00 | 29 | 2.900 | Inpari | Tegel | 38.65 | 50.00 | 11.35 |
+| I Gusti Ngurah Putu Suka Nada | 3.00 | 6 | 2.000 | Sertani | Jarwo | 13.50 | 50.00 | 36.50 |
+| I Made Suardika | 3.77 | 8 | 2.122 | Sertani | Jarwo | 36.47 | 50.00 | 13.53 |
+
+
+Holdout memuat beberapa observasi aktual sangat rendah; baris tersebut tidak dihapus setelah melihat error. Ini menjaga untouched holdout tetap konsisten dengan protokol yang disetujui.
+
+## 10. Parameter Final Versi C
 
 
 | Parameter | Nilai | Satuan | Status | Evidence/catatan |
 | --- | --- | --- | --- | --- |
-| A_are | runtime | are | system-design | Area aktif bebek; I1 No.24. |
-| J | runtime | ekor | system-design | Jumlah bebek ditebar. |
-| U_bebek | runtime | hari | local-estimate | Quality gate 21-30 hari; I1 No.25. |
-| d_rec_low | 2 | ekor/are | local-estimate | Batas bawah rekomendasi umum; I1 No.22. |
-| d_rec_high_Jarwo | 4 | ekor/are | local-estimate | Batas atas rekomendasi konservatif Jarwo; I1 No.22 + I2 4.1. |
-| d_rec_high_Tegel | 3 | ekor/are | local-estimate | I1 No.20 + I2 4.1. |
-| d_high_risk | 8 | ekor/are | local-estimate | Boundary expert; bukan probabilitas mortalitas. |
+| Y0_C | 50,0 | kg/are | local-calibrated | 25 calibration cycles; selected C0. |
+| Y0_C bootstrap 95% | 42,81-55,78 | kg/are | local-calibrated | Cluster bootstrap by farmer; descriptive parameter uncertainty. |
+| d_rec_low | 2 | ekor/are | local-estimate | I1 No.22. |
+| d_rec_high_Jarwo | 4 | ekor/are | local-estimate | I1/I2. |
+| d_rec_high_Tegel | 3 | ekor/are | local-estimate | I1/I2. |
+| d_high_risk | 8 | ekor/are | local-estimate | Expert boundary. |
 | HST_release_low | 21 | HST | local-estimate | I1 No.12. |
 | HST_release_high | 30 | HST | local-estimate | I1 No.12. |
 | HST_heading_low | 56 | HST | local-estimate | I1 No.13. |
-| HST_heading_high | 60 | HST | local-estimate | I1 No.13; observasi lebih luas tetap dicatat sebagai uncertainty. |
+| HST_heading_high | 60 | HST | local-estimate | I1 No.13. |
 | t_local_low | 28 | hari | local-estimate | I1 No.27. |
 | t_local_high | 40 | hari | local-estimate | I1 No.27. |
-| p_gabah_fallback | Rp6.000 | Rp/kg | local-estimate | Diterima sebagai realistis pada expert judgement; runtime price tetap prioritas. |
-| p_duck_buy_fallback | Rp25.000 | Rp/ekor | local-estimate | Lower bound range lokal Rp25-28 ribu; I1 No.39. |
-| p_duck_sell_scenario | Rp45.000 | Rp/ekor | local-estimate | Minimum normal menurut expert judgement; runtime market price prioritas. |
-| C_feed_expert_scenario | Rp20.000 | Rp/ekor/siklus | local-estimate | Optional sensitivity/lower-bound mixed-feed; tidak hidden default. |
-| Xiong a2 | -0.0103 | coefficient | literature-uncalibrated | E1/I5. |
-| Xiong a1 | 2.6314 | coefficient | literature-uncalibrated | E1/I5. |
-| Xiong a0 | 7569.4 | kg/ha intercept | literature-uncalibrated | E1/I5. |
-| Xiong t_center | 80 | hari | literature-uncalibrated | E1/I5. |
+| p_gabah_default_C | Rp6.000 | Rp/kg | local-calibrated | Median 25 calibration rows. |
+| p_duck_buy_default_C | Rp25.000 | Rp/ekor | local-calibrated | Median 21 positive calibration rows. |
+| p_duck_sell_scenario | Rp45.000 | Rp/ekor | local-estimate | Expert judgement; not calibrated from sale records. |
+| C_feed_recorded_median | Rp4.464 | Rp/ekor/siklus | local-estimate | Diagnostic only, not production default. |
+| C_feed_expert_scenario | Rp20.000 | Rp/ekor/siklus | local-estimate | Optional mixed-feed sensitivity. |
 
 
-## 6. Evaluasi Test-Only Versi A
-
-Dataset test tetap 36 siklus. Sebanyak 33/36 siklus berada dalam domain density Xiong (<=600 ducks/ha), sedangkan 3/36 berada di atas domain tersebut. Tidak ada (0/36) skenario lokal dengan t=32 hari yang berada pada domain t Xiong 50-80 hari. Karena itu, primary local validation metric untuk formula Xiong tidak didefinisikan pada Versi A.
+## 11. Candidate yang Tidak Dipromosikan
 
 
-| Evaluasi | MAE kg/are | RMSE | MedAE | Bias | Interpretasi |
-| --- | --- | --- | --- | --- | --- |
-| Primary test | Tidak dihitung | - | - | - | Semua t lokal berada di luar domain artikel; menghitung error sebagai validation akan menyesatkan. |
-| Diagnostic sensitivity: t=32 (out-of-domain), 33 density-valid cycles | 17.012 | 21.689 | 15.225 | 16.427 | Hanya diagnostic extrapolation; bukan validation production. |
-| Literature lower bound: t=50, 33 density-valid cycles | 23.810 | 27.656 | 22.462 | 23.689 | Valid terhadap batas t artikel, tetapi tidak merepresentasikan local duration 28-40 hari. |
-
-
-Diagnostic t=32 menunjukkan bias positif sekitar 16,43 kg/are pada subset density-valid. Angka ini memperkuat alasan untuk tidak menyebut extrapolation sebagai prediksi lokal terkalibrasi. Hasil test tidak dipakai kembali untuk memperbaiki koefisien Versi A.
-
-## 7. Formula Lama yang Dikeluarkan dari Production Path
-
-
-| Formula/parameter lama | Status final | Alasan |
+| Candidate | Status | Alasan |
 | --- | --- | --- |
-| R_age = 0,35/0,15/0,05 | Removed | Magnitude penalti berasal dari konversi kualitatif. Diganti status gate. |
-| P_over dan P_under kontinu | Removed | Boundary lokal dipertahankan sebagai status, bukan probabilitas. |
-| lambda_eff = 0,78125*(...) | Removed | Ceiling berasal dari recap dan sold count tidak identik dengan survival. |
-| F_age = 1 - 0,08*R_age | Removed | Tidak ada kalibrasi pengaruh umur ke yield. |
-| F_density_bio dengan alpha=0,15; beta=0,25 | Removed | Bentuk fungsi baru internal; tidak dipakai pada evidence-reset branch. |
-| F_sys=1,211 dan F_var=1 empiris | Removed | Berasal dari dataset recap yang sekarang test-only. |
-| Material temporal max(0,0,02*t-0,6) | Sandbox | Interpolasi internal tidak menjadi active economic output. |
-| R_weed(d), R_pest(d) | Sandbox | Mekanisme didukung, kurva numerik density tidak memiliki kalibrasi lokal. |
-| C_feed=J*4500*(1+...) | Removed | Rp4.500 berasal dari recap dan multipliers constructed. |
-| Regression infrastructure coefficient | Removed | Berasal dari recap; diganti arithmetic amortization transparan. |
+| C1 density | Retained as research candidate | Alpha fitted, tetapi improvement tidak cukup untuk mengalahkan simpler C0 via one-SE selection. |
+| C2 trampling beta | Non-identifiable | Hanya 1 calibration cycle d_are>8. Tidak ada basis untuk stable beta. |
+| C3 density+system | Best mean inner MAE, rejected for production complexity | LOFO macro-MAE terbaik, tetapi masih dalam one-SE band; holdout dibuka setelah rejection. |
+| C4 +variety | Rejected | Inpari representation terlalu kecil dan inner performance memburuk. |
+| R_age/F_age | Non-identifiable | U_bebek=21 di clean dataset adalah imputasi, bukan observasi variable. |
+| t effect | Non-identifiable | t_duck=45 di clean dataset adalah imputasi kualitatif. |
+| lambda_eff from sale records | Invalid target | N_sold tidak sama dengan N_survive. |
+| Weed/pesticide/fertilizer curves | Insufficient endpoint coverage | Weeding 0/36, fertilizer 1/36, pesticide 4/36 non-zero pada audit I2. |
+| Feed age/density multipliers | Not promoted | Feed records sparse/inconsistent dan age tidak variable. |
 
 
-## 8. Output DSS Final Versi A
+## 12. Output DSS Final Versi C
 
 
-| Output | Format | Kondisi | Status |
+| Output | Rumus/format | Kondisi | Status |
 | --- | --- | --- | --- |
-| d_are | angka | Selalu jika A_are>0 | system-design |
-| density_status | UNDER/RECOMMENDED/WARNING/HIGH_RISK | Selalu | mixed |
-| age_status | NOT_RECOMMENDED/LOCAL_READY/OLDER_CONSERVATIVE | Selalu | system-design |
-| HST_release/HST_withdraw | range/tanggal | Jika varietas dan TD tersedia | mixed |
+| Yield_are | 50 kg/are | Selalu selama input area valid | local-calibrated |
+| Yield_total_kg | 50*A_are | Selalu | mixed |
+| d_are | J/A_are | Selalu | system-design |
+| density_status | status | Selalu | mixed |
+| age_status | status | Selalu | system-design |
+| timeline | HST/tanggal | Jika TD/lookup tersedia | mixed |
 | survival_risk | HIGH | Hanya jika d_are>8 | system-design |
-| yield_status | VALID/OUTSIDE_LITERATURE_DOMAIN | Selalu | system-design |
-| x_kg_are | kg/are | Hanya yield_valid=TRUE | literature-uncalibrated |
-| Revenue_gabah | Rp | Hanya yield_valid dan price tersedia | mixed |
+| Revenue_gabah | Rp | Harga tersedia | mixed |
 | Revenue_duck_all_sold_scenario | Rp | Harga jual tersedia; dinonaktifkan jika d_are>8 | mixed |
-| C_duck_buy | Rp | Jika harga beli tersedia | system-design |
-| C_feed_scenario | Rp | Opsional; nilai aktual/sensitivity | mixed |
-| C_infra_cycle | Rp/siklus | Opsional | mixed |
-| CashContribution_before_optional | Rp | Jika komponen prerequisite tersedia | mixed |
-| CashContribution_after_optional | Rp | Jika feed/infrastruktur dipilih | mixed |
+| C_duck_buy | Rp | Harga beli tersedia | system-design |
+| C_feed_scenario | Rp | Opsional | mixed |
+| C_infra_cycle | Rp | Opsional | mixed |
+| CashContribution_before_optional | Rp | Prerequisite tersedia | mixed |
+| CashContribution_after_optional | Rp | Optional costs tersedia | mixed |
+| model_validation_status | LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE | Selalu | system-design |
 
 
-## 9. Keterbatasan Final Versi A
+## 13. Keterbatasan Final Versi C
 
-- Tidak ada overlap antara rentang durasi lokal 28-40 hari dan domain Xiong 50-80 hari. Ini adalah limitation utama numerical yield prediction pada cabang A.
-- Mortalitas tidak dimodelkan secara numerik pada density sampai 8 ekor/are; hanya density >8 yang memicu survival-risk gate. Boundary ini bukan estimasi persentase mortalitas.
-- Model tidak memprediksi jumlah bebek yang dijual. All-sold revenue adalah scenario ceiling sederhana.
-- Feed, pupuk, weeding, pestisida/herbisida, dan manfaat hara tidak menjadi active numeric benefit tanpa data yang lebih kuat.
-- Tidak ada optimal d* atau t* berbasis continuous optimization pada production path. Model memberi recommended range dan risk gate karena formula objective lama dibersihkan.
-- Jika penelitian membutuhkan angka yield lokal aktif untuk durasi 28-40 hari, diperlukan persamaan jurnal yang valid pada domain tersebut atau dataset calibration independen yang tidak menggunakan test set Versi A.
-## 10. Traceability Keputusan Final
+- Jumlah observasi tetap kecil: 25 calibration cycles dari 13 petani dan 11 holdout cycles dari 6 petani.
+- Hanya 3 calibration observations merupakan Inpari dan 3 explicit Tegel; candidate factors karena itu tidak stabil untuk production.
+- Default/imputed Jarwo tidak dipakai sebagai evidence numerik F_sys, sehingga jumlah fitting rows candidate C3/C4 hanya 19.
+- U_bebek dan t_duck pada clean workbook tidak merupakan raw observation, sehingga efek umur/durasi tidak dapat dikalibrasi secara sah.
+- Holdout MAE sekitar 11,98 kg/are menunjukkan predictive uncertainty masih material. C0 adalah baseline lokal defensible, bukan high-precision predictor.
+- Economic output tetap scenario contribution karena duck sale count, feed standard, dan optional cost coverage belum memadai untuk net profit final.
+- Setelah holdout dibuka, tidak ada retuning. Jika penelitian mengembangkan model berikutnya, diperlukan dataset baru agar validation set baru tetap independen.
+## 14. Traceability Keputusan Final
 
 
 | Keputusan | Pilihan | Implementasi |
 | --- | --- | --- |
-| Decision 1 | A - Strict separation | I3 hanya test/validation; semua recap-derived production parameters dicabut. |
-| Decision 2 | 2A - Evidence reset | Formula kualitatif-ke-numerik dihapus atau dikembalikan menjadi status/range. |
-| P1 | Approved | Xiong active numerical backbone hanya dengan validity guard. |
-| P2 | Approved with scope rule | Tidak ada koreksi survival numerik sampai boundary 8; d_are>8 memicu survival risk/status tanpa persentase. |
-| P3 | Approved | Output ekonomi disebut cash contribution/scenario estimate, bukan net profit final. |
-| P4 | Tidak berlaku ke A | Split calibration/holdout hanya untuk Versi C. |
+| Decision 1 | C - formal calibration/validation split | 25/11 cycles, 13/6 farmers, farmer-grouped. |
+| Decision 2 | 2B - retain and calibrate | Formula candidate diuji; non-identifiable candidate tidak dipaksakan. |
+| P1 | Versi A only | Tidak mengatur C production yield. |
+| P2 | Approved scope rule | Tidak ada koreksi survival numerik sampai boundary 8; d_are>8 memicu risk/status. |
+| P3 | Approved | Cash contribution/scenario estimate, bukan final net profit. |
+| P4 | Approved | 13 farmer development + 6 farmer untouched holdout; inner LOFO. |
 
 
 ### Sumber Internal yang Menjadi Evidence
@@ -272,7 +305,6 @@ Prioritas pencarian diterapkan Bali > Indonesia > ASEAN > Asia > Global dan tahu
 
 | Kode | Referensi | Pemakaian dalam model | Verifikasi Scopus |
 | --- | --- | --- | --- |
-| E1 | Xiong, D.; Fang, K.; Luo, Y.; Dai, X. (2014). Modeling of Duck Density and Complex Stocking Time in Rice-Duck Agroecosystems in Terms of Economic and Ecological Benefits. Mathematical Problems in Engineering, 2014, 487537. DOI: 10.1155/2014/487537. | Fallback formula yield; domain 0<d<=600 ducks/ha dan 50<=t<=80 hari. | SCImago journal record: https://www.scimagojr.com/journalsearch.php?q=13082&tip=sid . Journal memiliki rekam Scopus historis; source kemudian discontinued, sehingga tidak diperlakukan sebagai sumber baru >2020. |
 | E2 | Khumairoh, U.; Lantinga, E.A.; Handriyadi, I.; Schulte, R.P.O.; Groot, J.C.J. (2021). Agro-ecological mechanisms for weed and pest suppression and nutrient recycling in high yielding complex rice systems. Agriculture, Ecosystems & Environment, 313, 107385. DOI: 10.1016/j.agee.2021.107385. | Indonesia; mendukung mekanisme duck-foraging, weed/pest suppression, nutrient cycling, dan perlunya kehati-hatian memindahkan mekanisme menjadi koefisien lokal. | Scopus dikonfirmasi pada halaman Elsevier Journal Insights: https://www.sciencedirect.com/journal/agriculture-ecosystems-and-environment/about/insights . |
 | E3 | Li, Y. et al. (2023). Developing integrated rice-animal farming based on climate and farmers choices. Agricultural Systems, 204, 103554. DOI: 10.1016/j.agsy.2022.103554. | Asia/global review; mendukung kebutuhan adaptasi IRF terhadap kondisi geografis, iklim, dan konteks lokal. | SCImago: https://www.scimagojr.com/journalsearch.php?q=15061&tip=sid ; metrics based on Scopus data. |
 | E4 | Alfiansyah, M.L.; Rahardja, D.P.; Padjung, R. (2025). Advantages of introducing maggot-fed ducks into a rice plantation with and without Azolla. Journal of Water and Land Development, 67, 61-72. DOI: 10.24425/jwld.2025.156040. | Indonesia (Sulawesi Selatan); recent empirical context bahwa timing dan stocking density berpengaruh, tetapi density eksperimen tidak ditransfer ke Bali. | Publisher indexing page secara eksplisit mencantumkan SCOPUS: https://journals.pan.pl/jwld . |
@@ -282,7 +314,7 @@ Prioritas pencarian diterapkan Bali > Indonesia > ASEAN > Asia > Global dan tahu
 ---
 
 
-## Kontrak Implementasi Backend — Branch A — Strict Separation + Evidence Reset
+## Kontrak Implementasi Backend — Branch C — Farmer-Grouped Calibration/Validation Split
 
 ### Audit kondisi `master` sebelum migrasi
 
@@ -318,78 +350,65 @@ Perilaku `master` yang **tidak boleh dibawa mentah-mentah** ke branch baru:
 
 ### Kontrak request yang direkomendasikan
 
-Field Core:
-
 | Field API | Tipe | Aturan |
 |---|---|---|
 | `land_area_are` | number | wajib; `>0` |
 | `duck_count` | integer | wajib; `>=0` |
 | `rice_variety` | enum | wajib; `sertani` / `inpari` |
 | `planting_system` | enum | wajib; `jajar_legowo` / `tegel` |
-| `duck_age_days` | integer | wajib; `>=0` |
-| `planting_date` | date/null | opsional; hanya untuk mengubah HST menjadi tanggal kalender |
-| `p_gabah` | number/null | opsional; runtime aktual prioritas, fallback `6000` hanya dengan metadata `local-estimate` |
-| `p_duck_buy` | number/null | opsional; runtime aktual prioritas, fallback `25000` hanya dengan metadata `local-estimate` |
-| `p_duck_sell` | number/null | opsional; runtime aktual prioritas, fallback skenario `45000` dengan metadata `local-estimate` |
-| `literature_duration_days` | number/null | **conditional technical input** untuk mencoba Yield Xiong; jika tidak diberikan, Core lokal tidak membuat angka yield Xiong |
-| `c_feed_scenario` | number/null | opsional; biaya total skenario feed per siklus, tanpa hidden default |
-| `c_jaring_purchase` | number/null | opsional |
-| `n_jaring_cycles` | number/null | wajib `>0` jika `c_jaring_purchase` diberikan |
-| `c_kandang_purchase` | number/null | opsional |
-| `n_kandang_cycles` | number/null | wajib `>0` jika `c_kandang_purchase` diberikan |
+| `duck_age_days` | integer | wajib; `>=0`; gate saja |
+| `planting_date` | date/null | opsional; hanya untuk calendar dates |
+| `p_gabah` | number/null | opsional; default branch C `6000`, runtime aktual prioritas |
+| `p_duck_buy` | number/null | opsional; default branch C `25000`, runtime aktual prioritas |
+| `p_duck_sell` | number/null | opsional; default scenario `45000`, runtime aktual prioritas |
+| `c_feed_scenario` | number/null | opsional; tidak ada hidden production default |
+| `c_jaring_purchase`, `n_jaring_cycles` | number/null | optional pair; cycles `>0` bila biaya diberikan |
+| `c_kandang_purchase`, `n_kandang_cycles` | number/null | optional pair; cycles `>0` bila biaya diberikan |
 
-`literature_duration_days` bukan local-calibrated parameter. Ia hanya membuka jalur evaluasi persamaan Xiong bila caller memang mempunyai/ingin menguji nilai `t`. Tanpa nilai tersebut, local operational window `28–40` hari sendiri sudah menunjukkan bahwa numerical literature yield tidak layak dipaksakan.
+Tidak ada `duck_duration_days` untuk production yield C0 karena duration effect **tidak identifiable** dan tidak dipromosikan.
 
-### Output canonical branch A
+### Output canonical branch C
 
 | Field | Semantik |
 |---|---|
-| `model_variant` | `A_STRICT_SEPARATION` |
-| `age_status` | `NOT_RECOMMENDED`, `LOCAL_READY`, `OLDER_CONSERVATIVE` |
-| `density_are`, `density_ha` | hasil aritmetika |
-| `density_status` | `UNDER`, `RECOMMENDED`, `WARNING_ABOVE_RECOMMENDED`, `HIGH_RISK` |
-| `release_hst_min/max` | `21/30` |
-| `withdraw_hst_min/max` | `56/60` |
-| `release_date_min/max`, `withdraw_date_min/max` | tanggal atau `null` bila `planting_date` tidak ada |
+| `model_variant` | `C_FARMER_GROUPED_LOCAL` |
+| `yield_are_kg` | `50.0` |
+| `yield_total_kg` | `50*A_are` |
+| `model_validation_status` | `LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE` |
+| `parameter_uncertainty_y0_95pct` | `[42.81,55.78]`; deskriptif, bukan prediction interval individual |
+| `age_status` | readiness gate |
+| `density_are`, `density_status` | density/risk gate |
+| `release_hst_min/max`, `withdraw_hst_min/max` | `21–30`, `56–60` |
 | `survival_risk` | `HIGH` hanya jika `d_are>8`; selain itu `null` |
-| `yield_status` | `VALID` atau `OUTSIDE_LITERATURE_DOMAIN` |
-| `yield_are_kg`, `yield_total_kg` | angka hanya bila Xiong domain valid; selain itu `null` |
-| `revenue_gabah` | hanya bila yield numeric tersedia |
+| `revenue_gabah` | `Yield_are*A_are*p_gabah` |
 | `revenue_duck_all_sold_scenario` | `J*p_duck_sell`; `null` jika `d_are>8` |
 | `cost_duck_buy` | `J*p_duck_buy` |
-| `cash_contribution_before_optional` | hanya bila prerequisite revenue tersedia |
-| `cost_feed_scenario`, `cost_infra_cycle` | child component opsional |
-| `cash_contribution_after_optional` | hanya jika optional-cost scenario memang dipilih |
-| `warnings`, `provenance` | wajib menjelaskan fallback, domain mismatch, dan high-risk |
+| `cash_contribution_before_optional` | scenario contribution, bukan net profit |
+| optional cost/output | hanya jika caller menyediakan nilai |
+| `warnings`, `provenance` | source/default dan limitation |
 
-**Field yang harus hilang dari response A:** `N_survive`, `survival_rate`, `Revenue_duck_potential` berbasis survivor, `Cost_feed` hidden/default, `Net_Cash_Contribution_DSS` legacy, dan numerical sandbox yang seolah production.
+**Field yang harus hilang dari response C:** `N_survive`, `survival_rate`, old baseline `47.8767507`, fixed `Cost_feed`, `Revenue_duck_potential` berbasis survivor, old harvest windows, dan `Net_Cash_Contribution_DSS` legacy.
 
-### Implementasi Yield Xiong
-
-Gunakan `Decimal`/precision tinggi sebagaimana pola repository sekarang; pembulatan hanya di DTO boundary.
+### Production Yield Engine
 
 ```text
-d_ha = 100 * d_are
-
-x_kg_ha = (-0.0103*d_ha^2 + 2.6314*d_ha + 7569.4)
-          * exp(-((t-80)^2)/(2*80^2))
-
-valid iff: 0 < d_ha <= 600 and 50 <= t <= 80
-x_kg_are = x_kg_ha / 100
+Y0_C = 50.0 kg/are
+Yield_are = 50.0
+Yield_total_kg = 50.0 * land_area_are
 ```
 
-Tidak boleh clamp `t`, mengganti `t` dengan 50 secara diam-diam, atau menghitung extrapolation sebagai production result.
+Jangan mengaktifkan C1/C3/C4 hanya karena coefficient-nya tersedia di dokumentasi penelitian. Coefficient tersebut adalah audit candidate, **bukan production formula**.
 
 ### Perubahan file minimum dari master
 
 | Path | Perubahan wajib |
 |---|---|
-| `app/engines/formula_engine.py` | hapus constant yield dan numerical survival; implement age/density/calendar range, survival-risk gate, Xiong + validity guard, economic scenario |
-| `app/engines/impact_engine.py` | keluarkan dari Core; bila dipertahankan, label research-only dan jangan dipanggil otomatis |
-| `app/services/simulation_service.py` | conditional yield/economics; tidak membuat `N_survive`; tidak memberi universal survival warning pada kondisi normal |
-| `app/schemas/dss.py` | request optional price/date/duration/optional costs; response nullable untuk unavailable output |
-| `app/data/seed.py` | hapus `47.8767507`, `52500`, fixed feed `20000`, fixed HST 21/65 sebagai production constants; simpan range/default branch A |
-| `app/services/visualization_service.py` | hapus numerical survival curve; visualisasikan density/age gates dan Xiong domain/reference hanya jika valid |
-| `app/domain/models.py`, repository/history | schema v4; persistence mengikuti nullable field A |
-| `tests/*` | rebuild sesuai `docs/tes_skenario.md` A |
+| `app/engines/formula_engine.py` | `Y_BASE` menjadi 50; hapus numerical survival; kalender jadi range; economics jadi scenario contribution |
+| `app/engines/impact_engine.py` | keluarkan dari Core; tidak boleh mempengaruhi economic primary |
+| `app/services/simulation_service.py` | output C0 + gates; no `N_survive`; optional economics; provenance validation C |
+| `app/schemas/dss.py` | update request/default/nullable output, hapus survival number dan legacy cash fields |
+| `app/data/seed.py` | Y0=50; default p_gabah=6000, p_buy=25000, p_sell=45000; hapus feed hidden default dan harvest fixed legacy |
+| `app/services/visualization_service.py` | benchmark yield 50; density/age zone only; no survival-rate curve |
+| `app/domain/models.py`, repository/history | schema v4; record `model_variant=C_FARMER_GROUPED_LOCAL` |
+| `tests/*` | untouched holdout replay + boundary tests sesuai `tes_skenario.md` C |
 

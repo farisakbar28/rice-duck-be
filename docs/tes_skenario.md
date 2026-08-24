@@ -1,147 +1,131 @@
-# PANDUAN PENGUJIAN SKENARIO — BACKEND DSS PADI-BEBEK VERSI A
+# PANDUAN PENGUJIAN SKENARIO — BACKEND DSS PADI-BEBEK VERSI C
 
-> **Branch:** A — Strict Separation + Evidence Reset  
-> **SoT:** `docs/Model Matematika Data Collection DSS Padi Bebek FINAL.md` pada branch A.  
-> **Critical rule:** 36 clean cycles adalah **test-only**. Hasil replay tidak boleh digunakan mengubah parameter/formula branch A.
+> **Branch:** C — Farmer-Grouped Calibration/Validation Split  
+> **SoT:** `docs/Model Matematika Data Collection DSS Padi Bebek FINAL.md` pada branch C.  
+> **Critical rule:** final evaluation menggunakan **11 untouched holdout cycles dari 6 farmer** yang sudah ditetapkan sebelum fitting. Jangan mengganti row setelah melihat response.
 
 ## 1. Tujuan
 
-Dokumen ini menguji dua hal yang harus dipisahkan:
+1. Memastikan backend nyata mengimplementasikan production C0 `50 kg/are` dan DSS gates secara tepat.
+2. Mereplay **untouched holdout** dengan input yang sama/sepadan dari clean recap.
+3. Menghitung ulang error yield dari **raw HTTP output**, bukan menyalin angka dokumen.
+4. Memverifikasi economics sebagai scenario cash contribution, bukan realized farmer profit.
 
-1. **Historical Test-Only Replay**: seluruh 36 clean cycles dipakai untuk memverifikasi density/risk/domain semantics terhadap backend nyata. Actual yield disimpan sebagai context, tetapi tidak dibuat MAE production karena local duration evidence tidak overlap dengan domain Xiong.
-2. **Synthetic Contract & Formula Tests**: input buatan dipakai untuk menguji boundary, Xiong validity guard, arithmetic economics, optional-cost handling, dan HTTP/schema contract.
+Endpoint canonical: `POST /api/v1/dss/simulate`.
 
-Endpoint canonical tetap `POST /api/v1/dss/simulate`.
+## 2. Aturan Mutlak
 
-## 2. Aturan Evidence
+- Simpan commit, command start, request timestamp, request body, status, raw JSON.
+- Jangan membuka calibration cycles sebagai "extra test" lalu men-tune model lagi.
+- Untuk `DefaultJarwo*`, mapping ke `jajar_legowo` adalah imputation yang sudah ada di clean dataset; jangan menyebutnya raw observed system.
+- `duck_age_days=21` pada replay adalah estimasi clean dataset dan tidak dinilai sebagai biological ground truth.
+- `N_sold_actual`, feed historical, duck sale revenue, dan raw farmer profit bukan target langsung output model.
+- Bila source `planting_date` kosong, **omit/null**; jangan membuat tanggal sintetis.
+- Runtime `p_gabah` dan `p_duck_buy` pada replay menggunakan source value agar arithmetic economics dapat diaudit; nilai default hanya diuji pada synthetic cases.
 
-1. Jalankan service nyata; jangan mengganti response dengan kalkulasi manual.
-2. Simpan `backend_commit`, command start, timestamp, request, HTTP status, dan raw JSON response.
-3. `Actual Yield` bukan ground truth untuk numerical Xiong production bila `yield_status=OUTSIDE_LITERATURE_DOMAIN`.
-4. `U_bebek=21` dan `t_duck=45` pada clean workbook adalah estimasi/imputasi; keduanya **bukan raw biological ground truth**.
-5. `Null(default Jarwo 2:1)` diberi tanda `DefaultJarwo*`; boleh dinormalisasi ke `jajar_legowo` hanya untuk replay semantics, dan provenance harus menyebut bahwa sistem berasal dari default clean dataset.
-6. Jangan menggunakan `N_sold_actual` sebagai survival ground truth.
-7. Jangan menghitung realized-profit error terhadap cash contribution model.
-8. Jangan menghapus row setelah melihat error/response.
+## 3. Untouched Holdout Replay
 
-## 3. Historical Test-Only Replay — 36 Siklus
+| ID | Raw row | Farmer | A are | J | d/are | Var | Sistem | Actual yield | Expected pred | Error pred-actual | Expected total kg | p_gabah | Expected Revenue_gabah |
+|---|---:|---|---:|---:|---:|---|---|---:|---:|---:|---:|---:|---:|
+| H01 | 8 | I Made Arsania | 3.60 | 13 | 3.611 | sertani | DefaultJarwo* | 45.83 | 50.00 | 4.17 | 180.00 | 6000 | 1080000.00 |
+| H02 | 9 | I Nyoman Ranes | 5.10 | 5 | 0.980 | sertani | DefaultJarwo* | 48.04 | 50.00 | 1.96 | 255.00 | 6000 | 1530000.00 |
+| H03 | 11 | I Ketut Alit Sudarsana | 10.00 | 65 | 6.500 | sertani | DefaultJarwo* | 60.50 | 50.00 | -10.50 | 500.00 | 6000 | 3000000.00 |
+| H04 | 14 | I Wayan Sadia | 7.26 | 9 | 1.240 | sertani | DefaultJarwo* | 59.37 | 50.00 | -9.37 | 363.00 | 7500 | 2722500.00 |
+| H05 | 23 | I Nyoman Ranes | 5.10 | 10 | 1.961 | inpari | Jarwo | 21.02 | 50.00 | 28.98 | 255.00 | 7500 | 1912500.00 |
+| H06 | 25 | I Ketut Alit Sudarsana | 14.41 | 30 | 2.082 | sertani | Jarwo | 52.43 | 50.00 | -2.43 | 720.50 | 7500 | 5403750.00 |
+| H07 | 38 | I Ketut Alit Sudarsana | 10.00 | 32 | 3.200 | sertani | Jarwo | 53.40 | 50.00 | -3.40 | 500.00 | 6300 | 3150000.00 |
+| H08 | 43 | I Made Arsania | 3.60 | 15 | 4.167 | sertani | Jarwo | 40.42 | 50.00 | 9.58 | 180.00 | 6000 | 1080000.00 |
+| H09 | 44 | I Ketut Alit Sudarsana | 10.00 | 29 | 2.900 | inpari | Tegel | 38.65 | 50.00 | 11.35 | 500.00 | 6000 | 3000000.00 |
+| H10 | 47 | I Gusti Ngurah Putu Suka Nada | 3.00 | 6 | 2.000 | sertani | Jarwo | 13.50 | 50.00 | 36.50 | 150.00 | 6000 | 900000.00 |
+| H11 | 62 | I Made Suardika | 3.77 | 8 | 2.122 | sertani | Jarwo | 36.47 | 50.00 | 13.53 | 188.50 | 6000 | 1131000.00 |
 
-`literature_duration_days` **tidak diisi** pada historical replay karena durasi aktual individual tidak tersedia. Backend harus abstain dari numerical Xiong local prediction. Actual yield ditampilkan hanya untuk audit transferability.
+\* `DefaultJarwo` = `Null(default Jarwo 2:1)` pada clean dataset; provenance harus dipertahankan.
 
-| ID | Raw row | Farmer | A are | J | d/are | Varietas | Sistem | Actual yield | Expected density status | Xiong density domain | Expected yield result |
-|---|---:|---|---:|---:|---:|---|---|---:|---|---|---|
-| A01 | 4 | I Wayan Suarta | 6.60 | 30 | 4.545 | sertani | DefaultJarwo* | 53.03 | WARNING_ABOVE_RECOMMENDED | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A02 | 5 | I Made Widana | 10.50 | 28 | 2.667 | sertani | DefaultJarwo* | 47.71 | RECOMMENDED | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A03 | 6 | I Wayan Suwendhi Artha | 4.80 | 10 | 2.083 | sertani | DefaultJarwo* | 59.38 | RECOMMENDED | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A04 | 7 | I Ketut Tantra | 4.50 | 16 | 3.556 | sertani | DefaultJarwo* | 50.00 | RECOMMENDED | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A05 | 8 | I Made Arsania | 3.60 | 13 | 3.611 | sertani | DefaultJarwo* | 45.83 | RECOMMENDED | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A06 | 9 | I Nyoman Ranes | 5.10 | 5 | 0.980 | sertani | DefaultJarwo* | 48.04 | UNDER | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A07 | 10 | I Wayan Wiratna | 3.20 | 10 | 3.125 | sertani | DefaultJarwo* | 60.31 | RECOMMENDED | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A08 | 11 | I Ketut Alit Sudarsana | 10.00 | 65 | 6.500 | sertani | DefaultJarwo* | 60.50 | WARNING_ABOVE_RECOMMENDED | OUT | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A09 | 12 | I Gusti Ngurah Rai Sukarta | 5.50 | 40 | 7.273 | sertani | DefaultJarwo* | 53.09 | WARNING_ABOVE_RECOMMENDED | OUT | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A10 | 14 | I Wayan Sadia | 7.26 | 9 | 1.240 | sertani | DefaultJarwo* | 59.37 | UNDER | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A11 | 18 | I Wayan Suarta | 6.60 | 30 | 4.545 | sertani | Jarwo | 63.86 | WARNING_ABOVE_RECOMMENDED | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A12 | 19 | I Made Widana | 10.50 | 28 | 2.667 | sertani | Jarwo | 45.41 | RECOMMENDED | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A13 | 20 | I Wayan Suwendhi Artha | 4.80 | 8 | 1.667 | sertani | Jarwo | 65.73 | UNDER | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A14 | 21 | I Ketut Tantra | 4.50 | 10 | 2.222 | inpari | Jarwo | 55.78 | RECOMMENDED | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A15 | 23 | I Nyoman Ranes | 5.10 | 10 | 1.961 | inpari | Jarwo | 21.02 | UNDER | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A16 | 24 | I Wayan Wiratna | 3.20 | 3 | 0.938 | sertani | Jarwo | 37.50 | UNDER | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A17 | 25 | I Ketut Alit Sudarsana | 14.41 | 30 | 2.082 | sertani | Jarwo | 52.43 | RECOMMENDED | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A18 | 26 | I Gusti Ngurah Rai Sukarta | 5.50 | 50 | 9.091 | sertani | Jarwo | 53.55 | HIGH_RISK | OUT | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A19 | 28 | I Gusti Nyoman Ngurah Wirasuta | 6.35 | 20 | 3.150 | sertani | Jarwo | 45.83 | RECOMMENDED | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A20 | 34 | I Gusti Ngurah Rai Sukarta | 10.21 | 32 | 3.134 | sertani | Jarwo | 50.00 | RECOMMENDED | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A21 | 36 | I Wayan Suarta | 6.60 | 19 | 2.879 | inpari | Tegel | 47.20 | RECOMMENDED | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A22 | 37 | I Wayan Suwendhi Artha | 4.80 | 9 | 1.875 | sertani | Tegel | 60.42 | UNDER | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A23 | 38 | I Ketut Alit Sudarsana | 10.00 | 32 | 3.200 | sertani | Jarwo | 53.40 | RECOMMENDED | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A24 | 39 | I Gusti Ngurah Rai Sukarta | 5.50 | 18 | 3.273 | sertani | Jarwo | 47.00 | RECOMMENDED | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A25 | 41 | I Gusti Nyoman Ngurah Wirasuta | 6.35 | 5 | 0.787 | inpari | Tegel | 60.79 | UNDER | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A26 | 43 | I Made Arsania | 3.60 | 15 | 4.167 | sertani | Jarwo | 40.42 | WARNING_ABOVE_RECOMMENDED | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A27 | 44 | I Ketut Alit Sudarsana | 10.00 | 29 | 2.900 | inpari | Tegel | 38.65 | RECOMMENDED | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A28 | 46 | I Wayan Jana | 4.50 | 9 | 2.000 | sertani | Jarwo | 62.89 | RECOMMENDED | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A29 | 47 | I Gusti Ngurah Putu Suka Nada | 3.00 | 6 | 2.000 | sertani | Jarwo | 13.50 | RECOMMENDED | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A30 | 49 | I Wayan Arta Susila | 3.55 | 7 | 1.972 | sertani | Jarwo | 38.03 | UNDER | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A31 | 51 | I Wayan Suwendhi Artha | 4.81 | 10 | 2.079 | sertani | Jarwo | 43.45 | RECOMMENDED | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A32 | 53 | I Nyoman Suwitra | 4.80 | 10 | 2.083 | sertani | Jarwo | 40.10 | RECOMMENDED | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A33 | 55 | Alm. I Ketut Tantra | 3.45 | 7 | 2.029 | sertani | Jarwo | 7.54 | RECOMMENDED | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A34 | 60 | I Wayan Buana | 4.44 | 9 | 2.027 | sertani | Jarwo | 40.20 | RECOMMENDED | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A35 | 61 | I Ketut Buda | 4.43 | 9 | 2.032 | sertani | Jarwo | 33.75 | RECOMMENDED | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
-| A36 | 62 | I Made Suardika | 3.77 | 8 | 2.122 | sertani | Jarwo | 36.47 | RECOMMENDED | VALID | `OUTSIDE_LITERATURE_DOMAIN` / no production numeric yield |
+### Expected aggregate metrics
 
-\* `DefaultJarwo` berasal dari field clean dataset `Null(default Jarwo 2:1)`, bukan observasi sistem tanam eksplisit.
+Backend raw yield outputs pada 11 row harus menghasilkan, dengan toleransi floating-point wajar:
 
-### Expected aggregate result
+```text
+MAE   = 11.979 kg/are
+RMSE  = 15.990 kg/are
+MedAE = 9.583 kg/are
+Bias  = +7.307 kg/are
+```
 
-- `36/36` replay mempertahankan row; tidak ada post-hoc deletion.
-- `33/36` berada pada Xiong density domain (`d_ha<=600`); `3/36` di luar density domain.
-- Local operational duration evidence sekitar `28–40` hari tidak overlap dengan Xiong `50–80` hari.
-- **Primary numerical MAE/RMSE Versi A tidak dihitung.** Backend yang menghasilkan numerical local yield secara diam-diam pada suite ini adalah **FAIL**.
+Jika aggregate metrics berbeda material, implementation dianggap tidak identik dengan frozen production C0 atau row mapping salah.
 
-## 4. Request Template Historical Replay
+## 4. Request Construction
+
+Untuk setiap H01–H11:
 
 ```json
 {
-  "land_area_are": "<A_are>",
+  "land_area_are": "<A>",
   "duck_count": "<J>",
   "rice_variety": "sertani|inpari",
   "planting_system": "jajar_legowo|tegel",
   "duck_age_days": 21,
-  "planting_date": "<source date if available, otherwise omit>",
-  "p_gabah": "<source price if available, otherwise omit>",
-  "p_duck_buy": "<source price if available, otherwise omit>",
+  "planting_date": "<source date if present; otherwise omit>",
+  "p_gabah": "<source Price Gabah>",
+  "p_duck_buy": "<source Buy Price Duck>",
   "p_duck_sell": 45000
 }
 ```
 
-Do **not** add `literature_duration_days=45` merely because clean workbook stores `t_duck=45`; that field is an imputation and bukan observasi durasi individual.
+Jangan kirim historical feed sebagai Core default. Feed hanya boleh diuji terpisah sebagai `c_feed_scenario` bila memang ingin menjalankan sensitivity scenario.
 
-## 5. Synthetic Boundary & Golden Tests
+## 5. Expected Row Semantics
 
-| ID | Input inti | Expected |
+- `yield_are_kg` / `yield_primary_are` harus tepat `50.0` untuk seluruh holdout.
+- `yield_total_kg = 50*A_are`.
+- `density_status` diturunkan dari input; tidak mengubah yield C0.
+- Tidak ada `N_survive` atau survival percentage.
+- Hanya `d_are>8` yang menghasilkan `survival_risk=HIGH`; tidak ada holdout row di atas 8, sehingga `survival_risk` normalnya `null` pada H01–H11.
+- `revenue_duck_all_sold_scenario=J*45000` pada H01–H11; ini scenario ceiling, bukan actual-sale prediction.
+- `cost_duck_buy=J*p_duck_buy` menggunakan source runtime input, termasuk `0` bila source memang `0`.
+- cash contribution tidak dibandingkan ke raw farmer profit sebagai accuracy metric.
+
+
+## 6. Synthetic Contract & Boundary Tests
+
+| ID | Input | Expected |
 |---|---|---|
-| S-A01 | `A=10,J=19,Jarwo` | `d=1.9`, `UNDER` |
-| S-A02 | `A=10,J=20,Jarwo` | `d=2`, `RECOMMENDED` |
-| S-A03 | `A=10,J=40,Jarwo` | `d=4`, `RECOMMENDED` |
-| S-A04 | `A=10,J=41,Jarwo` | `WARNING_ABOVE_RECOMMENDED` |
-| S-A05 | `A=10,J=80,Jarwo` | warning, **not** survival high risk |
-| S-A06 | `A=10,J=81,Jarwo` | `HIGH_RISK`, `survival_risk=HIGH`, duck all-sold revenue `null` |
-| S-A07 | `A=10,J=30,Tegel` | `d=3`, `RECOMMENDED` |
-| S-A08 | `A=10,J=31,Tegel` | `WARNING_ABOVE_RECOMMENDED` |
-| S-A09 | `duck_age_days=20` | `NOT_RECOMMENDED` |
-| S-A10 | `duck_age_days=21` | `LOCAL_READY` |
-| S-A11 | `duck_age_days=30` | `LOCAL_READY` |
-| S-A12 | `duck_age_days=31` | `OLDER_CONSERVATIVE` |
-| S-A13 | `A=10,J=40,t=49` | `OUTSIDE_LITERATURE_DOMAIN`, yield `null` |
-| S-A14 | `A=10,J=40,t=50` | valid Xiong; `yield_are≈65.004455 kg/are` |
-| S-A15 | `A=10,J=40,t=80` | valid Xiong; `yield_are≈69.739600 kg/are` |
-| S-A16 | `A=10,J=40,t=81` | `OUTSIDE_LITERATURE_DOMAIN` |
-| S-A17 | `A=10,J=61,t=80` | density `610/ha`; `OUTSIDE_LITERATURE_DOMAIN` |
-| S-A18 | `A<=0` | HTTP validation failure |
-| S-A19 | `J=0` | accepted model input; `d=0`, `UNDER`; duck cash terms zero |
+| S-C01 | `A=10,J=20,Jarwo` | `d=2`, `RECOMMENDED`, yield `50` |
+| S-C02 | `A=10,J=40,Jarwo` | `d=4`, `RECOMMENDED`, yield `50` |
+| S-C03 | `A=10,J=41,Jarwo` | `WARNING_ABOVE_RECOMMENDED`, yield tetap `50` |
+| S-C04 | `A=10,J=80,Jarwo` | warning, no survival numeric, yield `50` |
+| S-C05 | `A=10,J=81,Jarwo` | `HIGH_RISK`, `survival_risk=HIGH`, duck all-sold revenue `null`, yield tetap `50` |
+| S-C06 | `A=10,J=30,Tegel` | `RECOMMENDED` |
+| S-C07 | `A=10,J=31,Tegel` | `WARNING_ABOVE_RECOMMENDED` |
+| S-C08 | age `20/21/30/31` | `NOT_RECOMMENDED/LOCAL_READY/LOCAL_READY/OLDER_CONSERVATIVE` |
+| S-C09 | prices omitted, `A=10,J=20` | fallback `p_gabah=6000`, `p_buy=25000`, `p_sell=45000` dengan provenance |
+| S-C10 | optional costs omitted | no hidden feed/infra deduction; after-optional may be `null`/same only per explicit schema rule |
+| S-C11 | `J=0,A=10` | accepted; yield still `50 kg/are`; duck cash components zero |
+| S-C12 | `A<=0` | request validation failure |
 
-### Golden numerical Xiong + economy case S-A14
-
-Gunakan `A=10`, `J=40`, `Jarwo`, `duck_age_days=21`, `literature_duration_days=50`, `p_gabah=6000`, `p_duck_buy=25000`, `p_duck_sell=45000`.
-
-Expected before DTO rounding:
+Golden S-C09 sebelum optional costs:
 
 ```text
-yield_are_kg                 ≈ 65.0044549762
-yield_total_kg               ≈ 650.0445497616
-revenue_gabah                ≈ Rp3,900,267.30
-revenue_duck_all_sold        = Rp1,800,000
-cost_duck_buy                = Rp1,000,000
-cash_contribution_before_optional ≈ Rp4,700,267.30
+yield_total_kg = 500
+revenue_gabah = 3,000,000
+revenue_duck_all_sold_scenario = 900,000
+cost_duck_buy = 500,000
+cash_contribution_before_optional = 3,400,000
 ```
 
-No hidden feed or infrastructure deduction.
 
-## 6. Calendar Contract Tests
+## 7. Calendar Tests
 
-Dengan `planting_date=2026-01-01`, backend harus mengembalikan HST recommendation window `release=21–30`, `withdraw=56–60` dan date range hasil penambahan kalender. Backend **tidak boleh** mengembalikan kembali fixed `HST_out=65`, `t_active=44`, atau harvest window legacy.
+Calendar terbaru hanya merepresentasikan recommendation window:
 
-## 7. Evidence Template
+```text
+release HST = 21–30
+withdraw/heading HST ≈ 56–60
+```
 
-Untuk setiap case:
+Jika `planting_date` tersedia, backend mengubah boundary HST menjadi date ranges. Jika tidak tersedia, date fields `null` tetapi HST ranges tetap tersedia. Fixed `HST_out=65`, `t_active=44`, dan harvest windows lama adalah **FAIL**.
+
+## 8. Evidence Template
 
 ```text
 backend_branch:
@@ -153,20 +137,25 @@ request_body:
 http_status:
 raw_response_json:
 
-expected_semantics:
-actual_semantics:
+actual_yield_source:
+predicted_yield_backend:
+error_backend_minus_actual:
+density_expected:
+density_backend:
+economic_arithmetic_check:
 result: PASS|FAIL
-numerical_difference_if_applicable:
 discrepancy:
 ```
 
-## 8. Pass/Fail Global
+## 9. Pass/Fail Global
 
-Branch A dianggap sesuai SoT hanya jika:
+Branch dianggap sesuai SoT jika:
 
-- historical local replay **tidak** memaksakan numerical Xiong yield;
-- Xiong hanya menghasilkan angka pada domain `0<d_ha<=600` dan `50<=t<=80`;
-- tidak ada `N_survive`/survival percentage;
-- `d>8` hanya menjadi risk gate dan menonaktifkan duck all-sold revenue;
-- tidak ada fixed feed Core, old yield `47.8767507`, old p_sell `52500`, atau fixed calendar `21/65/44`;
-- optional/missing data tetap `null`/explicitly unavailable, bukan synthetic zero.
+- 11 untouched holdout menghasilkan frozen C0 dan aggregate metrics di atas;
+- tidak ada numerical survival model atau `N_survive`;
+- `yield_are=50` tidak berubah oleh density/system/variety/age;
+- d>8 hanya risk gate + disable all-sold duck revenue;
+- calendar memakai ranges terbaru, bukan 21/65/44;
+- feed/infrastructure tidak menjadi hidden Core defaults;
+- old `47.8767507`, `52500`, survival 60%, dan old `Net_Cash_Contribution_DSS` semantics tidak aktif;
+- raw farmer profit tidak dipakai sebagai numerical ground truth cash contribution.
