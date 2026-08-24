@@ -159,3 +159,14 @@ Branch dianggap sesuai SoT jika:
 - feed/infrastructure tidak menjadi hidden Core defaults;
 - old `47.8767507`, `52500`, survival 60%, dan old `Net_Cash_Contribution_DSS` semantics tidak aktif;
 - raw farmer profit tidak dipakai sebagai numerical ground truth cash contribution.
+
+## Runtime execution result
+
+- Calendar contract crosscheck: the live PASS requires all HST/date boundaries with a planting anchor and `null` date fields without one.
+- Backend branch: `focus-model-c`; base HEAD: `b5cd75a95d95a05c1f907487c50fe9f66ef48396`; working tree dirty: `true`.
+- Executed at `2026-08-24T16:11:52.368903+00:00` through isolated loopback HTTP backend `http://127.0.0.1:51849`; the runtime nonce and raw request/response records are in `docs/runtime_evidence_model_c.json`.
+- Evidence: `docs/runtime_evidence_model_c.json`; main database SHA-256 snapshot was unchanged.
+- H01–H11: `11/11` PASS. Recomputed from raw HTTP output: MAE `11.9790909091`, RMSE `15.9900324066`, MedAE `9.5800000000`, Bias `7.3063636364` kg/are; all match frozen metrics within source-precision tolerance. The displayed source rows round actual yield to two decimals, while frozen MedAE `9.583` uses higher-precision source values.
+- S-C01–S-C12: `12/12` PASS, including S-C08 age boundaries, high-risk availability, optional-cost behavior, and S-C09 golden arithmetic.
+- Calendar: PASS. History v4 live register/login/simulate/list/detail/delete/404 round trip: PASS. Live legacy v1–v3 rows were preserved physically and remained hidden/404 through current Model C endpoints: PASS.
+- Discrepancy: the H01–H11 table does not provide the required source `p_duck_buy` values. The runner therefore uses the documented branch-C default only for that field; rice-price and yield arithmetic are verified, but holdout duck-purchase arithmetic cannot be audited against source price until the authoritative mapping is supplied.

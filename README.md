@@ -1,45 +1,16 @@
-# DSS Padi-Bebek Backend
+# DSS Padi-Bebek Backend — Frozen Model C
 
-Backend FastAPI untuk kalkulator deterministik DSS Padi-Bebek. Source of Truth tunggal adalah [Model Matematika Data Collection DSS Padi Bebek FINAL.md](docs/Model%20Matematika%20Data%20Collection%20DSS%20Padi%20Bebek%20FINAL.md). Jika kontrak API atau dokumentasi lain berbeda, SoT tersebut yang berlaku.
+Backend FastAPI ini mengimplementasikan Model C dengan production model C0 yang **frozen**: `yield_are_kg = 50.0`. C0 dikalibrasi pada 25 siklus dari 13 petani memakai farmer-grouped development split, lalu divalidasi sekali pada 11 holdout cycles dari 6 petani. Tidak ada retuning setelah holdout dibuka.
 
-## Scope
+Metrik holdout frozen adalah MAE 11.979, RMSE 15.990, MedAE 9.583, dan bias +7.307 kg/are. C0 adalah baseline lokal defensif—bukan prediktor hasil petak berpresisi tinggi. Candidate C1/C3/C4 hanya catatan riset dan tidak pernah dipakai pada runtime.
 
-`POST /api/v1/dss/simulate` menghitung estimasi **Net_Cash_Contribution_DSS**. Nilai ini adalah kontribusi kas parsial, bukan laba akuntansi, realized farmer profit, atau profit incremental murni.
+Source of Truth: [Model Matematika Data Collection DSS Padi Bebek FINAL.md](docs/Model%20Matematika%20Data%20Collection%20DSS%20Padi%20Bebek%20FINAL.md).
 
-Optimizer adalah fitur stub terpisah dan berada di luar scope matematika DSS Core.
+## Kontrak simulasi
 
-## Menjalankan aplikasi
+`POST /api/v1/dss/simulate` memerlukan lima input: `land_area_are` (>0), `duck_count` (integer >=0), `rice_variety` (`sertani`/`inpari`), `planting_system` (`jajar_legowo`/`tegel`), dan `duck_age_days` (integer >=0). Semua angka harus JSON number finite; string angka, boolean, NaN, Infinity, dan field legacy ditolak.
 
-```bash
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
-python -m pytest -q
-```
-
-Swagger tersedia di `http://127.0.0.1:8000/docs`.
-
-## Endpoint
-
-| Method | Path | Auth | Keterangan |
-|---|---|---|---|
-| GET | `/health` | Tidak | Health check |
-| GET | `/api/v1/dss/options` | Tidak | Varietas dan sistem tanam valid |
-| POST | `/api/v1/dss/simulate` | Opsional | Simulasi DSS Core |
-| POST | `/api/v1/dss/visualize` | Tidak | Zona density/umur dan waterfall Core |
-| GET/DELETE | `/api/v1/dss/histories/{id}` | Bearer | Baca/hapus history v3 |
-
-## Input production
-
-Semua tujuh field wajib dikirim. Tidak ada fallback tanggal, umur, atau harga beli bebek.
-
-| Field | Aturan |
-|---|---|
-| `land_area_are` | float `> 0` |
-| `duck_count` | integer `> 0` |
-| `rice_variety` | `sertani` atau `inpari` (generic) |
-| `planting_system` | `jajar_legowo` hanya Jajar Legowo 2:1, atau `tegel` |
-| `duck_age_days` | integer `>= 0` |
-| `planting_date` | tanggal ISO `YYYY-MM-DD` |
-| `p_duck_buy` | float `>= 0`; `0` berarti tidak ada current-cycle cash purchase |
+Input opsional adalah `planting_date`, `p_gabah`, `p_duck_buy`, `p_duck_sell`, `c_feed_scenario`, serta pasangan biaya/amortisasi jaring dan kandang. Tidak ada `literature_duration_days`, input Xiong, atau feed default tersembunyi.
 
 ```json
 {
@@ -47,48 +18,27 @@ Semua tujuh field wajib dikirim. Tidak ada fallback tanggal, umur, atau harga be
   "duck_count": 20,
   "rice_variety": "sertani",
   "planting_system": "jajar_legowo",
-  "duck_age_days": 21,
-  "planting_date": "2026-01-01",
-  "p_duck_buy": 15000
+  "duck_age_days": 21
 }
 ```
 
-Schema validation errors memakai HTTP `400`; varietas/sistem yang tidak terdapat pada lookup memakai `422`.
+Respons selalu memiliki `model_variant = C_FARMER_GROUPED_LOCAL`, `yield_are_kg = 50.0`, dan `yield_total_kg = 50 * land_area_are`, selama area valid. Status usia, varietas, sistem tanam, dan density adalah gate—tidak mengalikan yield. Parameter uncertainty `[42.81, 55.78]` adalah uncertainty parameter deskriptif, bukan prediction interval individual.
 
-## Model runtime
+Density 2–4 (Jarwo) atau 2–3 (Tegel) direkomendasikan. Di atas 8 ekor/are backend hanya menetapkan `survival_risk = HIGH`; tidak ada survival rate atau jumlah bebek hidup yang diprediksi. Skenario revenue bebek seluruhnya terjual dan cash contribution bergantung padanya menjadi `null` pada kondisi itu.
 
-```text
-AgeFlag: <21 TOO_YOUNG; 21–30 RECOMMENDED; >30 ABOVE_RECOMMENDED_AGE
-d = duck_count / land_area_are
-d_ha = 100 * d
-N_survive = duck_count                 jika d <= 8
-          = floor(0.60 * duck_count)   jika d > 8
-Yield_are_pred = 47.8767507 kg/are
-Yield_total_pred = Yield_are_pred * land_area_are
+Kalender menampilkan rekomendasi pelepasan 21–30 HST dan penarikan 56–60 HST. Jika `planting_date` tidak dikirim, seluruh tanggal bernilai `null` tanpa membuat tanggal sintetis.
+
+Default harga Model C adalah gabah Rp6.000/kg dan beli bebek Rp25.000/ekor (keduanya `local-calibrated`), serta harga jual scenario Rp45.000/ekor (`local-estimate`). Harga runtime mengesampingkan default. Feed dan infrastruktur hanya dikurangkan bila scenario caller memilihnya; output ini adalah scenario cash contribution, bukan final accounting profit atau realized farmer profit.
+
+## History dan validasi
+
+Simulasi dengan Bearer token disimpan sebagai `schema_version=4`, menyimpan request dan response Model C secara deterministik. Row v1–v3 dipertahankan secara fisik tetapi tidak ditampilkan, dibaca, atau dihapus sebagai history Model C.
+
+Jalankan pemeriksaan unit dan acceptance HTTP nyata:
+
+```bash
+python -m pytest -q
+python scripts/validate_model_c_runtime.py
 ```
 
-Sertani memiliki jendela panen 100–110 HST; Inpari memakai reference window empiris lokal 109–116 HST. Window Inpari dibentuk dari tiga observasi lokal (109, 112, dan 116 HST; median deskriptif 112) dan bukan generalisasi seluruh subvarietas. Age dan density tidak mengalikan yield. Density hanya memengaruhi survival ketika `d > 8`.
-
-```text
-Revenue_gabah = Yield_total_pred * 6000
-Revenue_duck_potential = N_survive * 52500
-Cost_duck_buy = duck_count * p_duck_buy
-Cost_feed = duck_count * 20000
-Core_Cash_Cost = Cost_duck_buy + Cost_feed
-Total_Revenue_DSS = Revenue_gabah + Revenue_duck_potential
-Net_Cash_Contribution_DSS = Total_Revenue_DSS - Core_Cash_Cost
-```
-
-## Response canonical
-
-Response memuat `age_flag`, `density_are`, `density_ha`, `density_status`, kalender (`HST_in`, `HST_out`, `D_in`, `D_out`, dan window panen), `N_survive`, yield, seluruh field ekonomi Core, `warnings`, dan `sandbox`.
-
-Sandbox weeding adalah estimasi per kegiatan; pestisida adalah indikator upper bound nonmoneter; fertilizer/material adalah research reference; infrastructure hanya context/reference tanpa formula biaya. Tidak ada bagian sandbox yang memengaruhi Core.
-
-Prediction untuk area di bawah 2,5 are tetap diterima, tetapi response menampilkan warning karena berada di luar domain numerical validation lokal.
-
-## History dan validation
-
-Simulasi dengan Bearer token disimpan sebagai schema version 3. Detail history mengembalikan semantic response yang sama dengan simulasi asal. Record v1/v2 tetap berada pada persistence legacy dan tidak diinterpretasikan sebagai output SoT final.
-
-Protokol replay dan boundary test ada pada [docs/tes_skenario.md](docs/tes_skenario.md). H01–H11 hanya membandingkan field yang semantik-kompatibel; `N_sold_actual` dan raw farmer profit bukan ground truth untuk survival atau `Net_Cash_Contribution_DSS`.
+Runner menyalakan Uvicorn pada loopback port acak dengan SQLite runtime terisolasi, memverifikasi nonce `/health`, menjalankan H01–H11, S-C01–S-C12, kalender, dan history v4. Bukti raw HTTP tersimpan di [docs/runtime_evidence_model_c.json](docs/runtime_evidence_model_c.json). Optimizer tetap fitur terpisah dan di luar scope DSS Core.

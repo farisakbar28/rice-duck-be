@@ -36,8 +36,8 @@ def get_dss_options() -> DSSOptionsResponse:
     summary="Run DSS simulation",
     description=(
         "Menjalankan model matematika deterministik padi-bebek per SoT FINAL. "
-        "7 input wajib. p_duck_buy>=0, tidak ada fallback. "
-        "Output canonical: Net_Cash_Contribution_DSS."
+        "Model C frozen C0 dengan 5 input inti; harga, kalender, dan biaya adalah opsional. "
+        "Output adalah scenario cash contribution, bukan net profit."
     ),
     responses={
         400: {"model": ErrorResponse, "description": "Input tidak valid."},
@@ -106,7 +106,7 @@ def delete_history(
     description=(
         "Menghasilkan data visualisasi grafik zona density, zona umur bebek, "
         "dan financial waterfall berdasarkan SoT FINAL. "
-        "Tidak menggunakan R_age, F_density_bio, lambda_eff, atau koefisien legacy lainnya."
+        "Tidak menggunakan multiplier produksi atau survival numerik."
     ),
     responses={
         422: {"model": ErrorResponse, "description": "Request tidak valid."},

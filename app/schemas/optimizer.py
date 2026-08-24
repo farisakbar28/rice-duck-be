@@ -4,16 +4,16 @@ WARNING — scope notice
 ----------------------
 The optimizer is a **separate product feature** and is **out of scope** of the
 rice-duck DSS mathematics documented in
-``docs/Model_Matematika_Data_Collection_DSS_Padi_Bebek_FINAL_BANGET.md``.
+the frozen Model C DSS contract.
 
 It is intentionally allowed to retain legacy literature-based formulas
-(``Xiong``-style, ``alpha_local``-calibrated, grid-search ``argmax``) because
+(archived literature, calibrated, grid-search) because
 its scope is the academic recommendation layer — not the operational
 calculator that the rest of the backend exposes under ``/api/v1/dss/simulate``.
 
 Do **not** import or reuse functions from ``app.engines.formula_engine`` or
-``app.engines.impact_engine`` from the core SoT here. If a derived metric is
-required, call the DSS core endpoint and pass its result through.
+``app.engines.impact_engine`` from the core SoT here. The current optimizer
+endpoint is only a self-contained stub and does not call the DSS core.
 """
 
 from datetime import date
@@ -294,9 +294,9 @@ class DataReadinessSummary(BaseModel):
 class OptimizerRecommendRequest(BaseModel):
     """Minimal request — optimizer needs only the inputs already used by /dss/simulate.
 
-    The optimizer service must call the DSS core endpoint to obtain SoT-aligned
-    metrics; it must NOT call ``app.engines.formula_engine`` or
-    ``app.engines.impact_engine`` directly.
+    The current stub does not call the DSS core and must not import either
+    engine. These fields overlap with the DSS request only for product
+    consistency.
     """
 
     duck_count: int = Field(gt=0)
@@ -329,5 +329,5 @@ class OptimizerRecommendResponse(BaseModel):
     data_readiness: DataReadinessSummary
     assumptions: list[str]
     scope_notice: str = (
-        "Out of scope of Model_Matematika_Data_Collection_DSS_Padi_Bebek_FINAL_BANGET.md"
+        "Out of scope of the frozen Model C DSS contract"
     )

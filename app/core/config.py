@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
     host: str = "127.0.0.1"
     port: int = 8000
+    runtime_instance_id: str = ""
     database_path: str = "data/rice_duck.db"
     cors_allowed_origins: str = "*"
     jwt_secret_key: str = "mSXdI785UBtEkxe1ejL5AqYnt5uD2jEeSDmrD60I3Jw"

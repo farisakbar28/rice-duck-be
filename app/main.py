@@ -25,7 +25,7 @@ OPENAPI_TAGS = [
         "description": (
             "DSS Core calculator — kalkulator SoT padi-bebek "
             "(docs/Model Matematika Data Collection DSS Padi Bebek FINAL.md). "
-            "7 input wajib. Output canonical: Net_Cash_Contribution_DSS. "
+            "Model C: lima input inti dan C0 frozen 50 kg/are. "
             "Tidak mengandung fitur optimizer/rekomendasi."
         ),
     },
@@ -48,7 +48,7 @@ def create_app() -> FastAPI:
             "Backend Decision Support System padi-bebek.\n\n"
             "Endpoint `/api/v1/dss/simulate` mengikuti model SoT "
             "docs/Model Matematika Data Collection DSS Padi Bebek FINAL.md. "
-            "7 input wajib, output canonical Net_Cash_Contribution_DSS. "
+            "lima input inti, output C0 dan scenario cash contribution. "
             "Endpoint `/api/v1/optimizer/recommend` adalah fitur produk terpisah di luar "
             "cakupan SoT."
         ),

@@ -1,11 +1,10 @@
 """Optimizer routes — STAND-ALONE feature, OUT OF SoT scope.
 
 See ``app.schemas.optimizer`` for the scope notice. The optimizer uses a
-legacy literature-based formula set (Xiong-style, ``alpha_local``-calibrated,
-grid-search ``argmax``). It MUST NOT import or call
+archived, separate formula set. It MUST NOT import or call
 ``app.engines.formula_engine`` or ``app.engines.impact_engine`` directly;
-it is designed to call the DSS core endpoint
-(``/api/v1/dss/simulate``) and pass the result through.
+The current endpoint is a self-contained stub: it does not call the DSS core
+endpoint or claim a Model C recommendation.
 
 The route below is intentionally minimal: it returns a structured response
 saying the optimizer is currently a stub. Real product work would re-implement
@@ -124,7 +123,7 @@ def _stub_environment() -> ScenarioEnvironment:
     summary="Optimizer recommendation (OUT OF SoT scope)",
     description=(
         "Stand-alone optimizer feature. NOT aligned with the local-calibrated "
-        "DSS core documented in FINAL_BANGET.md. May use legacy Xiong-style "
+        "Frozen Model C DSS core is separate. This endpoint may use archived "
         "formulas internally."
     ),
 )
@@ -247,4 +246,3 @@ def optimizer_recommend(payload: OptimizerRecommendRequest) -> OptimizerRecommen
         ),
         assumptions=["Optimizer is a stand-alone stub in this build."],
     )
-

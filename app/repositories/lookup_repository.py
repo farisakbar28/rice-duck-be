@@ -1,15 +1,7 @@
-from app.data.seed import (
-    DSS_CONSTANTS,
-    PARAMETER_METADATA,
-    PLANTING_SYSTEMS,
-    RICE_VARIETIES,
-)
-from app.domain.models import (
-    DSSConstants,
-    ParameterMetadata,
-    PlantingSystem,
-    RiceVariety,
-)
+"""Lookup access for active Model C reference metadata."""
+
+from app.data.seed import PARAMETER_METADATA, PLANTING_SYSTEMS, RICE_VARIETIES
+from app.domain.models import ParameterMetadata, PlantingSystem, RiceVariety
 
 
 class LookupRepository:
@@ -20,15 +12,10 @@ class LookupRepository:
         return list(PLANTING_SYSTEMS)
 
     def get_rice_variety(self, code: str) -> RiceVariety | None:
-        normalized = code.strip().lower()
-        return next((item for item in RICE_VARIETIES if item.code == normalized), None)
+        return next((item for item in RICE_VARIETIES if item.code == code), None)
 
     def get_planting_system(self, code: str) -> PlantingSystem | None:
-        normalized = code.strip().lower()
-        return next((item for item in PLANTING_SYSTEMS if item.code == normalized), None)
-
-    def get_constants(self) -> DSSConstants:
-        return DSS_CONSTANTS
+        return next((item for item in PLANTING_SYSTEMS if item.code == code), None)
 
     def get_parameter_metadata(self) -> dict[str, ParameterMetadata]:
         return dict(PARAMETER_METADATA)

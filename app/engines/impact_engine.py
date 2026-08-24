@@ -1,7 +1,7 @@
 """SoT §10 Research/Sandbox engines — docs/Model Matematika Data Collection DSS Padi Bebek FINAL.md
 
-SANDBOX components are fully excluded from Core_Cash_Cost and Net_Cash_Contribution_DSS.
-They are informational/research outputs only.
+These archived components are excluded from Model C cash contribution.
+They are informational/research outputs only and must never be called by `/dss/simulate`.
 
 SoT §10.1 Weeding:
     k_weeding = 21000 Rp/are/kegiatan
@@ -20,13 +20,11 @@ SoT §10.3 Fertilizer/Material:
 SoT §10.4 Infrastructure:
     Context/reference only. No production cost formula.
 
-SoT §13: feed=4500, Cost_feed_isolated are BANNED from production path.
+Archive-only: this module is never part of the Model C production path. The
+section labels below are legacy archive labels, not active Model C SoT claims.
 """
 
 from decimal import Decimal
-
-from app.domain.models import DSSConstants
-
 
 # ---------------------------------------------------------------------------
 # SoT §10.1 Weeding sandbox constants
@@ -98,7 +96,7 @@ def compute_sandbox_pesticide() -> dict:
 # SoT §10.3: Fertilizer/Material sandbox (research reference)
 # ---------------------------------------------------------------------------
 
-# Soil nutrient kappa constants (literature-uncalibrated, Xiong et al. 2014)
+# Archived literature-only soil-nutrient constants; never part of Model C.
 KAPPA_N = Decimal("0.049")
 KAPPA_P = Decimal("0.072")
 KAPPA_K = Decimal("0.032")
@@ -116,7 +114,6 @@ def compute_sandbox_fertilizer(
     t_active: int,
     n_survive: int,
     land_area_are: float,
-    constants: DSSConstants,
 ) -> dict:
     """SoT §10.3: Fertilizer Research/Sandbox output.
 
@@ -144,9 +141,11 @@ def compute_sandbox_fertilizer(
     q_urea = max(Decimal("0"), n_rem - (q_phonska * PHONSKA_N_FRACTION)) / UREA_N_FRACTION
     q_kcl = max(Decimal("0"), k_rem - (q_phonska * PHONSKA_K_FRACTION)) / KCL_K_FRACTION
 
-    het_phonska = _d(constants.HET_phonska)
-    het_urea = _d(constants.HET_urea)
-    het_kcl = _d(constants.HET_kcl)
+    # Historical HET references deliberately stay inside this archive module,
+    # not in active Model C lookup/default metadata.
+    het_phonska = Decimal("1840")
+    het_urea = Decimal("1800")
+    het_kcl = Decimal("9500")
 
     cost_fert_phonska = q_phonska * het_phonska
     cost_fert_urea = q_urea * het_urea

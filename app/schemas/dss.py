@@ -1,29 +1,56 @@
-"""Schemas for the DSS Core SoT calculator.
+"""Strict HTTP contracts for the frozen Model C DSS."""
 
-Field semantics follow docs/Model Matematika Data Collection DSS Padi Bebek FINAL.md.
+from datetime import date, datetime
+from decimal import Decimal
+from typing import Annotated, Any, Literal
 
-SoT §3: 7 mandatory inputs (land_area_are, duck_count, rice_variety, planting_system,
-         duck_age_days, planting_date, p_duck_buy)
-SoT §11: Canonical output semantics
-"""
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    StrictInt,
+    WithJsonSchema,
+    model_validator,
+)
 
-from datetime import date
-from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+def _number(value: Any) -> Any:
+    if isinstance(value, bool) or not isinstance(value, (int, float, Decimal)):
+        raise ValueError("must be a JSON number, not a string or boolean")
+    return value
 
 
-# ---------------------------------------------------------------------------
-# Options endpoint
-# ---------------------------------------------------------------------------
+def _positive(value: Decimal) -> Decimal:
+    if value <= 0:
+        raise ValueError("must be greater than zero")
+    return value
+
+
+def _nonnegative(value: Decimal) -> Decimal:
+    if value < 0:
+        raise ValueError("must be greater than or equal to zero")
+    return value
+
+
+JsonPositiveNumber = Annotated[
+    Decimal,
+    BeforeValidator(_number),
+    AfterValidator(_positive),
+    WithJsonSchema({"type": "number", "exclusiveMinimum": 0}, mode="validation"),
+]
+JsonNonNegativeNumber = Annotated[
+    Decimal,
+    BeforeValidator(_number),
+    AfterValidator(_nonnegative),
+    WithJsonSchema({"type": "number", "minimum": 0}, mode="validation"),
+]
 
 
 class RiceVarietyOption(BaseModel):
     code: str
     label: str
-    # SoT §6.1: Sertani 100–110, Inpari 109–116
-    hst_panen_min: int
-    hst_panen_max: int
     risk_note: str
     status: str
 
@@ -31,7 +58,6 @@ class RiceVarietyOption(BaseModel):
 class PlantingSystemOption(BaseModel):
     code: str
     label: str
-    # SoT §5.1: recommended density ceiling per system
     recommended_density_max_are: float
     recommended_density_min_are: float
     note: str
@@ -42,156 +68,139 @@ class DSSOptionsResponse(BaseModel):
     planting_systems: list[PlantingSystemOption]
 
 
-# ---------------------------------------------------------------------------
-# Input — SoT §3: 7 mandatory inputs
-# ---------------------------------------------------------------------------
-
-
 class DSSSimulationRequest(BaseModel):
-    """7 mandatory inputs per SoT §3.
-
-    All fields are required. No silent fallbacks.
-    p_duck_buy: mandatory, >= 0. Value 0 is valid (no current-cycle cash purchase).
-    duck_age_days: mandatory, >= 0. No default.
-    planting_date: mandatory. No date fallback.
-    """
-
     model_config = ConfigDict(
-        # JSON permits non-finite numeric tokens in some parsers, but they do
-        # not represent valid production measurements and would invalidate
-        # Decimal-based density, yield, and economics calculations.
+        extra="forbid",
         allow_inf_nan=False,
         json_schema_extra={
             "example": {
-                "land_area_are": 10.0,
+                "land_area_are": 10,
                 "duck_count": 20,
                 "rice_variety": "sertani",
                 "planting_system": "jajar_legowo",
                 "duck_age_days": 21,
-                "planting_date": "2024-04-22",
-                "p_duck_buy": 15000,
+            }
+        },
+    )
+
+    land_area_are: JsonPositiveNumber = Field(
+        description="Required finite JSON number: active duck area in are, greater than zero."
+    )
+    duck_count: StrictInt = Field(
+        ge=0, description="Required non-negative strict JSON integer; zero is accepted."
+    )
+    rice_variety: str = Field(
+        min_length=1,
+        json_schema_extra={"enum": ["sertani", "inpari"]},
+        description="Required exact canonical code: sertani or inpari; no normalization is performed.",
+    )
+    planting_system: str = Field(
+        min_length=1,
+        json_schema_extra={"enum": ["jajar_legowo", "tegel"]},
+        description="Required exact canonical code: jajar_legowo or tegel; no normalization is performed.",
+    )
+    duck_age_days: StrictInt = Field(
+        ge=0, description="Required non-negative strict JSON integer; readiness gate only."
+    )
+    planting_date: date | None = Field(
+        default=None, description="Optional calendar anchor; date outputs are null when omitted."
+    )
+    p_gabah: JsonNonNegativeNumber | None = Field(
+        default=None, description="Optional finite JSON number; defaults to local-calibrated Rp6000/kg."
+    )
+    p_duck_buy: JsonNonNegativeNumber | None = Field(
+        default=None, description="Optional finite JSON number; defaults to local-calibrated Rp25000/duck."
+    )
+    p_duck_sell: JsonNonNegativeNumber | None = Field(
+        default=None,
+        description="Optional finite JSON number; defaults to local-estimate all-sold scenario Rp45000/duck.",
+    )
+    c_feed_scenario: JsonNonNegativeNumber | None = Field(
+        default=None, description="Optional total cycle feed scenario; there is no hidden default."
+    )
+    c_jaring_purchase: JsonNonNegativeNumber | None = Field(
+        default=None, description="Optional net purchase cost; requires n_jaring_cycles."
+    )
+    n_jaring_cycles: JsonPositiveNumber | None = Field(
+        default=None, description="Optional positive allocation denominator for net purchase cost."
+    )
+    c_kandang_purchase: JsonNonNegativeNumber | None = Field(
+        default=None, description="Optional cage purchase cost; requires n_kandang_cycles."
+    )
+    n_kandang_cycles: JsonPositiveNumber | None = Field(
+        default=None, description="Optional positive allocation denominator for cage purchase cost."
+    )
+
+    @model_validator(mode="after")
+    def cost_pairs(self) -> "DSSSimulationRequest":
+        if self.c_jaring_purchase is not None and self.n_jaring_cycles is None:
+            raise ValueError("n_jaring_cycles is required when c_jaring_purchase is supplied")
+        if self.c_kandang_purchase is not None and self.n_kandang_cycles is None:
+            raise ValueError("n_kandang_cycles is required when c_kandang_purchase is supplied")
+        return self
+
+
+class DSSSimulationResponse(BaseModel):
+    """Canonical Model C response; null means unavailable or not selected, never zero-filled."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "model_variant": "C_FARMER_GROUPED_LOCAL",
+                "yield_are_kg": 50.0,
+                "yield_total_kg": 500.0,
+                "model_validation_status": "LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE",
+                "parameter_uncertainty_y0_95pct": [42.81, 55.78],
+                "survival_risk": None,
+                "cost_feed_scenario": None,
+                "cost_infra_cycle": None,
+                "cash_contribution_after_optional": None,
             }
         }
     )
 
-    land_area_are: float = Field(gt=0, description="Luas lahan aktif > 0 are")
-    duck_count: int = Field(gt=0, description="Populasi awal bebek > 0")
-    rice_variety: str = Field(min_length=1, description="'sertani' atau 'inpari'")
-    planting_system: str = Field(
-        min_length=1, description="'jajar_legowo' (2:1 only) atau 'tegel'"
+    model_variant: Literal["C_FARMER_GROUPED_LOCAL"] = Field(
+        default="C_FARMER_GROUPED_LOCAL", description="Frozen canonical Model C response variant."
     )
-    duck_age_days: int = Field(
-        ge=0, description="Umur bebek saat masuk sawah (hari). Wajib, tidak ada default."
+    yield_are_kg: float = Field(description="Frozen C0 production yield: always 50.0 kg/are for valid area.")
+    yield_total_kg: float = Field(description="Total frozen yield: 50.0 multiplied by land_area_are.")
+    model_validation_status: Literal["LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE"] = Field(
+        default="LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE",
+        description="Frozen Model C validation limitation status.",
     )
-    planting_date: date = Field(description="Tanggal tanam. Wajib, tidak ada fallback.")
-    p_duck_buy: float = Field(
-        ge=0,
-        description=(
-            "Harga beli bebek (Rp/ekor). Wajib, >= 0. "
-            "Nilai 0 sah bila tidak ada current-cycle cash purchase."
-        ),
+    parameter_uncertainty_y0_95pct: list[float] = Field(
+        description="Descriptive 95% uncertainty for Y0_C [42.81, 55.78], not an individual prediction interval."
     )
-
-
-# ---------------------------------------------------------------------------
-# Output — SoT §11: Canonical Output Semantics
-# ---------------------------------------------------------------------------
-
-
-class SandboxWeeding(BaseModel):
-    """SoT §10.1: Weeding Research/Sandbox output (per-event only)."""
-    k_weeding_rp_per_are_event: float
-    R_weeding: float
-    Weeding_residual_per_are_event: float
-    Weeding_avoided_per_are_event: float
-    Weeding_residual_total_one_event: float
-    Weeding_avoided_total_one_event: float
-    note: str
-
-
-class SandboxPesticide(BaseModel):
-    """SoT §10.2: Pesticide Research/Sandbox — non-monetary indicator."""
-    Pesticide_reduction_upper_bound: float
-    note: str
-
-
-class SandboxFertilizer(BaseModel):
-    """SoT §10.3: Fertilizer Research/Sandbox — literature-uncalibrated."""
-    Cost_fertilizer_total: float
-    Cost_fert_urea: float
-    Cost_fert_phonska: float
-    Cost_fert_kcl: float
-    Q_phonska: float
-    Q_urea: float
-    Q_kcl: float
-    note: str
-
-
-class SandboxInfrastructure(BaseModel):
-    """SoT §10.4: Infrastructure — context/reference only, without a cost formula."""
-    note: str
-
-
-class SandboxOutputs(BaseModel):
-    """SoT §10: Research/Sandbox outputs. NOT included in Core_Cash_Cost or Net_Cash_Contribution_DSS."""
-    weeding: SandboxWeeding
-    pesticide: SandboxPesticide
-    fertilizer: SandboxFertilizer
-    infrastructure: SandboxInfrastructure
-
-
-class DSSSimulationResponse(BaseModel):
-    """SoT §11: Canonical Output Semantics.
-
-    All Core fields follow SoT §11 naming exactly.
-    Sandbox outputs are nested under 'sandbox' and have zero effect on Core.
-    """
-
-    # SoT §4: Age Readiness Engine
-    age_flag: str                   # TOO_YOUNG | RECOMMENDED | ABOVE_RECOMMENDED_AGE
-
-    # SoT §5: Density Engine
-    density_are: float              # duck_count / land_area_are
-    density_ha: float               # 100 * density_are
-    density_status: str             # UNDER_DENSITY | RECOMMENDED | ABOVE_RECOMMENDED | OVERLOAD_HIGH_RISK
-
-    # SoT §6: Calendar Engine
-    HST_in: int                     # 21
-    HST_out: int                    # 65
-    t_active: int                   # 44
-    D_in: date                      # planting_date + 21
-    D_out: date                     # planting_date + 65
-    harvest_hst_min: int            # Sertani: 100; Inpari: 109
-    harvest_hst_max: int            # Sertani: 110; Inpari: 116
-    D_panen_min: date               # planting_date + harvest_hst_min
-    D_panen_max: date               # planting_date + harvest_hst_max
-
-    # SoT §7: Survival Engine
-    N_survive: int                  # J (d<=8) or floor(0.60*J) (d>8)
-
-    # SoT §8: Yield Engine
-    Yield_are_pred: float           # 47.8767507 kg/are (constant)
-    Yield_total_pred: float         # Yield_are_pred * land_area_are
-
-    # SoT §9: Core Economic Engine
-    Revenue_gabah: float            # Yield_total_pred * 6000
-    Revenue_duck_potential: float   # N_survive * 52500
-    Cost_duck_buy: float            # duck_count * p_duck_buy
-    Cost_feed: float                # duck_count * 20000
-    Core_Cash_Cost: float           # Cost_duck_buy + Cost_feed
-    Total_Revenue_DSS: float        # Revenue_gabah + Revenue_duck_potential
-    Net_Cash_Contribution_DSS: float  # Total_Revenue_DSS - Core_Cash_Cost
-
-    # SoT §11.1: Warnings
-    warnings: list[str]
-
-    # SoT §10: Research/Sandbox (informational only, does NOT affect Core)
-    sandbox: SandboxOutputs
-
-
-# ---------------------------------------------------------------------------
-# History schemas
-# ---------------------------------------------------------------------------
+    age_status: str = Field(description="Readiness gate: NOT_RECOMMENDED, LOCAL_READY, or OLDER_CONSERVATIVE.")
+    density_are: float = Field(description="Duck density J / land_area_are in ducks per are.")
+    density_ha: float = Field(description="Duck density converted to ducks per hectare: 100 * density_are.")
+    density_status: str = Field(description="Density gate: UNDER, RECOMMENDED, WARNING_ABOVE_RECOMMENDED, or HIGH_RISK.")
+    release_hst_min: int = Field(description="Earliest recommended release day: 21 HST.")
+    release_hst_max: int = Field(description="Latest recommended release day: 30 HST.")
+    withdraw_hst_min: int = Field(description="Earliest recommended withdrawal day: 56 HST.")
+    withdraw_hst_max: int = Field(description="Latest recommended withdrawal day: 60 HST.")
+    release_date_min: date | None = Field(description="Release lower-bound date, or null without planting_date.")
+    release_date_max: date | None = Field(description="Release upper-bound date, or null without planting_date.")
+    withdraw_date_min: date | None = Field(description="Withdrawal lower-bound date, or null without planting_date.")
+    withdraw_date_max: date | None = Field(description="Withdrawal upper-bound date, or null without planting_date.")
+    survival_risk: str | None = Field(description="HIGH only above 8 ducks/are; numerical survival is not modeled.")
+    revenue_gabah: float = Field(description="Rice revenue: frozen yield total multiplied by selected rice price.")
+    revenue_duck_all_sold_scenario: float | None = Field(
+        description="All-sold scenario ceiling J * p_duck_sell, or null above 8 ducks/are."
+    )
+    cost_duck_buy: float = Field(description="Duck purchase scenario cost J * p_duck_buy.")
+    cost_feed_scenario: float | None = Field(description="Selected total feed scenario, or null when omitted.")
+    cost_infra_cycle: float | None = Field(description="Selected amortized infrastructure scenario, or null when omitted.")
+    cash_contribution_before_optional: float | None = Field(
+        description="Scenario cash contribution before optional costs; null when duck all-sold revenue is unavailable."
+    )
+    cash_contribution_after_optional: float | None = Field(
+        description="Scenario cash contribution after selected optional costs; null when no optional cost is selected or prerequisite is unavailable."
+    )
+    warnings: list[str] = Field(description="Readiness and high-risk warnings; warnings do not change frozen yield.")
+    provenance: dict[str, Any] = Field(
+        description="Scientific traceability for frozen yield, validation metadata, prices, and non-numerical survival."
+    )
 
 
 class HistorySummary(BaseModel):
@@ -200,15 +209,13 @@ class HistorySummary(BaseModel):
     duck_count: int
     land_area_are: float
     density_are: float
-    d_panen_min: date
-    d_panen_max: date
-    yield_total_pred: float
+    yield_are_kg: float
 
 
 class HistoryListItem(BaseModel):
     id: str
     schema_version: int
-    created_at: date
+    created_at: datetime
     summary: HistorySummary
 
 
@@ -216,80 +223,35 @@ class HistoryListResponse(BaseModel):
     data: list[HistoryListItem]
 
 
-class HistoryDetailResponse(BaseModel):
-    id: str
-    schema_version: int
-    created_at: date
-    # Age
-    age_flag: str
-    # Density
-    density_are: float
-    density_ha: float
-    density_status: str
-    # Calendar
-    hst_in: int
-    hst_out: int
-    t_active: int
-    d_in: date
-    d_out: date
-    harvest_hst_min: int
-    harvest_hst_max: int
-    d_panen_min: date
-    d_panen_max: date
-    # Survival
-    n_survive: int
-    # Yield
-    yield_are_pred: float
-    yield_total_pred: float
-    # Core Economics
-    revenue_gabah: float
-    revenue_duck_potential: float
-    cost_duck_buy: float
-    cost_feed: float
-    core_cash_cost: float
-    total_revenue_dss: float
-    net_cash_contribution_dss: float
-    # Warnings
-    warnings: list[str]
-
-
 class DeleteHistoryResponse(BaseModel):
     message: str
 
 
-# ---------------------------------------------------------------------------
-# Visualization schemas
-# ---------------------------------------------------------------------------
-
-
 class DensityZonePoint(BaseModel):
-    """Density zone visualization point."""
     density: float
-    density_status: str             # UNDER_DENSITY | RECOMMENDED | ABOVE_RECOMMENDED | OVERLOAD_HIGH_RISK
-    is_recommended_jarwo: bool      # 2 <= d <= 4
-    is_recommended_tegel: bool      # 2 <= d <= 3
-    is_overload: bool               # d > 8
-    survival_rate: float            # 1.0 (d<=8) or 0.60 (d>8)
+    density_status: str
+    is_recommended_jarwo: bool
+    is_recommended_tegel: bool
+    is_high_risk: bool
 
 
 class AgeZonePoint(BaseModel):
-    """Age readiness zone visualization point."""
     age_days: int
-    age_flag: str                   # TOO_YOUNG | RECOMMENDED | ABOVE_RECOMMENDED_AGE
-    zone: str                       # "below_recommended" | "recommended" | "above_recommended"
+    age_status: str
+    zone: str
 
 
 class WaterfallNode(BaseModel):
     name: str
-    amount: float
-    type: str                       # "revenue" | "cost" | "total"
+    amount: float | None
+    type: str
 
 
 class ReferenceBenchmarks(BaseModel):
-    recommended_density_max_jarwo: float = 4.0
-    recommended_density_max_tegel: float = 3.0
-    overload_threshold: float = 8.0
-    yield_baseline_kg_per_are: float = 47.8767507
+    recommended_density_max_jarwo: float = 4
+    recommended_density_max_tegel: float = 3
+    high_risk_threshold: float = 8
+    yield_baseline_kg_per_are: float = 50
 
 
 class VisualizationResponse(BaseModel):
