@@ -396,7 +396,7 @@ def update_scenario_document(evidence: dict) -> None:
     updated = re.sub(
         r"^- Runtime capture timestamp \(UTC\): `[^`]+`\.$",
         f"- Runtime capture timestamp (UTC): `{captured_at}`.",
-        content,
+        updated,
         flags=re.MULTILINE,
     )
     updated = re.sub(
