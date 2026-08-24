@@ -218,16 +218,16 @@ discrepancy:
 
 Raw request/response evidence for every HTTP call is stored in [runtime_evidence_model_a.json](runtime_evidence_model_a.json). It includes timestamps, request JSON, HTTP status, expected semantics, the exact raw response body, and PASS/FAIL for A01–A36, S-A01–S-A19, health, and the authenticated v4 history sequence. The credential-bearing login body is redacted before writing, while its original byte length and SHA-256 commitment are retained so the exact received body remains independently verifiable without publishing a bearer token.
 
-- Branch: `focus-model-a`; exact tested HEAD: `af5bbc167d0fb4eb5ad6c97db6c8d40e9c9f415b`; `working_tree_dirty=false` at server test start.
-- Runtime capture timestamp (UTC): `2026-08-24T18:02:51.860807+00:00`.
+- Branch: `focus-model-a`; exact tested HEAD: `8ffb1c6fb3889f0643d6ac5e988645266995a080`; `working_tree_dirty=false` at server test start.
+- Runtime capture timestamp (UTC): `2026-08-24T19:02:03.428267+00:00`.
 
 <!-- RUNTIME_GENERATED_SUMMARY_START -->
-- Generated from the latest real HTTP run at `2026-08-24T18:02:51.860807+00:00`.
+- Generated from the latest real HTTP run at `2026-08-24T19:02:03.428267+00:00`.
 - Required branch `focus-model-a`; captured branch `focus-model-a`.
-- Exact tested HEAD `5d3c9d29f4dbfc43470076e3a001904ddb847bef`; working tree at server start=`false`.
-- Isolated runtime database: `data\model_a_runtime_20260824180247553165.db` (launcher PID `2976`).
+- Exact tested HEAD `8ffb1c6fb3889f0643d6ac5e988645266995a080`; working tree at server start=`false`.
+- Isolated runtime database: `data\model_a_runtime_20260824190159277305.db` (launcher PID `8388`).
 - Isolation verification: runtime DB changed=`True`; main DB unchanged by SHA-256 content snapshot=`True`.
-- Health: HTTP `200`, instance nonce verified, payload `{"status":"ok","service":"rice-duck-dss-backend","runtime_instance_id":"-JyrWOgVadubpI1m009p8jNrphyKlBg-7j9IZAj41dE"}`, PASS=`True`.
+- Health: HTTP `200`, instance nonce verified, payload `{"status":"ok","service":"rice-duck-dss-backend","runtime_instance_id":"j8HLMe6U7vEGBh64UX2ptqK_U5SNH3ZRnfvZjNtSg08"}`, PASS=`True`.
 - Historical A01-A36: `36/36` PASS.
 - Synthetic S-A01-S-A19: `19/19` PASS.
 - S-A14 actual: `yield_are_kg=65.00445497615651`, numerical difference `-4.349e-11`.
