@@ -5,7 +5,7 @@ import pytest
 
 TEST_DATABASE_PATH = Path(__file__).with_name("rice_duck_test.db")
 os.environ["DATABASE_PATH"] = str(TEST_DATABASE_PATH)
-os.environ["JWT_SECRET_KEY"] = "test-secret-key"
+os.environ["JWT_SECRET_KEY"] = "test-only-disposable-jwt-secret-key-1234567890"
 os.environ["PASSWORD_HASH_ITERATIONS"] = "1000"
 
 from app.core.database import get_connection, initialize_database

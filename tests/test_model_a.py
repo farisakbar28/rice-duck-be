@@ -13,6 +13,10 @@ def test_missing_duration_abstains_and_has_no_legacy_fields(client):
     assert body["yield_status"]=="OUTSIDE_LITERATURE_DOMAIN" and body["yield_are_kg"] is None
     assert not {"N_survive","survival_rate","Yield_are_pred","Net_Cash_Contribution_DSS","Cost_feed"}&body.keys()
 
+def test_optimizer_is_not_exposed_by_the_active_research_api(client):
+    assert client.post("/api/v1/optimizer/recommend",json={}).status_code==404
+    assert "optimizer" not in [tag["name"] for tag in create_app().openapi().get("tags",[])]
+
 @pytest.mark.parametrize("age,status",[(20,"NOT_RECOMMENDED"),(21,"LOCAL_READY"),(30,"LOCAL_READY"),(31,"OLDER_CONSERVATIVE")])
 def test_age_boundaries(client,age,status): assert client.post("/api/v1/dss/simulate",json=payload(duck_age_days=age)).json()["age_status"]==status
 
@@ -93,10 +97,19 @@ def test_openapi_response_documents_every_model_a_field_and_example(client):
 def test_runtime_evidence_acceptance_includes_database_isolation():
     from scripts.validate_model_a_runtime import acceptance_passes
     summary={"health_pass":True,"historical_pass":36,"historical_total":36,"synthetic_pass":19,"synthetic_total":19,"calendar_pass":True,"history_pass":True}
-    metadata={"branch":"focus-model-a","runtime_database_changed":True,"main_database_unchanged":True}
+    metadata={"branch":"focus-model-a","runtime_database_changed":True,"main_database_unchanged":True,"working_tree_dirty_at_server_start":False}
     assert acceptance_passes(summary,metadata)
     assert not acceptance_passes(summary,metadata|{"main_database_unchanged":False})
     assert not acceptance_passes(summary,metadata|{"branch":"other-branch"})
+    assert not acceptance_passes(summary,metadata|{"working_tree_dirty_at_server_start":True})
+
+def test_historical_replay_uses_documented_source_prices_and_dates():
+    from scripts.validate_model_a_runtime import historical_source_inputs
+    rows=historical_source_inputs()
+    assert len(rows)==36 and rows["A01"]["p_gabah"]==6000
+    assert rows["A22"]["p_duck_buy"]==0
+    assert rows["A13"]["p_duck_buy"] is None
+    assert rows["A19"]["planting_date"]=="2024-02-19"
 
 def test_runtime_validator_requires_model_a_branch():
     from scripts.validate_model_a_runtime import require_model_a_branch

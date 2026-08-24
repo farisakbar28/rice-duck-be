@@ -38,6 +38,7 @@ def acceptance_passes(summary: dict, metadata: dict) -> bool:
         summary["history_pass"],
         metadata["runtime_database_changed"],
         metadata["main_database_unchanged"],
+        metadata["working_tree_dirty_at_server_start"] is False,
     ))
 
 
@@ -103,6 +104,10 @@ def start_isolated_server() -> tuple[subprocess.Popen, dict]:
     environment["DATABASE_PATH"] = str(database_path)
     instance_id = token_urlsafe(32)
     environment["RUNTIME_INSTANCE_ID"] = instance_id
+    # The runtime process must never rely on a developer's operational JWT
+    # secret.  This secret is unique to the disposable acceptance subprocess
+    # and intentionally not written to evidence.
+    environment["JWT_SECRET_KEY"] = token_urlsafe(48)
     command = [
         sys.executable, "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", str(port),
     ]
@@ -180,8 +185,46 @@ def call(method: str, path: str, body: dict | None = None, token: str | None = N
     }
 
 
+def historical_source_inputs() -> dict[str, dict]:
+    """Read the source-compatible historical inputs documented beside the replay.
+
+    The workbook itself is intentionally not copied into Git.  This compact
+    transcription is keyed by the workbook's ``Excel Row (Sumber)`` identity
+    and contains only fields that are semantically valid Model A inputs.
+    """
+    entries: dict[str, dict] = {}
+    in_source_table = False
+    for line in SCENARIO_DOC.read_text(encoding="utf-8").splitlines():
+        if line.startswith("| ID | Source planting date | Source p_gabah | Source p_duck_buy |"):
+            in_source_table = True
+            continue
+        if in_source_table and line.startswith("|---"):
+            continue
+        if in_source_table and not line.startswith("| A"):
+            break
+        if not in_source_table:
+            continue
+        columns = [part.strip() for part in line.split("|")]
+        if len(columns) < 6:
+            raise RuntimeError(f"Malformed historical provenance row: {line}")
+        identifier, planting_date, p_gabah, p_duck_buy = columns[1:5]
+        if identifier in entries:
+            raise RuntimeError(f"Duplicate historical provenance ID: {identifier}")
+        if p_gabah == "missing":
+            raise RuntimeError(f"{identifier} has no source p_gabah; it must not silently fall back.")
+        entries[identifier] = {
+            "planting_date": None if planting_date == "missing" else planting_date,
+            "p_gabah": Decimal(p_gabah),
+            "p_duck_buy": None if p_duck_buy == "missing" else Decimal(p_duck_buy),
+        }
+    if len(entries) != 36:
+        raise RuntimeError(f"Expected 36 historical provenance rows, found {len(entries)}.")
+    return entries
+
+
 def replay_rows() -> list[dict]:
     rows = []
+    source_inputs = historical_source_inputs()
     in_source_table = False
     for line in Path("docs/tes_skenario.md").read_text(encoding="utf-8").splitlines():
         if line.startswith("| ID | Raw row"):
@@ -193,11 +236,21 @@ def replay_rows() -> list[dict]:
             continue
         cols = [part.strip() for part in line.split("|")]
         area, ducks = Decimal(cols[4]), int(cols[5])
+        identifier = cols[1]
+        source = source_inputs[identifier]
         payload = {
             "land_area_are": float(area), "duck_count": ducks,
             "rice_variety": cols[7], "planting_system": "tegel" if "Tegel" in cols[8] else "jajar_legowo",
             "duck_age_days": 21,
+            "p_gabah": float(source["p_gabah"]),
+            "p_duck_sell": 45000,
         }
+        if source["planting_date"] is not None:
+            payload["planting_date"] = source["planting_date"]
+        if source["p_duck_buy"] is not None:
+            # An explicit source zero is intentionally included and must not
+            # be converted into an absent input/fallback.
+            payload["p_duck_buy"] = float(source["p_duck_buy"])
         entry = call("POST", "/api/v1/dss/simulate", payload)
         response = entry["raw_response_json"]
         expected_density = cols[10]
@@ -205,10 +258,27 @@ def replay_rows() -> list[dict]:
         expected_density_ha = expected_density_are * Decimal("100")
         expected_xiong_density_domain = cols[11] == "VALID"
         expected_survival = "HIGH" if expected_density_are > 8 else None
-        passed = (entry["http_status"] == 200 and approximately_equal(response["density_are"], expected_density_are) and approximately_equal(response["density_ha"], expected_density_ha) and response["density_status"] == expected_density and response["survival_risk"] == expected_survival and ((Decimal("0") < expected_density_ha <= Decimal("600")) == expected_xiong_density_domain) and response["yield_status"] == "OUTSIDE_LITERATURE_DOMAIN" and response["yield_are_kg"] is None and response["yield_total_kg"] is None)
-        entry.update({"id": cols[1], "expected": {"density_are": float(expected_density_are), "density_ha": float(expected_density_ha), "density_status": expected_density, "xiong_density_domain": expected_xiong_density_domain, "survival_risk": expected_survival, "yield_status": "OUTSIDE_LITERATURE_DOMAIN", "yield_are_kg": None}, "actual": {"density_are": response["density_are"], "density_ha": response["density_ha"], "density_status": response["density_status"], "survival_risk": response["survival_risk"], "yield_status": response["yield_status"], "yield_are_kg": response["yield_are_kg"]}, "numerical_difference_if_applicable": None, "pass": passed})
+        expected_cost_duck_buy = Decimal(ducks) * (source["p_duck_buy"] if source["p_duck_buy"] is not None else Decimal("25000"))
+        expected_dates = {"release_date_min": None, "release_date_max": None, "withdraw_date_min": None, "withdraw_date_max": None}
+        if source["planting_date"] is not None:
+            expected_dates = {key: value.isoformat() for key, value in compute_calendar_dates(source["planting_date"]).items()}
+        expected_buy_provenance = "runtime" if source["p_duck_buy"] is not None else "local-estimate fallback Rp25000/ekor"
+        passed = (entry["http_status"] == 200 and approximately_equal(response["density_are"], expected_density_are) and approximately_equal(response["density_ha"], expected_density_ha) and response["density_status"] == expected_density and response["survival_risk"] == expected_survival and ((Decimal("0") < expected_density_ha <= Decimal("600")) == expected_xiong_density_domain) and response["yield_status"] == "OUTSIDE_LITERATURE_DOMAIN" and response["yield_are_kg"] is None and response["yield_total_kg"] is None and response["provenance"]["prices"]["p_gabah"] == "runtime" and response["provenance"]["prices"]["p_duck_buy"] == expected_buy_provenance and response["provenance"]["prices"]["p_duck_sell"] == "runtime" and approximately_equal(response["cost_duck_buy"], expected_cost_duck_buy) and {key: response[key] for key in expected_dates} == expected_dates)
+        entry.update({"id": identifier, "source_inputs": {"excel_row_sumber": int(cols[2]), "planting_date": source["planting_date"], "p_gabah": float(source["p_gabah"]), "p_duck_buy": float(source["p_duck_buy"]) if source["p_duck_buy"] is not None else None, "p_duck_sell": 45000, "field_flags": {"land_area_are": "source", "duck_count": "source", "rice_variety": "source normalized", "planting_system": "clean-dataset DefaultJarwo imputation" if "DefaultJarwo" in cols[8] else "source normalized", "duck_age_days": "IMPUTED/ESTIMATED (21); not source observation", "literature_duration_days": "omitted; raw individual duration unavailable", "p_gabah": "source", "p_duck_buy": "source" if source["p_duck_buy"] is not None else "missing; fallback visible", "p_duck_sell": "scenario (45000); not source actual sale price"}}, "expected": {"density_are": float(expected_density_are), "density_ha": float(expected_density_ha), "density_status": expected_density, "xiong_density_domain": expected_xiong_density_domain, "survival_risk": expected_survival, "yield_status": "OUTSIDE_LITERATURE_DOMAIN", "yield_are_kg": None, "cost_duck_buy": float(expected_cost_duck_buy), "date_window": expected_dates}, "actual": {"density_are": response["density_are"], "density_ha": response["density_ha"], "density_status": response["density_status"], "survival_risk": response["survival_risk"], "yield_status": response["yield_status"], "yield_are_kg": response["yield_are_kg"], "cost_duck_buy": response["cost_duck_buy"], "price_provenance": response["provenance"]["prices"], "date_window": {key: response[key] for key in expected_dates}}, "numerical_difference_if_applicable": None, "pass": passed})
         rows.append(entry)
     return rows
+
+
+def compute_calendar_dates(planting_date: str) -> dict:
+    from datetime import date, timedelta
+
+    anchor = date.fromisoformat(planting_date)
+    return {
+        "release_date_min": anchor + timedelta(days=21),
+        "release_date_max": anchor + timedelta(days=30),
+        "withdraw_date_min": anchor + timedelta(days=56),
+        "withdraw_date_max": anchor + timedelta(days=60),
+    }
 
 
 def synthetic_rows() -> list[dict]:
@@ -299,6 +369,7 @@ def update_scenario_document(evidence: dict) -> None:
         "<!-- RUNTIME_GENERATED_SUMMARY_START -->",
         f"- Generated from the latest real HTTP run at `{captured_at}`.",
         f"- Required branch `{REQUIRED_BRANCH}`; captured branch `{evidence['metadata']['branch']}`.",
+        f"- Exact tested HEAD `{evidence['metadata']['base_head']}`; working tree at server start=`{evidence['metadata']['working_tree_dirty_at_server_start']}`.",
         f"- Isolated runtime database: `{evidence['metadata']['runtime_database_path']}` (launcher PID `{evidence['metadata']['launcher_pid']}`).",
         f"- Isolation verification: runtime DB changed=`{evidence['metadata']['runtime_database_changed']}`; main DB unchanged by SHA-256 content snapshot=`{evidence['metadata']['main_database_unchanged']}`.",
         f"- Health: HTTP `{health['http_status']}`, instance nonce verified, payload `{json.dumps(health['raw_response_json'], separators=(',', ':'))}`, PASS=`{health['pass']}`.",
@@ -321,6 +392,35 @@ def update_scenario_document(evidence: dict) -> None:
         updated,
         flags=re.DOTALL,
     )
+    historical_header = "| ID | HTTP | Source p_gabah | Backend price provenance | Source p_duck_buy | Backend cost_duck_buy | Source planting date | Actual backend date window | Density | Density status | Survival risk | Yield status | Yield are kg | Result |"
+    historical_separator = "|---|---:|---:|---|---:|---:|---|---|---:|---|---|---|---:|---|"
+    historical_rows = []
+    for row in evidence["historical"]:
+        source = row["source_inputs"]
+        actual = row["actual"]
+        window = actual["date_window"]
+        date_window = "missing" if window["release_date_min"] is None else f"{window['release_date_min']}..{window['withdraw_date_max']}"
+        source_buy = "missing" if source["p_duck_buy"] is None else str(source["p_duck_buy"])
+        price_provenance = "; ".join(f"{key}={value}" for key, value in actual["price_provenance"].items())
+        historical_rows.append(
+            f"| {row['id']} | {row['http_status']} | {source['p_gabah']} | {price_provenance} | {source_buy} | {actual['cost_duck_buy']} | {source['planting_date'] or 'missing'} | {date_window} | {actual['density_are']} | {actual['density_status']} | {actual['survival_risk'] or 'null'} | {actual['yield_status']} | {actual['yield_are_kg'] if actual['yield_are_kg'] is not None else 'null'} | {'PASS' if row['pass'] else 'FAIL'} |"
+        )
+    generated_historical = "\n".join([
+        "### Actual HTTP results: historical replay A01-A36",
+        "",
+        "Each request uses its documented source-compatible `p_gabah`, source `p_duck_buy` when present, source planting date when present, and scenario `p_duck_sell=45000`. `duck_age_days=21` remains imputed/estimated. No request sends `literature_duration_days`; no local `t_duck=45` or local 28-40 duration is converted into a Xiong input. Actual yield remains context only: no local yield MAE/RMSE is calculated.",
+        "",
+        historical_header,
+        historical_separator,
+        *historical_rows,
+        "",
+    ])
+    updated = re.sub(
+        r"### Actual HTTP results: historical replay A01.*?(?=### Actual HTTP results: synthetic)",
+        lambda _: generated_historical,
+        updated,
+        flags=re.DOTALL,
+    )
     if updated == content:
         raise RuntimeError("Runtime timestamp marker is missing from docs/tes_skenario.md")
     SCENARIO_DOC.write_text(updated, encoding="utf-8")
@@ -329,12 +429,14 @@ def update_scenario_document(evidence: dict) -> None:
 def main() -> int:
     branch = subprocess.check_output(["git", "branch", "--show-current"], text=True).strip()
     require_model_a_branch(branch)
+    head_at_server_start = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+    dirty_at_server_start = bool(subprocess.check_output(["git", "status", "--porcelain"], text=True).strip())
+    if dirty_at_server_start:
+        raise RuntimeError("Clean-HEAD acceptance requires a clean working tree at server start.")
     process, launcher = start_isolated_server()
     try:
         health = call("GET", "/health")
         historical, synthetic, history, calendar = replay_rows(), synthetic_rows(), history_case(), calendar_case()
-        head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
-        dirty = bool(subprocess.check_output(["git", "status", "--porcelain"], text=True).strip())
         captured_at = datetime.now(timezone.utc).isoformat()
         runtime_after = file_snapshot(Path(launcher["runtime_database_path_absolute"]))
         main_after = file_snapshot(MAIN_DATABASE_PATH)
@@ -350,7 +452,7 @@ def main() -> int:
             "runtime_instance_id": launcher["runtime_instance_id"],
         }
         health["pass"] = health["http_status"] == 200 and health["raw_response_json"] == health["expected"]
-        evidence = {"metadata": {"branch": branch, "base_head": head, "working_tree_dirty": dirty, "captured_at": captured_at} | launcher, "health": health, "historical": historical, "synthetic": synthetic, "calendar": calendar, "history": history, "summary": {"health_pass": health["pass"], "historical_pass": sum(x["pass"] for x in historical), "historical_total": len(historical), "synthetic_pass": sum(x["pass"] for x in synthetic), "synthetic_total": len(synthetic), "calendar_pass": calendar["pass"], "history_pass": history[0]["pass"]}}
+        evidence = {"metadata": {"branch": branch, "base_head": head_at_server_start, "working_tree_dirty_at_server_start": dirty_at_server_start, "captured_at": captured_at} | launcher, "health": health, "historical": historical, "synthetic": synthetic, "calendar": calendar, "history": history, "summary": {"health_pass": health["pass"], "historical_pass": sum(x["pass"] for x in historical), "historical_total": len(historical), "synthetic_pass": sum(x["pass"] for x in synthetic), "synthetic_total": len(synthetic), "calendar_pass": calendar["pass"], "history_pass": history[0]["pass"]}}
         update_scenario_document(evidence)
         OUTPUT.write_text(json.dumps(evidence, ensure_ascii=False, indent=2), encoding="utf-8")
         print(json.dumps(evidence["summary"]))

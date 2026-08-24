@@ -301,7 +301,7 @@ Perilaku `master` yang **tidak boleh dibawa mentah-mentah** ke branch baru:
 - sandbox fertilizer/weeding/pesticide yang dipanggil otomatis pada setiap simulasi Core;
 - history `schema_version=3` yang memakai field SoT lama.
 
-`/optimizer/recommend` pada master adalah stub dan berada di luar SoT. Branch baru boleh mempertahankannya sebagai stub, tetapi **dilarang** menghidupkan kembali formula legacy melalui optimizer lalu mencampurkannya ke `/dss/simulate`.
+`/optimizer/recommend` pada master adalah stub dan berada di luar SoT. Endpoint tersebut tidak dipasang pada API riset Model A; **dilarang** menghidupkan kembali formula legacy melalui optimizer lalu mencampurkannya ke `/dss/simulate`.
 
 ### Aturan perubahan repository
 
@@ -392,4 +392,3 @@ Tidak boleh clamp `t`, mengganti `t` dengan 50 secara diam-diam, atau menghitung
 | `app/services/visualization_service.py` | hapus numerical survival curve; visualisasikan density/age gates dan Xiong domain/reference hanya jika valid |
 | `app/domain/models.py`, repository/history | schema v4; persistence mengikuti nullable field A |
 | `tests/*` | rebuild sesuai `docs/tes_skenario.md` A |
-

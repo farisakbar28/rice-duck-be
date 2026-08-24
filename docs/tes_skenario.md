@@ -69,6 +69,58 @@ Endpoint canonical tetap `POST /api/v1/dss/simulate`.
 
 \* `DefaultJarwo` berasal dari field clean dataset `Null(default Jarwo 2:1)`, bukan observasi sistem tanam eksplisit.
 
+### Provenance input sumber untuk replay
+
+Tabel ini adalah transkripsi field yang semantically compatible dari
+`DSS_Padi_Bebek_Rekap_Bersih_v10(1).xlsx`, sheet `Dataset Actual Bersih`,
+dijoin dengan `Excel Row (Sumber)`. Workbook tidak disalin ke Git. Nilai
+`missing` sengaja tidak dikirim agar fallback backend terlihat; `0` adalah
+nilai source eksplisit dan tetap dikirim sebagai runtime `0`.
+
+| ID | Source planting date | Source p_gabah | Source p_duck_buy | Field provenance |
+|---|---|---:|---:|---|
+| A01 | missing | 6000 | 10000 | A/J source; variety normalized; DefaultJarwo*; U_bebek=21 imputed |
+| A02 | missing | 6000 | 25000 | A/J source; variety normalized; DefaultJarwo*; U_bebek=21 imputed |
+| A03 | missing | 6000 | 30000 | A/J source; variety normalized; DefaultJarwo*; U_bebek=21 imputed |
+| A04 | missing | 6000 | 25000 | A/J source; variety normalized; DefaultJarwo*; U_bebek=21 imputed |
+| A05 | missing | 6000 | 25000 | A/J source; variety normalized; DefaultJarwo*; U_bebek=21 imputed |
+| A06 | missing | 6000 | 25000 | A/J source; variety normalized; DefaultJarwo*; U_bebek=21 imputed |
+| A07 | missing | 6000 | 32000 | A/J source; variety normalized; DefaultJarwo*; U_bebek=21 imputed |
+| A08 | missing | 6000 | 7539 | A/J source; variety normalized; DefaultJarwo*; U_bebek=21 imputed |
+| A09 | missing | 6000 | 8550 | A/J source; variety normalized; DefaultJarwo*; U_bebek=21 imputed |
+| A10 | missing | 7500 | 22222.22222 | A/J source; variety normalized; DefaultJarwo*; U_bebek=21 imputed |
+| A11 | missing | 7500 | 6666.666667 | A/J source; variety/system normalized; U_bebek=21 imputed |
+| A12 | missing | 7500 | 7000 | A/J source; variety/system normalized; U_bebek=21 imputed |
+| A13 | missing | 7500 | missing | A/J source; variety/system normalized; U_bebek=21 imputed; p_duck_buy missing |
+| A14 | missing | 7500 | 15000 | A/J source; variety/system normalized; U_bebek=21 imputed |
+| A15 | missing | 7500 | 5000 | A/J source; variety/system normalized; U_bebek=21 imputed |
+| A16 | missing | 7500 | missing | A/J source; variety/system normalized; U_bebek=21 imputed; p_duck_buy missing |
+| A17 | missing | 7500 | 10000 | A/J source; variety/system normalized; U_bebek=21 imputed |
+| A18 | missing | 7500 | 7000 | A/J source; variety/system normalized; U_bebek=21 imputed |
+| A19 | 2024-02-19 | 6000 | 15000 | A/J source; variety/system normalized; U_bebek=21 imputed |
+| A20 | 2024-04-15 | 6300 | 12000 | A/J source; variety/system normalized; U_bebek=21 imputed |
+| A21 | 2024-04-12 | 6300 | 12000 | A/J source; variety/system normalized; U_bebek=21 imputed |
+| A22 | 2024-04-23 | 6300 | 0 | A/J source; variety/system normalized; U_bebek=21 imputed; explicit zero |
+| A23 | 2024-04-22 | 6300 | 0 | A/J source; variety/system normalized; U_bebek=21 imputed; explicit zero |
+| A24 | 2024-04-15 | 6300 | 12000 | A/J source; variety/system normalized; U_bebek=21 imputed |
+| A25 | 2024-07-17 | 6200 | missing | A/J source; variety/system normalized; U_bebek=21 imputed; p_duck_buy missing |
+| A26 | 2024-10-01 | 6000 | 0 | A/J source; variety/system normalized; U_bebek=21 imputed; explicit zero |
+| A27 | 2024-09-28 | 6000 | 0 | A/J source; variety/system normalized; U_bebek=21 imputed; explicit zero |
+| A28 | missing | 6000 | 25000 | A/J source; variety/system normalized; U_bebek=21 imputed |
+| A29 | missing | 6000 | 25000 | A/J source; variety/system normalized; U_bebek=21 imputed |
+| A30 | missing | 6000 | 25000 | A/J source; variety/system normalized; U_bebek=21 imputed |
+| A31 | 2025-04-09 | 6000 | 25000 | A/J source; variety/system normalized; U_bebek=21 imputed |
+| A32 | 2025-04-09 | 6000 | 25000 | A/J source; variety/system normalized; U_bebek=21 imputed |
+| A33 | 2025-04-19 | 6000 | 25000 | A/J source; variety/system normalized; U_bebek=21 imputed |
+| A34 | missing | 6000 | 25000 | A/J source; variety/system normalized; U_bebek=21 imputed |
+| A35 | missing | 6000 | 25000 | A/J source; variety/system normalized; U_bebek=21 imputed |
+| A36 | missing | 6000 | 25000 | A/J source; variety/system normalized; U_bebek=21 imputed |
+
+`t_duck=45` tidak pernah menjadi `literature_duration_days`: itu imputed/estimated
+dan raw individual Xiong duration tidak tersedia. Evidence lokal 28â€“40 hari
+juga tidak dikirim sebagai durasi Xiong. `p_duck_sell=45000` tetap nilai
+skenario, bukan harga jual aktual sumber.
+
 ### Expected aggregate result
 
 - `36/36` replay mempertahankan row; tidak ada post-hoc deletion.

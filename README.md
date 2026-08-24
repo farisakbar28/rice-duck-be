@@ -5,9 +5,13 @@ Backend FastAPI ini menerapkan **A_STRICT_SEPARATION**. Sumber matematika tertin
 ## Menjalankan
 
 ```bash
+export JWT_SECRET_KEY="<private-random-secret-at-least-32-characters>"
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 python -m pytest -q
 ```
+
+`JWT_SECRET_KEY` wajib diberikan melalui environment atau `.env` yang tidak
+ditrack. `.env.example` hanya template dan bukan secret yang dapat dipakai.
 
 Untuk acceptance HTTP, validator meluncurkan subprocess backend sendiri pada
 port loopback bebas dengan database SQLite disposable. Ia juga memverifikasi
@@ -32,4 +36,4 @@ Harga runtime diprioritaskan. Fallback berprovenance `local-estimate` adalah Rp6
 
 Simulasi terautentikasi disimpan sebagai history schema v4, dengan payload request/response versioned yang round-trip. Baris v1–v3 tetap historical dan tidak ditafsirkan ulang sebagai Model A.
 
-Endpoint optimizer adalah stub terpisah dan tidak memanggil DSS Core. Protokol dan hasil live validation ada di [docs/tes_skenario.md](docs/tes_skenario.md), dengan raw evidence di [docs/runtime_evidence_model_a.json](docs/runtime_evidence_model_a.json).
+Optimizer tidak diekspos oleh API riset aktif. Protokol dan hasil live validation ada di [docs/tes_skenario.md](docs/tes_skenario.md), dengan raw evidence di [docs/runtime_evidence_model_a.json](docs/runtime_evidence_model_a.json).

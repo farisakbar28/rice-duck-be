@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enforced JSON-number-only semantics for all Decimal request fields and published standard OpenAPI numeric bounds without string alternatives.
 - Documented every Model A response field and its null/abstention semantics in OpenAPI, including an explicit unavailable-output example.
 
+### Removed
+- Unmounted the legacy/stub optimizer from the active research API and OpenAPI surface; it is not Model A evidence.
+- Removed the tracked JWT default. Runtime and tests now require disposable environment-provided secrets.
+
 ## [Legacy migration draft — superseded]
 
 ### Changed
