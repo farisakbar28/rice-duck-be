@@ -32,6 +32,8 @@ Default harga Model C adalah gabah Rp6.000/kg dan beli bebek Rp25.000/ekor (kedu
 
 ## History dan validasi
 
+Historical holdout replay mengirim dan memverifikasi arithmetic cycle-specific source `p_duck_buy`, termasuk nilai runtime `0`; fallback Rp25.000 diuji terpisah oleh S-C09.
+
 Simulasi dengan Bearer token disimpan sebagai `schema_version=4`, menyimpan request dan response Model C secara deterministik. Row v1–v3 dipertahankan secara fisik tetapi tidak ditampilkan, dibaca, atau dihapus sebagai history Model C.
 
 Jalankan pemeriksaan unit dan acceptance HTTP nyata:

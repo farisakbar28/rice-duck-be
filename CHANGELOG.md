@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Restored cycle-specific `p_duck_buy` values to H01-H11 holdout replay using cleaned source-row mapping, enabling source-level audit of `cost_duck_buy` and scenario cash contribution without changing frozen Model C yield parameters or holdout metrics.
 - **Breaking: Model C migration.** The active production formula is frozen C0: 50 kg/are from the farmer-grouped calibration partition. C1/C3/C4 candidate coefficients remain research-only and cannot enter `/api/v1/dss/simulate`.
 - The simulation API now has five core inputs, strict finite JSON-number validation, optional calendar/prices/scenario costs, and no Xiong or literature-duration runtime contract.
 - Density and age are gates only; numerical survival, the old fixed calendar, legacy yield/revenue fields, and hidden feed costs were removed from Model C responses.

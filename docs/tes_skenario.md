@@ -25,21 +25,25 @@ Endpoint canonical: `POST /api/v1/dss/simulate`.
 
 ## 3. Untouched Holdout Replay
 
-| ID | Raw row | Farmer | A are | J | d/are | Var | Sistem | Actual yield | Expected pred | Error pred-actual | Expected total kg | p_gabah | Expected Revenue_gabah |
-|---|---:|---|---:|---:|---:|---|---|---:|---:|---:|---:|---:|---:|
-| H01 | 8 | I Made Arsania | 3.60 | 13 | 3.611 | sertani | DefaultJarwo* | 45.83 | 50.00 | 4.17 | 180.00 | 6000 | 1080000.00 |
-| H02 | 9 | I Nyoman Ranes | 5.10 | 5 | 0.980 | sertani | DefaultJarwo* | 48.04 | 50.00 | 1.96 | 255.00 | 6000 | 1530000.00 |
-| H03 | 11 | I Ketut Alit Sudarsana | 10.00 | 65 | 6.500 | sertani | DefaultJarwo* | 60.50 | 50.00 | -10.50 | 500.00 | 6000 | 3000000.00 |
-| H04 | 14 | I Wayan Sadia | 7.26 | 9 | 1.240 | sertani | DefaultJarwo* | 59.37 | 50.00 | -9.37 | 363.00 | 7500 | 2722500.00 |
-| H05 | 23 | I Nyoman Ranes | 5.10 | 10 | 1.961 | inpari | Jarwo | 21.02 | 50.00 | 28.98 | 255.00 | 7500 | 1912500.00 |
-| H06 | 25 | I Ketut Alit Sudarsana | 14.41 | 30 | 2.082 | sertani | Jarwo | 52.43 | 50.00 | -2.43 | 720.50 | 7500 | 5403750.00 |
-| H07 | 38 | I Ketut Alit Sudarsana | 10.00 | 32 | 3.200 | sertani | Jarwo | 53.40 | 50.00 | -3.40 | 500.00 | 6300 | 3150000.00 |
-| H08 | 43 | I Made Arsania | 3.60 | 15 | 4.167 | sertani | Jarwo | 40.42 | 50.00 | 9.58 | 180.00 | 6000 | 1080000.00 |
-| H09 | 44 | I Ketut Alit Sudarsana | 10.00 | 29 | 2.900 | inpari | Tegel | 38.65 | 50.00 | 11.35 | 500.00 | 6000 | 3000000.00 |
-| H10 | 47 | I Gusti Ngurah Putu Suka Nada | 3.00 | 6 | 2.000 | sertani | Jarwo | 13.50 | 50.00 | 36.50 | 150.00 | 6000 | 900000.00 |
-| H11 | 62 | I Made Suardika | 3.77 | 8 | 2.122 | sertani | Jarwo | 36.47 | 50.00 | 13.53 | 188.50 | 6000 | 1131000.00 |
+| ID | Raw row | Farmer | A are | J | d/are | Var | Sistem | Actual yield | Expected pred | Error pred-actual | Expected total kg | p_gabah | p_duck_buy source | Expected Cost_duck_buy | Expected CashContribution_before_optional |
+|---|---:|---|---:|---:|---:|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| H01 | 8 | I Made Arsania | 3.60 | 13 | 3.611 | sertani | DefaultJarwo* | 45.83 | 50.00 | 4.17 | 180.00 | 6000 | 25000 | 325000 | 1340000 |
+| H02 | 9 | I Nyoman Ranes | 5.10 | 5 | 0.980 | sertani | DefaultJarwo* | 48.04 | 50.00 | 1.96 | 255.00 | 6000 | 25000 | 125000 | 1630000 |
+| H03 | 11 | I Ketut Alit Sudarsana | 10.00 | 65 | 6.500 | sertani | DefaultJarwo* | 60.50 | 50.00 | -10.50 | 500.00 | 6000 | 7539 | 490035 | 5434965 |
+| H04 | 14 | I Wayan Sadia | 7.26 | 9 | 1.240 | sertani | DefaultJarwo* | 59.37 | 50.00 | -9.37 | 363.00 | 7500 | 22222.22222 | 199999.99998 | 2927500.00002 |
+| H05 | 23 | I Nyoman Ranes | 5.10 | 10 | 1.961 | inpari | Jarwo | 21.02 | 50.00 | 28.98 | 255.00 | 7500 | 5000 | 50000 | 2312500 |
+| H06 | 25 | I Ketut Alit Sudarsana | 14.41 | 30 | 2.082 | sertani | Jarwo | 52.43 | 50.00 | -2.43 | 720.50 | 7500 | 10000 | 300000 | 6453750 |
+| H07 | 38 | I Ketut Alit Sudarsana | 10.00 | 32 | 3.200 | sertani | Jarwo | 53.40 | 50.00 | -3.40 | 500.00 | 6300 | 0 | 0 | 4590000 |
+| H08 | 43 | I Made Arsania | 3.60 | 15 | 4.167 | sertani | Jarwo | 40.42 | 50.00 | 9.58 | 180.00 | 6000 | 0 | 0 | 1755000 |
+| H09 | 44 | I Ketut Alit Sudarsana | 10.00 | 29 | 2.900 | inpari | Tegel | 38.65 | 50.00 | 11.35 | 500.00 | 6000 | 0 | 0 | 4305000 |
+| H10 | 47 | I Gusti Ngurah Putu Suka Nada | 3.00 | 6 | 2.000 | sertani | Jarwo | 13.50 | 50.00 | 36.50 | 150.00 | 6000 | 25000 | 150000 | 1020000 |
+| H11 | 62 | I Made Suardika | 3.77 | 8 | 2.122 | sertani | Jarwo | 36.47 | 50.00 | 13.53 | 188.50 | 6000 | 25000 | 200000 | 1291000 |
 
 \* `DefaultJarwo` = `Null(default Jarwo 2:1)` pada clean dataset; provenance harus dipertahankan.
+
+Mapping `p_duck_buy` memakai source file `DSS_Padi_Bebek_Rekap_Bersih_v10(1).xlsx`, sheet `Dataset Actual Bersih`, join key `Excel Row (Sumber)`, field `Buy Price Duck (Rp/ekor)`. Join dilakukan memakai raw row, bukan nama farmer, karena satu farmer dapat memiliki beberapa cycle. Nilai `0` pada H07, H08, dan H09 adalah runtime source value eksplisit; H09 mempunyai evidence operasional bahwa bebek memakai cycle sebelumnya, sedangkan H07/H08 hanya didokumentasikan sebagai `recorded source value = Rp0/duck`.
+
+Source-level duck purchase prices were subsequently restored to the holdout replay fixture from the cleaned local dataset using the original source-row identifier. This correction affects only the arithmetic audit of `Cost_duck_buy` and scenario cash contribution. It does not alter the frozen yield model, model-selection process, holdout composition, or yield-validation metrics.
 
 ### Expected aggregate metrics
 
@@ -83,6 +87,7 @@ Jangan kirim historical feed sebagai Core default. Feed hanya boleh diuji terpis
 - Hanya `d_are>8` yang menghasilkan `survival_risk=HIGH`; tidak ada holdout row di atas 8, sehingga `survival_risk` normalnya `null` pada H01–H11.
 - `revenue_duck_all_sold_scenario=J*45000` pada H01–H11; ini scenario ceiling, bukan actual-sale prediction.
 - `cost_duck_buy=J*p_duck_buy` menggunakan source runtime input, termasuk `0` bila source memang `0`.
+- `cash_contribution_before_optional = revenue_gabah + J*45000 - cost_duck_buy`; gunakan toleransi Rp0.01 untuk H04 karena harga sumber decimal.
 - cash contribution tidak dibandingkan ke raw farmer profit sebagai accuracy metric.
 
 
@@ -163,10 +168,10 @@ Branch dianggap sesuai SoT jika:
 ## Runtime execution result
 
 - Calendar contract crosscheck: the live PASS requires all HST/date boundaries with a planting anchor and `null` date fields without one.
-- Backend branch: `focus-model-c`; base HEAD: `b5cd75a95d95a05c1f907487c50fe9f66ef48396`; working tree dirty: `true`.
-- Executed at `2026-08-24T16:11:52.368903+00:00` through isolated loopback HTTP backend `http://127.0.0.1:51849`; the runtime nonce and raw request/response records are in `docs/runtime_evidence_model_c.json`.
+- Backend branch: `focus-model-c`; base HEAD: `2d28a87536803780ba95770123e2b92090bdf274`; working tree dirty: `true`.
+- Executed at `2026-08-24T16:45:03.005769+00:00` through an isolated loopback HTTP backend; the runtime nonce and raw request/response records are in `docs/runtime_evidence_model_c.json`.
 - Evidence: `docs/runtime_evidence_model_c.json`; main database SHA-256 snapshot was unchanged.
 - H01–H11: `11/11` PASS. Recomputed from raw HTTP output: MAE `11.9790909091`, RMSE `15.9900324066`, MedAE `9.5800000000`, Bias `7.3063636364` kg/are; all match frozen metrics within source-precision tolerance. The displayed source rows round actual yield to two decimals, while frozen MedAE `9.583` uses higher-precision source values.
+- Source-price economics: `cost_duck_buy` audit `11/11` PASS and `cash_contribution_before_optional` audit `11/11` PASS. Each request sends the source-row-mapped `p_duck_buy`, including explicit zero values; H04 uses Rp0.01 arithmetic tolerance.
 - S-C01–S-C12: `12/12` PASS, including S-C08 age boundaries, high-risk availability, optional-cost behavior, and S-C09 golden arithmetic.
 - Calendar: PASS. History v4 live register/login/simulate/list/detail/delete/404 round trip: PASS. Live legacy v1–v3 rows were preserved physically and remained hidden/404 through current Model C endpoints: PASS.
-- Discrepancy: the H01–H11 table does not provide the required source `p_duck_buy` values. The runner therefore uses the documented branch-C default only for that field; rice-price and yield arithmetic are verified, but holdout duck-purchase arithmetic cannot be audited against source price until the authoritative mapping is supplied.
