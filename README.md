@@ -1,14 +1,16 @@
 # DSS Padi-Bebek A+C
 
-Backend FastAPI untuk arsitektur **dual-evidence**, mengikuti [Source of Truth](docs/Model%20Matematika%20Data%20Collection%20DSS%20Padi%20Bebek%20FINAL.md).
+Backend FastAPI untuk arsitektur dual-evidence sesuai [Source of Truth](docs/Model%20Matematika%20Data%20Collection%20DSS%20Padi%20Bebek%20FINAL.md).
 
-- Primary local production adalah C0 tetap: `50 kg/are` dan `50 * land_area_are`.
-- Xiong et al. (2014) hanya reference literature opsional, valid pada `0 < density_ha <= 600` dan durasi eksplisit `50..80` hari.
+- Primary produksi lokal adalah C0 tetap: `50 kg/are` dan `50 × land_area_are`.
+- Xiong et al. (2014) adalah reference literature opsional, `VALID_DOMAIN` hanya pada `0 < density_ha <= 600` dan `literature_duration_days=50..80` yang eksplisit.
 - Tidak ada average, weight, ensemble, fallback, atau koreksi numerik antara C0 dan Xiong.
-- Ekonomi selalu memakai yield primary C0, termasuk saat reference valid.
-- `d > 8` menghasilkan `survival_risk=HIGH`; sistem tidak membuat survival/N_sold numerik dan revenue all-sold bebek menjadi `null`.
+- Ekonomi (`revenue_gabah` dan cash contribution) selalu memakai primary C0, juga ketika reference valid.
+- `d > 8` hanya menghasilkan `survival_risk=HIGH`; sistem tidak menghitung numerical survival/N_sold dan revenue all-sold bebek menjadi `null`.
 
 ## Menjalankan
+
+Set `JWT_SECRET_KEY` melalui environment atau `.env` lokal (gunakan nilai acak yang tidak pernah di-commit), kemudian:
 
 ```bash
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
@@ -26,8 +28,8 @@ Lima input required: `land_area_are` (JSON number >0), `duck_count` (StrictInt >
 {"land_area_are":10,"duck_count":40,"rice_variety":"sertani","planting_system":"jajar_legowo","duck_age_days":21,"literature_duration_days":50}
 ```
 
-Response memisahkan `yield_are_kg`/`yield_total_kg` (PRIMARY C0) dari `literature_reference_status`, `yield_literature_reference_*`, dan `literature_gap_kg_are`. Defaults harga adalah gabah 6000 (local-calibrated), beli bebek 25000 (local-calibrated), jual bebek 45000 (local-estimate); input `0` tetap runtime value. Feed dan infrastruktur hanya mengurangi cash contribution bila optional scenario dipilih.
+`yield_are_kg` dan `yield_total_kg` selalu PRIMARY C0. `yield_literature_reference_*` dan `literature_gap_kg_are` adalah diagnostic reference-only; `literature_gap_kg_are` tidak mengubah economics. Harga default: gabah 6000, beli bebek 25000, jual bebek 45000. Input `0` adalah runtime value yang sah.
 
-History authenticated memakai schema v4 dan menyimpan request serta exact response A+C. v1–v3 dipertahankan secara fisik dan tidak disajikan sebagai history A+C. Optimizer berada di luar scope.
+History authenticated memakai schema v4 dan menyimpan request serta exact response A+C. v1-v3 dipertahankan secara fisik tetapi current history API tidak mengeksposnya. API riset saat ini tidak mengekspos optimizer.
 
-Lihat [tes_skenario.md](docs/tes_skenario.md), [runtime evidence](docs/runtime_evidence_model_ac.json), dan [stale semantics audit](docs/stale_semantics_audit_model_ac.md).
+Lihat [tes skenario](docs/tes_skenario.md), [runtime evidence](docs/runtime_evidence_model_ac.json), [stale semantics audit](docs/stale_semantics_audit_model_ac.md), dan [research evidence manifest](docs/research_evidence_manifest_model_ac.md).

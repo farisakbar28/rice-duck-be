@@ -61,7 +61,7 @@ def compute_literature_reference(density_ha: Decimal, duration_days: object | No
     polynomial = Decimal("-0.0103") * density_ha**2 + Decimal("2.6314") * density_ha + Decimal("7569.4")
     exponent = -((t - Decimal("80"))**2) / (Decimal("2") * Decimal("80")**2)
     yield_are = polynomial * exponent.exp() / Decimal("100")
-    return {"status": "VALID", "yield_are_kg": yield_are, "yield_total_kg": yield_are * decimal(land_area_are), "reason": None}
+    return {"status": "VALID_DOMAIN", "yield_are_kg": yield_are, "yield_total_kg": yield_are * decimal(land_area_are), "reason": None}
 
 
 def compute_economics_from_primary(*, primary_total_kg: Decimal, duck_count: int, density_are: Decimal, p_gabah: object, p_duck_buy: object, p_duck_sell: object, c_feed_scenario: object | None, c_jaring_purchase: object | None, n_jaring_cycles: object | None, c_kandang_purchase: object | None, n_kandang_cycles: object | None) -> dict:

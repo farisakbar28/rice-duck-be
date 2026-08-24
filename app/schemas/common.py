@@ -2,8 +2,9 @@ from pydantic import BaseModel
 
 
 class HealthResponse(BaseModel):
-    status: str
-    service: str
+    status: str = "ok"
+    service: str = "rice-duck-dss-backend"
+    runtime_instance_id: str
 
 
 class ErrorDetail(BaseModel):

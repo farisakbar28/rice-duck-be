@@ -4,10 +4,9 @@ from pathlib import Path
 from app.core.config import settings
 
 
-# v3 explicit columns — SoT FINAL
-# schema_version=3 rows written by /dss/simulate (authenticated)
-# schema_version<=2 legacy rows remain readable via SimulationHistoryLegacy
-HISTORY_V3_COLUMNS = (
+# v1-v3 columns are historical physical storage only; v4 is the current A+C payload.
+# Legacy rows are preserved non-destructively and never returned by the current API.
+HISTORICAL_V1_V3_COLUMNS = (
     # Input snapshot
     "land_area_are REAL NOT NULL DEFAULT 0",
     "duck_count INTEGER NOT NULL DEFAULT 0",
@@ -89,7 +88,7 @@ def initialize_database() -> None:
                 lookup_json TEXT NOT NULL DEFAULT '{}',
                 validation_json TEXT NOT NULL DEFAULT '{}',
                 data_readiness_json TEXT NOT NULL DEFAULT '{}',
-                -- schema_version: 1/2=legacy JSON, 3=v3 explicit columns (SoT FINAL)
+                -- schema_version: v1-v3 historical physical storage; v4=current A+C payload.
                 schema_version INTEGER NOT NULL DEFAULT 1,
                 created_at TEXT NOT NULL,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -128,8 +127,8 @@ def initialize_database() -> None:
             ).fetchall()
         }
 
-        # Add v3 columns
-        for column_def in HISTORY_V3_COLUMNS:
+        # Preserve/add historical v3 columns without presenting them as current.
+        for column_def in HISTORICAL_V1_V3_COLUMNS:
             column_name = column_def.split()[0]
             if column_name not in existing_columns:
                 connection.execute(

@@ -11,7 +11,8 @@ class Settings(BaseSettings):
     port: int = 8000
     database_path: str = "data/rice_duck.db"
     cors_allowed_origins: str = "*"
-    jwt_secret_key: str = "mSXdI785UBtEkxe1ejL5AqYnt5uD2jEeSDmrD60I3Jw"
+    jwt_secret_key: str
+    runtime_instance_id: str = "development-instance"
     jwt_access_token_minutes: int = 120
     password_hash_iterations: int = 600_000
 

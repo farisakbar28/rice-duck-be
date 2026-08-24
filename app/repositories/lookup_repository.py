@@ -1,11 +1,5 @@
-from app.data.seed import (
-    DSS_CONSTANTS,
-    PARAMETER_METADATA,
-    PLANTING_SYSTEMS,
-    RICE_VARIETIES,
-)
+from app.data.seed import PARAMETER_METADATA, PLANTING_SYSTEMS, RICE_VARIETIES
 from app.domain.models import (
-    DSSConstants,
     ParameterMetadata,
     PlantingSystem,
     RiceVariety,
@@ -24,9 +18,6 @@ class LookupRepository:
 
     def get_planting_system(self, code: str) -> PlantingSystem | None:
         return next((item for item in PLANTING_SYSTEMS if item.code == code), None)
-
-    def get_constants(self) -> DSSConstants:
-        return DSS_CONSTANTS
 
     def get_parameter_metadata(self) -> dict[str, ParameterMetadata]:
         return dict(PARAMETER_METADATA)

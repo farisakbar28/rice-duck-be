@@ -25,7 +25,7 @@ def test_xiong_domain_and_golden_values(client,duration,expected):
     body=client.post("/api/v1/dss/simulate",json=payload(literature_duration_days=duration) if duration is not None else payload()).json()
     assert body["yield_are_kg"]==50
     if expected is None: assert body["literature_reference_status"]=="OUTSIDE_LITERATURE_DOMAIN" and body["yield_literature_reference_are_kg"] is None
-    else: assert body["literature_reference_status"]=="VALID" and body["yield_literature_reference_are_kg"]==pytest.approx(expected)
+    else: assert body["literature_reference_status"]=="VALID_DOMAIN" and body["yield_literature_reference_are_kg"]==pytest.approx(expected)
 
 def test_reference_never_routes_into_primary_economics(client):
     fields=["yield_are_kg","yield_total_kg","revenue_gabah","revenue_duck_all_sold_scenario","cost_duck_buy","cash_contribution_before_optional","cash_contribution_after_optional"]
@@ -64,8 +64,12 @@ def test_legacy_rows_are_physically_preserved_but_hidden(client):
     with get_connection() as connection:
         connection.execute("INSERT INTO dss_simulation_histories (id,user_id,schema_version,created_at,input_json,actual_scenario_json,recommended_scenario_json,comparison_json,risk_json,trace_json,notes_json,economics_json,ecology_json,environment_json,lookup_json,validation_json,data_readiness_json) VALUES ('legacy-v3',?,3,'2026-01-01T00:00:00+00:00','{}','{}','{}','{}','{}','{}','[]','{}','{}','{}','{}','{}','{}')",(user.id,))
     response=client.get("/api/v1/dss/histories",headers={"Authorization":f"Bearer {token}"}); assert response.json()=={"data":[]}
+    headers={"Authorization":f"Bearer {token}"}
+    assert client.get("/api/v1/dss/histories/legacy-v3",headers=headers).status_code==404
+    assert client.delete("/api/v1/dss/histories/legacy-v3",headers=headers).status_code==404
     with get_connection() as connection: assert connection.execute("SELECT COUNT(*) FROM dss_simulation_histories WHERE id='legacy-v3'").fetchone()[0]==1
 
 def test_openapi_and_visualization(client):
     schema=client.get("/openapi.json").json(); assert "literature_duration_days" in schema["components"]["schemas"]["DSSSimulationRequest"]["properties"]
+    assert "VALID_DOMAIN" in str(schema) and "/api/v1/optimizer/recommend" not in schema["paths"]
     result=client.post("/api/v1/dss/visualize",json=payload()).json(); assert "survival_rate" not in result["density_zones"][0] and "PRIMARY" in result["yield_note"]

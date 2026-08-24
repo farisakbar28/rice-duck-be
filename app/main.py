@@ -8,7 +8,7 @@ from app.core.config import settings
 from app.core.database import initialize_database
 from app.core.exceptions import AppError
 from app.schemas.common import ErrorResponse
-OPENAPI_TAGS=[{"name":"health","description":"Service health check."},{"name":"auth","description":"JWT authentication for per-user A+C history."},{"name":"dss","description":"A+C dual-evidence DSS: C0 local production primary plus optional Xiong literature reference; no numeric fusion."},{"name":"optimizer","description":"Separate product feature, outside the A+C DSS model scope."}]
+OPENAPI_TAGS=[{"name":"health","description":"Service health check and runtime provenance."},{"name":"auth","description":"JWT authentication for per-user A+C history."},{"name":"dss","description":"A+C dual-evidence DSS: C0 local production primary plus optional Xiong literature reference; no numeric fusion."}]
 def create_app():
     initialize_database(); app=FastAPI(title=settings.app_name,description="A+C Dual-Evidence Rice-Duck DSS. Primary C0 local yield is 50 kg/are; Xiong is optional reference only and never changes economics.",version=settings.app_version,debug=settings.app_debug,docs_url="/docs",redoc_url="/redoc",openapi_tags=OPENAPI_TAGS,swagger_ui_parameters={"displayRequestDuration":True})
     app.add_middleware(CORSMiddleware,allow_origins=settings.cors_allowed_origins_list,allow_credentials=False,allow_methods=["*"],allow_headers=["*"])
