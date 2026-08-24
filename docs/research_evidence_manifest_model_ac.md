@@ -5,12 +5,12 @@
 | Evidence item | Frozen result |
 | --- | --- |
 | Calibration partition | 25 cycles / 13 farmers |
-| Final untouched holdout | 11 cycles / 6 farmers |
+| Final holdout | 11 cycles / 6 farmers; pre-specified final holdout, untouched at the time of final evaluation; subsequently opened and prohibited from future model selection or retuning. |
 | Production parameter | `Y0_C = 50 kg/are` |
 | Descriptive bootstrap interval | `[42.81, 55.78] kg/are` |
-| Holdout MAE / RMSE / MedAE / Bias | `11.979091 / 15.990032 / 9.580000 / +7.306364 kg/are` |
+| Holdout MAE / RMSE / MedAE / Bias | `11.9785716318 / 15.9898352553 / 9.5833333300 / +7.3067061736 kg/are` (academic display: `11.979 / 15.990 / 9.583 / +7.307`) |
 
-C0 is the sole production and economics path. The interval is parameter uncertainty, not an individual-field prediction interval. No post-holdout retuning is permitted.
+C0 is the sole production and economics path. The interval is parameter uncertainty, not an individual-field prediction interval. No post-holdout retuning is permitted. The frozen metrics use exact source yield precision; source workbook gabah revenue is retained as an explicit field, not derived from a display-rounded yield.
 
 ## Literature reference A (diagnostic only)
 

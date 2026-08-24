@@ -1,4 +1,6 @@
 import json
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 from app.main import create_app
@@ -8,6 +10,18 @@ def client(): return TestClient(create_app())
 def payload(**changes):
     value={"land_area_are":10,"duck_count":40,"rice_variety":"sertani","planting_system":"jajar_legowo","duck_age_days":21}
     value.update(changes); return value
+
+def test_historical_replay_fixture_preserves_source_holdout_evidence():
+    fixture=json.loads((Path(__file__).parent / "fixtures" / "historical_replay.json").read_text(encoding="utf-8"))
+    expected={
+        "H01":(8,45.83333333,990000), "H02":(9,48.03921569,1470000), "H03":(11,60.5,3630000),
+        "H04":(14,59.36639118,3232500), "H05":(23,21.01960784,804000), "H06":(25,52.42886884,5666250),
+        "H07":(38,53.4,3364200), "H08":(43,40.41666667,873000), "H09":(44,38.65,2319000),
+        "H10":(47,13.5,243000), "H11":(62,36.47214854,825000),
+    }
+    assert {row["id"]:(row["raw_row"],row["actual_yield_are"],row["actual_gabah_revenue"]) for row in fixture} == expected
+    assert [row.get("planting_date") for row in fixture[6:9]] == ["2024-04-22","2024-10-01","2024-09-28"]
+    assert all("literature_duration_days" not in row for row in fixture)
 
 @pytest.mark.parametrize(("age","status"),[(20,"NOT_RECOMMENDED"),(21,"LOCAL_READY"),(30,"LOCAL_READY"),(31,"OLDER_CONSERVATIVE")])
 def test_age_gate_never_changes_primary(client,age,status):

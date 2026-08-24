@@ -17,9 +17,6 @@ ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE = ROOT / "docs" / "runtime_evidence_model_ac.json"
 FIXTURE = ROOT / "tests" / "fixtures" / "historical_replay.json"
 MAIN_DB = ROOT / "data" / "rice_duck.db"
-RAW_ROWS = {"H01": 8, "H02": 9, "H03": 11, "H04": 14, "H05": 23, "H06": 25, "H07": 38, "H08": 43, "H09": 44, "H10": 47, "H11": 62}
-
-
 def sha(path: Path) -> str | None:
     return hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else None
 
@@ -142,10 +139,11 @@ def main() -> None:
                 expected_cash = 50 * source["land_area_are"] * source["p_gabah"] + source["duck_count"] * source["p_duck_sell"] - source["duck_count"] * source["p_duck_buy"]
                 expect(abs(body["cash_contribution_before_optional"] - expected_cash) < 0.01, source["id"] + " primary cash")
                 errors.append(50 - source["actual_yield_are"])
-                rows.append({"id": source["id"], "raw_row": source.get("raw_row", RAW_ROWS[source["id"]]), "request": request, "actual_yield_are": source["actual_yield_are"], "actual_gabah_revenue": source["actual_yield_are"] * source["land_area_are"] * source["p_gabah"], "error_backend_minus_actual": 50 - source["actual_yield_are"], "http_status": 200, "response": body, "pass": True})
+                rows.append({"id": source["id"], "raw_row": source["raw_row"], "request": request, "actual_yield_are": source["actual_yield_are"], "actual_gabah_revenue": source["actual_gabah_revenue"], "error_backend_minus_actual": 50 - source["actual_yield_are"], "http_status": 200, "response": body, "pass": True})
             absolute = sorted(abs(value) for value in errors)
             metrics = {"MAE": sum(abs(value) for value in errors) / len(errors), "RMSE": (sum(value * value for value in errors) / len(errors)) ** 0.5, "MedAE": absolute[len(absolute) // 2], "Bias": sum(errors) / len(errors)}
-            expect(abs(metrics["MAE"] - 11.979) < 0.01 and abs(metrics["RMSE"] - 15.990) < 0.01 and abs(metrics["MedAE"] - 9.583) < 0.01 and abs(metrics["Bias"] - 7.307) < 0.01, "holdout metrics")
+            expected_metrics = {"MAE": 11.9785716318, "RMSE": 15.9898352553, "MedAE": 9.5833333300, "Bias": 7.3067061736}
+            expect(all(abs(metrics[name] - expected) < 1e-9 for name, expected in expected_metrics.items()), "holdout metrics")
             evidence["holdout"] = rows
             evidence["holdout_metrics"] = metrics
 
