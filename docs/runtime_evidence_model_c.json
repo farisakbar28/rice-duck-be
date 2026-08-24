@@ -1,31 +1,38 @@
 {
   "branch": "focus-model-c",
-  "base_head": "a823b19aa3b1700c4d4f5cf1f3742369a2ecd58d",
+  "base_head": "ffb4fd7c3e865061e1475192039c00836442aa81",
   "working_tree_dirty": false,
-  "captured_at": "2026-08-24T18:14:01.186363+00:00",
-  "server_url": "http://127.0.0.1:56109",
-  "runtime_instance_id": "WWqw-p8t_ANufXPU4Csvj-ib",
+  "captured_at": "2026-08-24T19:08:09.851986+00:00",
+  "server_url": "http://127.0.0.1:60088",
+  "runtime_instance_id": "dWoCHSX4aiIvk3R6I_qiFfDF",
   "backend_start_command": "python -m uvicorn app.main:app",
-  "runtime_database_path": "C:\\My Project\\rice-duck-be\\data\\model_c_runtime_WWqw-p8t_ANufXPU4Csvj-ib.db",
+  "runtime_database_path": "C:\\My Project\\rice-duck-be\\data\\model_c_runtime_dWoCHSX4aiIvk3R6I_qiFfDF.db",
   "main_database_before": {
-    "sha256": "b8e5fa23c274cc9da8afcb53d737fda6806ad22ee8359e3a4150f9ad4b9892a9",
+    "sha256": "846fc85a753db96c058443e60042f7a91d3146acf50ceeb9db98375ca340e676",
     "bytes": 274432
   },
   "main_database_after": {
-    "sha256": "b8e5fa23c274cc9da8afcb53d737fda6806ad22ee8359e3a4150f9ad4b9892a9",
+    "sha256": "846fc85a753db96c058443e60042f7a91d3146acf50ceeb9db98375ca340e676",
     "bytes": 274432
   },
   "main_database_unchanged": true,
   "health": {
-    "timestamp": "2026-08-24T18:13:59.324019+00:00",
+    "timestamp": "2026-08-24T19:08:08.102966+00:00",
     "request": null,
     "http_status": 200,
-    "raw_response": "{\"status\":\"ok\",\"service\":\"rice-duck-dss-backend\",\"runtime_instance_id\":\"WWqw-p8t_ANufXPU4Csvj-ib\"}",
+    "raw_response": "{\"status\":\"ok\",\"service\":\"rice-duck-dss-backend\",\"runtime_instance_id\":\"dWoCHSX4aiIvk3R6I_qiFfDF\"}",
     "response": {
       "status": "ok",
       "service": "rice-duck-dss-backend",
-      "runtime_instance_id": "WWqw-p8t_ANufXPU4Csvj-ib"
+      "runtime_instance_id": "dWoCHSX4aiIvk3R6I_qiFfDF"
     }
+  },
+  "holdout_actual_source": {
+    "file": "DSS_Padi_Bebek_Rekap_Bersih_v10(1).xlsx",
+    "sheet": "Dataset Actual Bersih",
+    "join_key": "Excel Row (Sumber)",
+    "actual_yield_field": "Actual Yield (kg/are)",
+    "actual_gabah_revenue_field": "Actual Gabah Revenue (Rp)"
   },
   "holdout_p_duck_buy_source": {
     "file": "DSS_Padi_Bebek_Rekap_Bersih_v10(1).xlsx",
@@ -41,7 +48,7 @@
   },
   "holdout": [
     {
-      "timestamp": "2026-08-24T18:13:59.345349+00:00",
+      "timestamp": "2026-08-24T19:08:08.118304+00:00",
       "request": {
         "land_area_are": 3.6,
         "duck_count": 13,
@@ -128,15 +135,21 @@
       "id": "H01",
       "raw_row": 8,
       "source_planting_date": null,
-      "actual_yield": 45.83,
+      "actual_yield": 45.83333333,
+      "actual_gabah_revenue": 990000,
       "backend_yield": 50.0,
-      "error": 4.170000000000002,
+      "error": 4.166666669999998,
       "density_expected": 3.611111111111111,
       "density_returned": 3.611111111111111,
       "density_status": "RECOMMENDED",
-      "revenue_expected": 1080000.0,
-      "revenue_returned": 1080000.0,
-      "revenue_check": true,
+      "backend_revenue_gabah_expected": 1080000.0,
+      "backend_revenue_gabah": 1080000.0,
+      "backend_revenue_gabah_check": true,
+      "actual_gabah_revenue_comparison": {
+        "source_value": 990000,
+        "backend_value": 1080000.0,
+        "backend_minus_actual": 90000.0
+      },
       "p_duck_buy_source": 25000,
       "cost_duck_buy_expected": 325000,
       "cost_duck_buy_backend": 325000.0,
@@ -155,7 +168,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:13:59.351106+00:00",
+      "timestamp": "2026-08-24T19:08:08.123492+00:00",
       "request": {
         "land_area_are": 5.1,
         "duck_count": 5,
@@ -242,15 +255,21 @@
       "id": "H02",
       "raw_row": 9,
       "source_planting_date": null,
-      "actual_yield": 48.04,
+      "actual_yield": 48.03921569,
+      "actual_gabah_revenue": 1470000,
       "backend_yield": 50.0,
-      "error": 1.9600000000000009,
+      "error": 1.960784310000001,
       "density_expected": 0.9803921568627452,
       "density_returned": 0.9803921568627451,
       "density_status": "UNDER",
-      "revenue_expected": 1529999.9999999998,
-      "revenue_returned": 1530000.0,
-      "revenue_check": true,
+      "backend_revenue_gabah_expected": 1529999.9999999998,
+      "backend_revenue_gabah": 1530000.0,
+      "backend_revenue_gabah_check": true,
+      "actual_gabah_revenue_comparison": {
+        "source_value": 1470000,
+        "backend_value": 1530000.0,
+        "backend_minus_actual": 60000.0
+      },
       "p_duck_buy_source": 25000,
       "cost_duck_buy_expected": 125000,
       "cost_duck_buy_backend": 125000.0,
@@ -269,7 +288,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:13:59.356246+00:00",
+      "timestamp": "2026-08-24T19:08:08.128016+00:00",
       "request": {
         "land_area_are": 10,
         "duck_count": 65,
@@ -357,14 +376,20 @@
       "raw_row": 11,
       "source_planting_date": null,
       "actual_yield": 60.5,
+      "actual_gabah_revenue": 3630000,
       "backend_yield": 50.0,
       "error": -10.5,
       "density_expected": 6.5,
       "density_returned": 6.5,
       "density_status": "WARNING_ABOVE_RECOMMENDED",
-      "revenue_expected": 3000000,
-      "revenue_returned": 3000000.0,
-      "revenue_check": true,
+      "backend_revenue_gabah_expected": 3000000,
+      "backend_revenue_gabah": 3000000.0,
+      "backend_revenue_gabah_check": true,
+      "actual_gabah_revenue_comparison": {
+        "source_value": 3630000,
+        "backend_value": 3000000.0,
+        "backend_minus_actual": -630000.0
+      },
       "p_duck_buy_source": 7539,
       "cost_duck_buy_expected": 490035,
       "cost_duck_buy_backend": 490035.0,
@@ -383,7 +408,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:13:59.360968+00:00",
+      "timestamp": "2026-08-24T19:08:08.147130+00:00",
       "request": {
         "land_area_are": 7.26,
         "duck_count": 9,
@@ -470,15 +495,21 @@
       "id": "H04",
       "raw_row": 14,
       "source_planting_date": null,
-      "actual_yield": 59.37,
+      "actual_yield": 59.36639118,
+      "actual_gabah_revenue": 3232500,
       "backend_yield": 50.0,
-      "error": -9.369999999999997,
+      "error": -9.36639118,
       "density_expected": 1.2396694214876034,
       "density_returned": 1.2396694214876034,
       "density_status": "UNDER",
-      "revenue_expected": 2722500.0,
-      "revenue_returned": 2722500.0,
-      "revenue_check": true,
+      "backend_revenue_gabah_expected": 2722500.0,
+      "backend_revenue_gabah": 2722500.0,
+      "backend_revenue_gabah_check": true,
+      "actual_gabah_revenue_comparison": {
+        "source_value": 3232500,
+        "backend_value": 2722500.0,
+        "backend_minus_actual": -510000.0
+      },
       "p_duck_buy_source": 22222.22222,
       "cost_duck_buy_expected": 199999.99998,
       "cost_duck_buy_backend": 199999.99998,
@@ -497,7 +528,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:13:59.366884+00:00",
+      "timestamp": "2026-08-24T19:08:08.153226+00:00",
       "request": {
         "land_area_are": 5.1,
         "duck_count": 10,
@@ -584,15 +615,21 @@
       "id": "H05",
       "raw_row": 23,
       "source_planting_date": null,
-      "actual_yield": 21.02,
+      "actual_yield": 21.01960784,
+      "actual_gabah_revenue": 804000,
       "backend_yield": 50.0,
-      "error": 28.98,
+      "error": 28.98039216,
       "density_expected": 1.9607843137254903,
       "density_returned": 1.9607843137254901,
       "density_status": "UNDER",
-      "revenue_expected": 1912499.9999999998,
-      "revenue_returned": 1912500.0,
-      "revenue_check": true,
+      "backend_revenue_gabah_expected": 1912499.9999999998,
+      "backend_revenue_gabah": 1912500.0,
+      "backend_revenue_gabah_check": true,
+      "actual_gabah_revenue_comparison": {
+        "source_value": 804000,
+        "backend_value": 1912500.0,
+        "backend_minus_actual": 1108500.0
+      },
       "p_duck_buy_source": 5000,
       "cost_duck_buy_expected": 50000,
       "cost_duck_buy_backend": 50000.0,
@@ -611,7 +648,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:13:59.391025+00:00",
+      "timestamp": "2026-08-24T19:08:08.157789+00:00",
       "request": {
         "land_area_are": 14.41,
         "duck_count": 30,
@@ -698,15 +735,21 @@
       "id": "H06",
       "raw_row": 25,
       "source_planting_date": null,
-      "actual_yield": 52.43,
+      "actual_yield": 52.42886884,
+      "actual_gabah_revenue": 5666250,
       "backend_yield": 50.0,
-      "error": -2.4299999999999997,
+      "error": -2.42886884,
       "density_expected": 2.081887578070784,
       "density_returned": 2.081887578070784,
       "density_status": "RECOMMENDED",
-      "revenue_expected": 5403750.0,
-      "revenue_returned": 5403750.0,
-      "revenue_check": true,
+      "backend_revenue_gabah_expected": 5403750.0,
+      "backend_revenue_gabah": 5403750.0,
+      "backend_revenue_gabah_check": true,
+      "actual_gabah_revenue_comparison": {
+        "source_value": 5666250,
+        "backend_value": 5403750.0,
+        "backend_minus_actual": -262500.0
+      },
       "p_duck_buy_source": 10000,
       "cost_duck_buy_expected": 300000,
       "cost_duck_buy_backend": 300000.0,
@@ -725,7 +768,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:13:59.407372+00:00",
+      "timestamp": "2026-08-24T19:08:08.162674+00:00",
       "request": {
         "land_area_are": 10,
         "duck_count": 32,
@@ -814,14 +857,20 @@
       "raw_row": 38,
       "source_planting_date": "2024-04-22",
       "actual_yield": 53.4,
+      "actual_gabah_revenue": 3364200,
       "backend_yield": 50.0,
       "error": -3.3999999999999986,
       "density_expected": 3.2,
       "density_returned": 3.2,
       "density_status": "RECOMMENDED",
-      "revenue_expected": 3150000,
-      "revenue_returned": 3150000.0,
-      "revenue_check": true,
+      "backend_revenue_gabah_expected": 3150000,
+      "backend_revenue_gabah": 3150000.0,
+      "backend_revenue_gabah_check": true,
+      "actual_gabah_revenue_comparison": {
+        "source_value": 3364200,
+        "backend_value": 3150000.0,
+        "backend_minus_actual": -214200.0
+      },
       "p_duck_buy_source": 0,
       "cost_duck_buy_expected": 0,
       "cost_duck_buy_backend": 0.0,
@@ -840,7 +889,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:13:59.423165+00:00",
+      "timestamp": "2026-08-24T19:08:08.168832+00:00",
       "request": {
         "land_area_are": 3.6,
         "duck_count": 15,
@@ -928,15 +977,21 @@
       "id": "H08",
       "raw_row": 43,
       "source_planting_date": "2024-10-01",
-      "actual_yield": 40.42,
+      "actual_yield": 40.41666667,
+      "actual_gabah_revenue": 873000,
       "backend_yield": 50.0,
-      "error": 9.579999999999998,
+      "error": 9.583333330000002,
       "density_expected": 4.166666666666667,
       "density_returned": 4.166666666666667,
       "density_status": "WARNING_ABOVE_RECOMMENDED",
-      "revenue_expected": 1080000.0,
-      "revenue_returned": 1080000.0,
-      "revenue_check": true,
+      "backend_revenue_gabah_expected": 1080000.0,
+      "backend_revenue_gabah": 1080000.0,
+      "backend_revenue_gabah_check": true,
+      "actual_gabah_revenue_comparison": {
+        "source_value": 873000,
+        "backend_value": 1080000.0,
+        "backend_minus_actual": 207000.0
+      },
       "p_duck_buy_source": 0,
       "cost_duck_buy_expected": 0,
       "cost_duck_buy_backend": 0.0,
@@ -955,7 +1010,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:13:59.428700+00:00",
+      "timestamp": "2026-08-24T19:08:08.173942+00:00",
       "request": {
         "land_area_are": 10,
         "duck_count": 29,
@@ -1044,14 +1099,20 @@
       "raw_row": 44,
       "source_planting_date": "2024-09-28",
       "actual_yield": 38.65,
+      "actual_gabah_revenue": 2319000,
       "backend_yield": 50.0,
       "error": 11.350000000000001,
       "density_expected": 2.9,
       "density_returned": 2.9,
       "density_status": "RECOMMENDED",
-      "revenue_expected": 3000000,
-      "revenue_returned": 3000000.0,
-      "revenue_check": true,
+      "backend_revenue_gabah_expected": 3000000,
+      "backend_revenue_gabah": 3000000.0,
+      "backend_revenue_gabah_check": true,
+      "actual_gabah_revenue_comparison": {
+        "source_value": 2319000,
+        "backend_value": 3000000.0,
+        "backend_minus_actual": 681000.0
+      },
       "p_duck_buy_source": 0,
       "cost_duck_buy_expected": 0,
       "cost_duck_buy_backend": 0.0,
@@ -1070,7 +1131,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:13:59.453672+00:00",
+      "timestamp": "2026-08-24T19:08:08.178097+00:00",
       "request": {
         "land_area_are": 3,
         "duck_count": 6,
@@ -1158,14 +1219,20 @@
       "raw_row": 47,
       "source_planting_date": null,
       "actual_yield": 13.5,
+      "actual_gabah_revenue": 243000,
       "backend_yield": 50.0,
       "error": 36.5,
       "density_expected": 2.0,
       "density_returned": 2.0,
       "density_status": "RECOMMENDED",
-      "revenue_expected": 900000,
-      "revenue_returned": 900000.0,
-      "revenue_check": true,
+      "backend_revenue_gabah_expected": 900000,
+      "backend_revenue_gabah": 900000.0,
+      "backend_revenue_gabah_check": true,
+      "actual_gabah_revenue_comparison": {
+        "source_value": 243000,
+        "backend_value": 900000.0,
+        "backend_minus_actual": 657000.0
+      },
       "p_duck_buy_source": 25000,
       "cost_duck_buy_expected": 150000,
       "cost_duck_buy_backend": 150000.0,
@@ -1184,7 +1251,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:13:59.469150+00:00",
+      "timestamp": "2026-08-24T19:08:08.184151+00:00",
       "request": {
         "land_area_are": 3.77,
         "duck_count": 8,
@@ -1271,15 +1338,21 @@
       "id": "H11",
       "raw_row": 62,
       "source_planting_date": null,
-      "actual_yield": 36.47,
+      "actual_yield": 36.47214854,
+      "actual_gabah_revenue": 825000,
       "backend_yield": 50.0,
-      "error": 13.530000000000001,
+      "error": 13.52785146,
       "density_expected": 2.1220159151193636,
       "density_returned": 2.1220159151193636,
       "density_status": "RECOMMENDED",
-      "revenue_expected": 1131000.0,
-      "revenue_returned": 1131000.0,
-      "revenue_check": true,
+      "backend_revenue_gabah_expected": 1131000.0,
+      "backend_revenue_gabah": 1131000.0,
+      "backend_revenue_gabah_check": true,
+      "actual_gabah_revenue_comparison": {
+        "source_value": 825000,
+        "backend_value": 1131000.0,
+        "backend_minus_actual": 306000.0
+      },
       "p_duck_buy_source": 25000,
       "cost_duck_buy_expected": 200000,
       "cost_duck_buy_backend": 200000.0,
@@ -1299,20 +1372,26 @@
     }
   ],
   "holdout_metrics": {
-    "MAE": 11.97909090909091,
-    "RMSE": 15.990032406584932,
-    "MedAE": 9.579999999999998,
-    "Bias": 7.306363636363637
+    "MAE": 11.978571631818182,
+    "RMSE": 15.989835255314372,
+    "MedAE": 9.583333330000002,
+    "Bias": 7.306706173636363
   },
   "frozen_holdout_metrics": {
+    "MAE": 11.9785716318,
+    "RMSE": 15.9898352553,
+    "MedAE": 9.58333333,
+    "Bias": 7.3067061736
+  },
+  "academic_displayed_holdout_metrics": {
     "MAE": 11.979,
     "RMSE": 15.99,
     "MedAE": 9.583,
-    "Bias": 7.307
+    "Bias": "+7.307"
   },
   "synthetic": [
     {
-      "timestamp": "2026-08-24T18:13:59.475059+00:00",
+      "timestamp": "2026-08-24T19:08:08.189469+00:00",
       "request": {
         "land_area_are": 10,
         "rice_variety": "sertani",
@@ -1397,7 +1476,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:13:59.500394+00:00",
+      "timestamp": "2026-08-24T19:08:08.194020+00:00",
       "request": {
         "land_area_are": 10,
         "rice_variety": "sertani",
@@ -1482,7 +1561,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:13:59.516023+00:00",
+      "timestamp": "2026-08-24T19:08:08.199491+00:00",
       "request": {
         "land_area_are": 10,
         "rice_variety": "sertani",
@@ -1567,7 +1646,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:13:59.532141+00:00",
+      "timestamp": "2026-08-24T19:08:08.204425+00:00",
       "request": {
         "land_area_are": 10,
         "rice_variety": "sertani",
@@ -1652,7 +1731,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:13:59.538020+00:00",
+      "timestamp": "2026-08-24T19:08:08.208647+00:00",
       "request": {
         "land_area_are": 10,
         "rice_variety": "sertani",
@@ -1739,7 +1818,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:13:59.542447+00:00",
+      "timestamp": "2026-08-24T19:08:08.213510+00:00",
       "request": {
         "land_area_are": 10,
         "rice_variety": "sertani",
@@ -1824,7 +1903,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:13:59.548072+00:00",
+      "timestamp": "2026-08-24T19:08:08.218333+00:00",
       "request": {
         "land_area_are": 10,
         "rice_variety": "sertani",
@@ -1909,7 +1988,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:13:59.579186+00:00",
+      "timestamp": "2026-08-24T19:08:08.222828+00:00",
       "request": {
         "land_area_are": 10,
         "rice_variety": "sertani",
@@ -2022,7 +2101,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:13:59.604758+00:00",
+      "timestamp": "2026-08-24T19:08:08.257995+00:00",
       "request": {
         "land_area_are": 10,
         "rice_variety": "sertani",
@@ -2107,7 +2186,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:13:59.609803+00:00",
+      "timestamp": "2026-08-24T19:08:08.263343+00:00",
       "request": {
         "land_area_are": 10,
         "rice_variety": "sertani",
@@ -2192,7 +2271,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:13:59.625049+00:00",
+      "timestamp": "2026-08-24T19:08:08.269054+00:00",
       "request": {
         "land_area_are": 10,
         "rice_variety": "sertani",
@@ -2277,7 +2356,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:13:59.630683+00:00",
+      "timestamp": "2026-08-24T19:08:08.273177+00:00",
       "request": {
         "land_area_are": 0,
         "duck_count": 1,
@@ -2306,7 +2385,7 @@
     }
   ],
   "calendar": {
-    "timestamp": "2026-08-24T18:13:59.636412+00:00",
+    "timestamp": "2026-08-24T19:08:08.296357+00:00",
     "request": {
       "land_area_are": 10,
       "duck_count": 20,
@@ -2389,7 +2468,7 @@
       }
     },
     "unanchored": {
-      "timestamp": "2026-08-24T18:13:59.641107+00:00",
+      "timestamp": "2026-08-24T19:08:08.301390+00:00",
       "request": {
         "land_area_are": 10,
         "duck_count": 20,
@@ -2476,27 +2555,27 @@
   "history": {
     "steps": [
       {
-        "timestamp": "2026-08-24T18:14:00.292021+00:00",
+        "timestamp": "2026-08-24T19:08:08.968736+00:00",
         "request": {
           "name": "Model C Runtime",
-          "email": "model-c-1787595239641225@example.com",
+          "email": "model-c-1787598488301513@example.com",
           "password": "[REDACTED]"
         },
         "http_status": 201,
-        "raw_response": "{\"message\":\"User registered successfully\",\"user\":{\"id\":\"bf88913a-f7c5-49a4-8d38-47e50e5e0abf\",\"name\":\"Model C Runtime\",\"email\":\"model-c-1787595239641225@example.com\"}}",
+        "raw_response": "{\"message\":\"User registered successfully\",\"user\":{\"id\":\"b8d7e4dd-0c7e-44ee-bb72-04f75a515579\",\"name\":\"Model C Runtime\",\"email\":\"model-c-1787598488301513@example.com\"}}",
         "response": {
           "message": "User registered successfully",
           "user": {
-            "id": "bf88913a-f7c5-49a4-8d38-47e50e5e0abf",
+            "id": "b8d7e4dd-0c7e-44ee-bb72-04f75a515579",
             "name": "Model C Runtime",
-            "email": "model-c-1787595239641225@example.com"
+            "email": "model-c-1787598488301513@example.com"
           }
         }
       },
       {
-        "timestamp": "2026-08-24T18:14:00.946701+00:00",
+        "timestamp": "2026-08-24T19:08:09.604086+00:00",
         "request": {
-          "email": "model-c-1787595239641225@example.com",
+          "email": "model-c-1787598488301513@example.com",
           "password": "[REDACTED]"
         },
         "http_status": 200,
@@ -2505,14 +2584,14 @@
           "access_token": "[REDACTED]",
           "token_type": "Bearer",
           "user": {
-            "id": "bf88913a-f7c5-49a4-8d38-47e50e5e0abf",
+            "id": "b8d7e4dd-0c7e-44ee-bb72-04f75a515579",
             "name": "Model C Runtime",
-            "email": "model-c-1787595239641225@example.com"
+            "email": "model-c-1787598488301513@example.com"
           }
         }
       },
       {
-        "timestamp": "2026-08-24T18:14:00.972249+00:00",
+        "timestamp": "2026-08-24T19:08:09.643111+00:00",
         "request": {
           "land_area_are": 10,
           "duck_count": 20,
@@ -2595,16 +2674,16 @@
         }
       },
       {
-        "timestamp": "2026-08-24T18:14:01.007133+00:00",
+        "timestamp": "2026-08-24T19:08:09.677756+00:00",
         "request": null,
         "http_status": 200,
-        "raw_response": "{\"data\":[{\"id\":\"f1152974-2c01-4311-84ea-3175891a079d\",\"schema_version\":4,\"created_at\":\"2026-08-24T18:14:00.953352Z\",\"summary\":{\"rice_variety\":\"sertani\",\"planting_system\":\"jajar_legowo\",\"duck_count\":20,\"land_area_are\":10.0,\"density_are\":2.0,\"yield_are_kg\":50.0}}]}",
+        "raw_response": "{\"data\":[{\"id\":\"04aba210-da34-484e-b157-9849b3c91944\",\"schema_version\":4,\"created_at\":\"2026-08-24T19:08:09.626480Z\",\"summary\":{\"rice_variety\":\"sertani\",\"planting_system\":\"jajar_legowo\",\"duck_count\":20,\"land_area_are\":10.0,\"density_are\":2.0,\"yield_are_kg\":50.0}}]}",
         "response": {
           "data": [
             {
-              "id": "f1152974-2c01-4311-84ea-3175891a079d",
+              "id": "04aba210-da34-484e-b157-9849b3c91944",
               "schema_version": 4,
-              "created_at": "2026-08-24T18:14:00.953352Z",
+              "created_at": "2026-08-24T19:08:09.626480Z",
               "summary": {
                 "rice_variety": "sertani",
                 "planting_system": "jajar_legowo",
@@ -2618,7 +2697,7 @@
         }
       },
       {
-        "timestamp": "2026-08-24T18:14:01.017584+00:00",
+        "timestamp": "2026-08-24T19:08:09.688383+00:00",
         "request": null,
         "http_status": 200,
         "raw_response": "{\"model_variant\":\"C_FARMER_GROUPED_LOCAL\",\"yield_are_kg\":50.0,\"yield_total_kg\":500.0,\"model_validation_status\":\"LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE\",\"parameter_uncertainty_y0_95pct\":[42.81,55.78],\"age_status\":\"LOCAL_READY\",\"density_are\":2.0,\"density_ha\":200.0,\"density_status\":\"RECOMMENDED\",\"release_hst_min\":21,\"release_hst_max\":30,\"withdraw_hst_min\":56,\"withdraw_hst_max\":60,\"release_date_min\":null,\"release_date_max\":null,\"withdraw_date_min\":null,\"withdraw_date_max\":null,\"survival_risk\":null,\"revenue_gabah\":3000000.0,\"revenue_duck_all_sold_scenario\":900000.0,\"cost_duck_buy\":500000.0,\"cost_feed_scenario\":null,\"cost_infra_cycle\":null,\"cash_contribution_before_optional\":3400000.0,\"cash_contribution_after_optional\":null,\"warnings\":[],\"provenance\":{\"prices\":{\"p_duck_buy\":{\"source\":\"branch-C default\",\"status\":\"local-calibrated\",\"value\":25000.0},\"p_duck_sell\":{\"source\":\"branch-C default\",\"status\":\"local-estimate\",\"value\":45000.0},\"p_gabah\":{\"source\":\"branch-C default\",\"status\":\"local-calibrated\",\"value\":6000.0}},\"survival\":{\"note\":\"numerical survival not modeled\"},\"validation\":{\"Bias\":7.307,\"MAE\":11.979,\"MedAE\":9.583,\"RMSE\":15.99,\"limitation\":\"limited holdout performance\",\"untouched_holdout_cycles\":11,\"untouched_holdout_farmers\":6},\"yield\":{\"Y0_C\":50,\"calibration_cycles\":25,\"calibration_farmers\":13,\"parameter_uncertainty\":\"descriptive; not individual prediction interval\",\"selection\":\"one-standard-error rule\",\"source\":\"farmer-grouped calibration\",\"status\":\"local-calibrated\"}}}",
@@ -2695,7 +2774,7 @@
         }
       },
       {
-        "timestamp": "2026-08-24T18:14:01.068358+00:00",
+        "timestamp": "2026-08-24T19:08:09.704392+00:00",
         "request": null,
         "http_status": 200,
         "raw_response": "{\"message\":\"Simulation history deleted successfully\"}",
@@ -2704,14 +2783,14 @@
         }
       },
       {
-        "timestamp": "2026-08-24T18:14:01.080634+00:00",
+        "timestamp": "2026-08-24T19:08:09.716892+00:00",
         "request": null,
         "http_status": 404,
-        "raw_response": "{\"error\":{\"code\":\"not_found\",\"message\":\"History 'f1152974-2c01-4311-84ea-3175891a079d' was not found.\",\"field\":\"history_id\",\"issues\":null}}",
+        "raw_response": "{\"error\":{\"code\":\"not_found\",\"message\":\"History '04aba210-da34-484e-b157-9849b3c91944' was not found.\",\"field\":\"history_id\",\"issues\":null}}",
         "response": {
           "error": {
             "code": "not_found",
-            "message": "History 'f1152974-2c01-4311-84ea-3175891a079d' was not found.",
+            "message": "History '04aba210-da34-484e-b157-9849b3c91944' was not found.",
             "field": "history_id",
             "issues": null
           }
@@ -2726,7 +2805,7 @@
         "legacy-runtime-v3"
       ],
       "list": {
-        "timestamp": "2026-08-24T18:14:01.109201+00:00",
+        "timestamp": "2026-08-24T19:08:09.739188+00:00",
         "request": null,
         "http_status": 200,
         "raw_response": "{\"data\":[]}",
@@ -2738,7 +2817,7 @@
         {
           "id": "legacy-runtime-v1",
           "detail": {
-            "timestamp": "2026-08-24T18:14:01.119620+00:00",
+            "timestamp": "2026-08-24T19:08:09.750772+00:00",
             "request": null,
             "http_status": 404,
             "raw_response": "{\"error\":{\"code\":\"not_found\",\"message\":\"History 'legacy-runtime-v1' was not found.\",\"field\":\"history_id\",\"issues\":null}}",
@@ -2752,7 +2831,7 @@
             }
           },
           "delete": {
-            "timestamp": "2026-08-24T18:14:01.143777+00:00",
+            "timestamp": "2026-08-24T19:08:09.759141+00:00",
             "request": null,
             "http_status": 404,
             "raw_response": "{\"error\":{\"code\":\"not_found\",\"message\":\"History 'legacy-runtime-v1' was not found.\",\"field\":\"history_id\",\"issues\":null}}",
@@ -2770,7 +2849,7 @@
         {
           "id": "legacy-runtime-v2",
           "detail": {
-            "timestamp": "2026-08-24T18:14:01.153994+00:00",
+            "timestamp": "2026-08-24T19:08:09.785189+00:00",
             "request": null,
             "http_status": 404,
             "raw_response": "{\"error\":{\"code\":\"not_found\",\"message\":\"History 'legacy-runtime-v2' was not found.\",\"field\":\"history_id\",\"issues\":null}}",
@@ -2784,7 +2863,7 @@
             }
           },
           "delete": {
-            "timestamp": "2026-08-24T18:14:01.163437+00:00",
+            "timestamp": "2026-08-24T19:08:09.794623+00:00",
             "request": null,
             "http_status": 404,
             "raw_response": "{\"error\":{\"code\":\"not_found\",\"message\":\"History 'legacy-runtime-v2' was not found.\",\"field\":\"history_id\",\"issues\":null}}",
@@ -2802,7 +2881,7 @@
         {
           "id": "legacy-runtime-v3",
           "detail": {
-            "timestamp": "2026-08-24T18:14:01.172729+00:00",
+            "timestamp": "2026-08-24T19:08:09.815508+00:00",
             "request": null,
             "http_status": 404,
             "raw_response": "{\"error\":{\"code\":\"not_found\",\"message\":\"History 'legacy-runtime-v3' was not found.\",\"field\":\"history_id\",\"issues\":null}}",
@@ -2816,7 +2895,7 @@
             }
           },
           "delete": {
-            "timestamp": "2026-08-24T18:14:01.181643+00:00",
+            "timestamp": "2026-08-24T19:08:09.846533+00:00",
             "request": null,
             "http_status": 404,
             "raw_response": "{\"error\":{\"code\":\"not_found\",\"message\":\"History 'legacy-runtime-v3' was not found.\",\"field\":\"history_id\",\"issues\":null}}",

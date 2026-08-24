@@ -53,16 +53,24 @@ mempertahankan returned date fields sebagai `null`.
 
 Source-level duck purchase prices were subsequently restored to the holdout replay fixture from the cleaned local dataset using the original source-row identifier. This correction affects only the arithmetic audit of `Cost_duck_buy` and scenario cash contribution. It does not alter the frozen yield model, model-selection process, holdout composition, or yield-validation metrics.
 
+`actual_yield` and `actual_gabah_revenue` use the same workbook, sheet, and
+`Excel Row (Sumber)` join. They retain the exact source cells from `Actual
+Yield (kg/are)` and `Actual Gabah Revenue (Rp)`, respectively. The two-decimal
+Actual Yield values in this document are display-only; metric calculation uses
+the exact fixture values preserved in `docs/runtime_evidence_model_c.json`.
+
 ### Expected aggregate metrics
 
 Backend raw yield outputs pada 11 row harus menghasilkan, dengan toleransi floating-point wajar:
 
 ```text
-MAE   = 11.979 kg/are
-RMSE  = 15.990 kg/are
-MedAE = 9.583 kg/are
-Bias  = +7.307 kg/are
+MAE   = 11.9785716318 kg/are
+RMSE  = 15.9898352553 kg/are
+MedAE = 9.5833333300 kg/are
+Bias  = +7.3067061736 kg/are
 ```
+
+Nilai akademik yang ditampilkan tetap: `11.979 / 15.990 / 9.583 / +7.307`.
 
 Jika aggregate metrics berbeda material, implementation dianggap tidak identik dengan frozen production C0 atau row mapping salah.
 
@@ -100,9 +108,10 @@ Jangan kirim historical feed sebagai Core default. Feed hanya boleh diuji terpis
 
 ### Comparison validity
 
-Perbandingan yang valid adalah backend yield terhadap actual yield, predicted
-`revenue_gabah` terhadap Actual Gabah Revenue (`actual_yield × A × source
-p_gabah`), dan `cost_duck_buy` terhadap `J × source p_duck_buy`. Skenario
+Perbandingan yang valid adalah backend yield terhadap actual yield dan
+`revenue_gabah` backend terhadap field sumber `Actual Gabah Revenue (Rp)` yang
+eksplisit (bukan hasil turunan `actual_yield` yang ditampilkan). `cost_duck_buy`
+dibandingkan terhadap `J × source p_duck_buy`. Skenario
 `revenue_duck_all_sold_scenario` **tidak** valid dibandingkan dengan raw Duck
 Sale Revenue, karena ia adalah ceiling scenario seluruh bebek terjual. Demikian
 juga `cash_contribution_before_optional` **tidak** valid dibandingkan dengan
@@ -186,40 +195,33 @@ Branch dianggap sesuai SoT jika:
 ## Final clean-HEAD runtime result
 
 Evidence was captured over real loopback Uvicorn HTTP from clean HEAD
-`a823b19aa3b1700c4d4f5cf1f3742369a2ecd58d`: `working_tree_dirty=false` at
+`ffb4fd7c3e865061e1475192039c00836442aa81`: `working_tree_dirty=false` at
 startup, and the isolated runtime SQLite database left the main database
 unchanged. Raw requests and responses are preserved in
 `docs/runtime_evidence_model_c.json`.
 
-| ID | Raw row | Source planting_date | Actual Yield | Backend Yield | Yield Error | Actual Gabah Revenue | Backend Revenue_gabah | density | density status | Backend Cost_duck_buy | Backend CashContribution_before_optional | price provenance | Release / withdraw window returned | HTTP | PASS/FAIL |
+| ID | Raw row | Source planting_date | Actual Yield (displayed) | Backend Yield | Yield Error | Actual Gabah Revenue (source) | Backend Revenue_gabah | density | density status | Backend Cost_duck_buy | Backend CashContribution_before_optional | price provenance | Release / withdraw window returned | HTTP | PASS/FAIL |
 | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | --- | --- | ---: | --- |
-| H01 | 8 | omitted / null | 45.83 | 50.00 | +4.17 | 989,928.00 | 1,080,000.00 | 3.611111 | RECOMMENDED | 325,000.00 | 1,340,000.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | null / null | 200 | PASS |
-| H02 | 9 | omitted / null | 48.04 | 50.00 | +1.96 | 1,470,024.00 | 1,530,000.00 | 0.980392 | UNDER | 125,000.00 | 1,630,000.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | null / null | 200 | PASS |
+| H01 | 8 | omitted / null | 45.83 | 50.00 | +4.17 | 990,000.00 | 1,080,000.00 | 3.611111 | RECOMMENDED | 325,000.00 | 1,340,000.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | null / null | 200 | PASS |
+| H02 | 9 | omitted / null | 48.04 | 50.00 | +1.96 | 1,470,000.00 | 1,530,000.00 | 0.980392 | UNDER | 125,000.00 | 1,630,000.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | null / null | 200 | PASS |
 | H03 | 11 | omitted / null | 60.50 | 50.00 | -10.50 | 3,630,000.00 | 3,000,000.00 | 6.500000 | WARNING_ABOVE_RECOMMENDED | 490,035.00 | 5,434,965.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | null / null | 200 | PASS |
-| H04 | 14 | omitted / null | 59.37 | 50.00 | -9.37 | 3,232,696.50 | 2,722,500.00 | 1.239669 | UNDER | 200,000.00 | 2,927,500.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | null / null | 200 | PASS |
-| H05 | 23 | omitted / null | 21.02 | 50.00 | +28.98 | 804,015.00 | 1,912,500.00 | 1.960784 | UNDER | 50,000.00 | 2,312,500.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | null / null | 200 | PASS |
-| H06 | 25 | omitted / null | 52.43 | 50.00 | -2.43 | 5,666,372.25 | 5,403,750.00 | 2.081888 | RECOMMENDED | 300,000.00 | 6,453,750.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | null / null | 200 | PASS |
+| H04 | 14 | omitted / null | 59.37 | 50.00 | -9.37 | 3,232,500.00 | 2,722,500.00 | 1.239669 | UNDER | 200,000.00 | 2,927,500.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | null / null | 200 | PASS |
+| H05 | 23 | omitted / null | 21.02 | 50.00 | +28.98 | 804,000.00 | 1,912,500.00 | 1.960784 | UNDER | 50,000.00 | 2,312,500.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | null / null | 200 | PASS |
+| H06 | 25 | omitted / null | 52.43 | 50.00 | -2.43 | 5,666,250.00 | 5,403,750.00 | 2.081888 | RECOMMENDED | 300,000.00 | 6,453,750.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | null / null | 200 | PASS |
 | H07 | 38 | 2024-04-22 | 53.40 | 50.00 | -3.40 | 3,364,200.00 | 3,150,000.00 | 3.200000 | RECOMMENDED | 0.00 | 4,590,000.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | release 2024-05-13–2024-05-22; withdraw 2024-06-17–2024-06-21 | 200 | PASS |
-| H08 | 43 | 2024-10-01 | 40.42 | 50.00 | +9.58 | 873,072.00 | 1,080,000.00 | 4.166667 | WARNING_ABOVE_RECOMMENDED | 0.00 | 1,755,000.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | release 2024-10-22–2024-10-31; withdraw 2024-11-26–2024-11-30 | 200 | PASS |
+| H08 | 43 | 2024-10-01 | 40.42 | 50.00 | +9.58 | 873,000.00 | 1,080,000.00 | 4.166667 | WARNING_ABOVE_RECOMMENDED | 0.00 | 1,755,000.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | release 2024-10-22–2024-10-31; withdraw 2024-11-26–2024-11-30 | 200 | PASS |
 | H09 | 44 | 2024-09-28 | 38.65 | 50.00 | +11.35 | 2,319,000.00 | 3,000,000.00 | 2.900000 | RECOMMENDED | 0.00 | 4,305,000.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | release 2024-10-19–2024-10-28; withdraw 2024-11-23–2024-11-27 | 200 | PASS |
 | H10 | 47 | omitted / null | 13.50 | 50.00 | +36.50 | 243,000.00 | 900,000.00 | 2.000000 | RECOMMENDED | 150,000.00 | 1,020,000.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | null / null | 200 | PASS |
-| H11 | 62 | omitted / null | 36.47 | 50.00 | +13.53 | 824,951.40 | 1,131,000.00 | 2.122016 | RECOMMENDED | 200,000.00 | 1,291,000.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | null / null | 200 | PASS |
+| H11 | 62 | omitted / null | 36.47 | 50.00 | +13.53 | 825,000.00 | 1,131,000.00 | 2.122016 | RECOMMENDED | 200,000.00 | 1,291,000.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | null / null | 200 | PASS |
 
-Final metrics from those 11 HTTP responses: MAE `11.9790909091`, RMSE
-`15.9900324066`, MedAE `9.5800000000`, and Bias `+7.3063636364` kg/are. They
-match the frozen published values at their stated source-precision tolerance;
-the source rows displayed here are rounded to two decimals. `Cost_duck_buy`
+Final metrics from those 11 HTTP responses, calculated from the exact retained
+source yields: MAE `11.9785716318`, RMSE `15.9898352553`, MedAE
+`9.5833333300`, and Bias `+7.3067061736` kg/are. Academic display values are
+`11.979 / 15.990 / 9.583 / +7.307`; this table's yield cells are rounded only
+for readability. Each actual revenue value is the explicit source `Actual
+Gabah Revenue (Rp)` cell, and the JSON evidence records its comparison with
+`backend_revenue_gabah`; it is never calculated from the displayed yield.
+`Cost_duck_buy`
 and `CashContribution_before_optional` arithmetic both passed 11/11. Calendar
 source-date audit passed 11/11; S-C01–S-C12 passed 12/12; calendar and history
 v4 passed; v1–v3 history was physically preserved and hidden over current HTTP.
-
-## Superseded runtime execution result (historical)
-
-- Calendar contract crosscheck: the live PASS requires all HST/date boundaries with a planting anchor and `null` date fields without one.
-- Backend branch: `focus-model-c`; base HEAD: `2d28a87536803780ba95770123e2b92090bdf274`; working tree dirty: `true`.
-- Executed at `2026-08-24T16:45:03.005769+00:00` through an isolated loopback HTTP backend; the runtime nonce and raw request/response records are in `docs/runtime_evidence_model_c.json`.
-- Evidence: `docs/runtime_evidence_model_c.json`; main database SHA-256 snapshot was unchanged.
-- H01–H11: `11/11` PASS. Recomputed from raw HTTP output: MAE `11.9790909091`, RMSE `15.9900324066`, MedAE `9.5800000000`, Bias `7.3063636364` kg/are; all match frozen metrics within source-precision tolerance. The displayed source rows round actual yield to two decimals, while frozen MedAE `9.583` uses higher-precision source values.
-- Source-price economics: `cost_duck_buy` audit `11/11` PASS and `cash_contribution_before_optional` audit `11/11` PASS. Each request sends the source-row-mapped `p_duck_buy`, including explicit zero values; H04 uses Rp0.01 arithmetic tolerance.
-- S-C01–S-C12: `12/12` PASS, including S-C08 age boundaries, high-risk availability, optional-cost behavior, and S-C09 golden arithmetic.
-- Calendar: PASS. History v4 live register/login/simulate/list/detail/delete/404 round trip: PASS. Live legacy v1–v3 rows were preserved physically and remained hidden/404 through current Model C endpoints: PASS.
