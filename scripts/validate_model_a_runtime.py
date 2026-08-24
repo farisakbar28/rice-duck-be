@@ -357,6 +357,7 @@ def calendar_case() -> dict:
 def update_scenario_document(evidence: dict) -> None:
     content = SCENARIO_DOC.read_text(encoding="utf-8")
     captured_at = evidence["metadata"]["captured_at"]
+    capture_day = datetime.fromisoformat(captured_at).date().isoformat()
     health = evidence["health"]
     calendar = evidence["calendar"]
     history = evidence["history"][0]
@@ -369,7 +370,7 @@ def update_scenario_document(evidence: dict) -> None:
         "<!-- RUNTIME_GENERATED_SUMMARY_START -->",
         f"- Generated from the latest real HTTP run at `{captured_at}`.",
         f"- Required branch `{REQUIRED_BRANCH}`; captured branch `{evidence['metadata']['branch']}`.",
-        f"- Exact tested HEAD `{evidence['metadata']['base_head']}`; working tree at server start=`{evidence['metadata']['working_tree_dirty_at_server_start']}`.",
+        f"- Exact tested HEAD `{evidence['metadata']['base_head']}`; working tree at server start=`{str(evidence['metadata']['working_tree_dirty_at_server_start']).lower()}`.",
         f"- Isolated runtime database: `{evidence['metadata']['runtime_database_path']}` (launcher PID `{evidence['metadata']['launcher_pid']}`).",
         f"- Isolation verification: runtime DB changed=`{evidence['metadata']['runtime_database_changed']}`; main DB unchanged by SHA-256 content snapshot=`{evidence['metadata']['main_database_unchanged']}`.",
         f"- Health: HTTP `{health['http_status']}`, instance nonce verified, payload `{json.dumps(health['raw_response_json'], separators=(',', ':'))}`, PASS=`{health['pass']}`.",
@@ -380,6 +381,18 @@ def update_scenario_document(evidence: dict) -> None:
         f"- Discrepancy: `{'none' if all_pass else 'one or more checks failed; inspect the raw evidence entry marked pass=false'}`.",
         "<!-- RUNTIME_GENERATED_SUMMARY_END -->",
     ])
+    updated = re.sub(
+        r"^## 9\. Runtime Evidence.*$",
+        f"## 9. Runtime Evidence — {capture_day}",
+        content,
+        flags=re.MULTILINE,
+    )
+    updated = re.sub(
+        r"^- Branch: .*?$",
+        f"- Branch: `{evidence['metadata']['branch']}`; exact tested HEAD: `{evidence['metadata']['base_head']}`; `working_tree_dirty={str(evidence['metadata']['working_tree_dirty_at_server_start']).lower()}` at server test start.",
+        updated,
+        flags=re.MULTILINE,
+    )
     updated = re.sub(
         r"^- Runtime capture timestamp \(UTC\): `[^`]+`\.$",
         f"- Runtime capture timestamp (UTC): `{captured_at}`.",
