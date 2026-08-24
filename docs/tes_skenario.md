@@ -2,12 +2,12 @@
 
 > **Branch:** C — Farmer-Grouped Calibration/Validation Split  
 > **SoT:** `docs/Model Matematika Data Collection DSS Padi Bebek FINAL.md` pada branch C.  
-> **Critical rule:** final evaluation menggunakan **11 untouched holdout cycles dari 6 farmer** yang sudah ditetapkan sebelum fitting. Jangan mengganti row setelah melihat response.
+> **Critical rule:** final evaluation menggunakan **11 holdout cycles dari 6 farmer** yang sudah ditetapkan sebelum fitting. Holdout ini kini sudah dibuka; jangan memakai ulang untuk model generation, selection, atau tuning.
 
 ## 1. Tujuan
 
 1. Memastikan backend nyata mengimplementasikan production C0 `50 kg/are` dan DSS gates secara tepat.
-2. Mereplay **untouched holdout** dengan input yang sama/sepadan dari clean recap.
+2. Mereplay holdout yang telah dibuka dengan input yang sama/sepadan dari clean recap.
 3. Menghitung ulang error yield dari **raw HTTP output**, bukan menyalin angka dokumen.
 4. Memverifikasi economics sebagai scenario cash contribution, bukan realized farmer profit.
 
@@ -26,7 +26,7 @@ Endpoint canonical: `POST /api/v1/dss/simulate`.
   (`2024-09-28`); ketiganya harus dikirim dalam request HTTP replay.
 - Runtime `p_gabah` dan `p_duck_buy` pada replay menggunakan source value agar arithmetic economics dapat diaudit; nilai default hanya diuji pada synthetic cases.
 
-## 3. Untouched Holdout Replay
+## 3. Pre-specified Holdout Replay
 
 | ID | Raw row | Farmer | A are | J | d/are | Var | Sistem | Actual yield | Expected pred | Error pred-actual | Expected total kg | p_gabah | p_duck_buy source | Expected Cost_duck_buy | Expected CashContribution_before_optional |
 |---|---:|---|---:|---:|---:|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -174,7 +174,7 @@ discrepancy:
 
 Branch dianggap sesuai SoT jika:
 
-- 11 untouched holdout menghasilkan frozen C0 dan aggregate metrics di atas;
+- 11 pre-specified holdout menghasilkan frozen C0 dan aggregate metrics di atas;
 - tidak ada numerical survival model atau `N_survive`;
 - `yield_are=50` tidak berubah oleh density/system/variety/age;
 - d>8 hanya risk gate + disable all-sold duck revenue;
@@ -183,7 +183,37 @@ Branch dianggap sesuai SoT jika:
 - old `47.8767507`, `52500`, survival 60%, dan old `Net_Cash_Contribution_DSS` semantics tidak aktif;
 - raw farmer profit tidak dipakai sebagai numerical ground truth cash contribution.
 
-## Runtime execution result
+## Final clean-HEAD runtime result
+
+Evidence was captured over real loopback Uvicorn HTTP from clean HEAD
+`a823b19aa3b1700c4d4f5cf1f3742369a2ecd58d`: `working_tree_dirty=false` at
+startup, and the isolated runtime SQLite database left the main database
+unchanged. Raw requests and responses are preserved in
+`docs/runtime_evidence_model_c.json`.
+
+| ID | Raw row | Source planting_date | Actual Yield | Backend Yield | Yield Error | Actual Gabah Revenue | Backend Revenue_gabah | density | density status | Backend Cost_duck_buy | Backend CashContribution_before_optional | price provenance | Release / withdraw window returned | HTTP | PASS/FAIL |
+| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | --- | --- | ---: | --- |
+| H01 | 8 | omitted / null | 45.83 | 50.00 | +4.17 | 989,928.00 | 1,080,000.00 | 3.611111 | RECOMMENDED | 325,000.00 | 1,340,000.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | null / null | 200 | PASS |
+| H02 | 9 | omitted / null | 48.04 | 50.00 | +1.96 | 1,470,024.00 | 1,530,000.00 | 0.980392 | UNDER | 125,000.00 | 1,630,000.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | null / null | 200 | PASS |
+| H03 | 11 | omitted / null | 60.50 | 50.00 | -10.50 | 3,630,000.00 | 3,000,000.00 | 6.500000 | WARNING_ABOVE_RECOMMENDED | 490,035.00 | 5,434,965.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | null / null | 200 | PASS |
+| H04 | 14 | omitted / null | 59.37 | 50.00 | -9.37 | 3,232,696.50 | 2,722,500.00 | 1.239669 | UNDER | 200,000.00 | 2,927,500.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | null / null | 200 | PASS |
+| H05 | 23 | omitted / null | 21.02 | 50.00 | +28.98 | 804,015.00 | 1,912,500.00 | 1.960784 | UNDER | 50,000.00 | 2,312,500.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | null / null | 200 | PASS |
+| H06 | 25 | omitted / null | 52.43 | 50.00 | -2.43 | 5,666,372.25 | 5,403,750.00 | 2.081888 | RECOMMENDED | 300,000.00 | 6,453,750.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | null / null | 200 | PASS |
+| H07 | 38 | 2024-04-22 | 53.40 | 50.00 | -3.40 | 3,364,200.00 | 3,150,000.00 | 3.200000 | RECOMMENDED | 0.00 | 4,590,000.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | release 2024-05-13–2024-05-22; withdraw 2024-06-17–2024-06-21 | 200 | PASS |
+| H08 | 43 | 2024-10-01 | 40.42 | 50.00 | +9.58 | 873,072.00 | 1,080,000.00 | 4.166667 | WARNING_ABOVE_RECOMMENDED | 0.00 | 1,755,000.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | release 2024-10-22–2024-10-31; withdraw 2024-11-26–2024-11-30 | 200 | PASS |
+| H09 | 44 | 2024-09-28 | 38.65 | 50.00 | +11.35 | 2,319,000.00 | 3,000,000.00 | 2.900000 | RECOMMENDED | 0.00 | 4,305,000.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | release 2024-10-19–2024-10-28; withdraw 2024-11-23–2024-11-27 | 200 | PASS |
+| H10 | 47 | omitted / null | 13.50 | 50.00 | +36.50 | 243,000.00 | 900,000.00 | 2.000000 | RECOMMENDED | 150,000.00 | 1,020,000.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | null / null | 200 | PASS |
+| H11 | 62 | omitted / null | 36.47 | 50.00 | +13.53 | 824,951.40 | 1,131,000.00 | 2.122016 | RECOMMENDED | 200,000.00 | 1,291,000.00 | `p_gabah`/`p_duck_buy`: runtime (source row) | null / null | 200 | PASS |
+
+Final metrics from those 11 HTTP responses: MAE `11.9790909091`, RMSE
+`15.9900324066`, MedAE `9.5800000000`, and Bias `+7.3063636364` kg/are. They
+match the frozen published values at their stated source-precision tolerance;
+the source rows displayed here are rounded to two decimals. `Cost_duck_buy`
+and `CashContribution_before_optional` arithmetic both passed 11/11. Calendar
+source-date audit passed 11/11; S-C01–S-C12 passed 12/12; calendar and history
+v4 passed; v1–v3 history was physically preserved and hidden over current HTTP.
+
+## Superseded runtime execution result (historical)
 
 - Calendar contract crosscheck: the live PASS requires all HST/date boundaries with a planting anchor and `null` date fields without one.
 - Backend branch: `focus-model-c`; base HEAD: `2d28a87536803780ba95770123e2b92090bdf274`; working tree dirty: `true`.

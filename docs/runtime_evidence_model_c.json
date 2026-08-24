@@ -1,12 +1,12 @@
 {
   "branch": "focus-model-c",
-  "base_head": "2d28a87536803780ba95770123e2b92090bdf274",
-  "working_tree_dirty": true,
-  "captured_at": "2026-08-24T16:45:03.005769+00:00",
-  "server_url": "http://127.0.0.1:54613",
-  "runtime_instance_id": "ZWnkIa7u-MX0prMJVRE9mrD1",
+  "base_head": "a823b19aa3b1700c4d4f5cf1f3742369a2ecd58d",
+  "working_tree_dirty": false,
+  "captured_at": "2026-08-24T18:14:01.186363+00:00",
+  "server_url": "http://127.0.0.1:56109",
+  "runtime_instance_id": "WWqw-p8t_ANufXPU4Csvj-ib",
   "backend_start_command": "python -m uvicorn app.main:app",
-  "runtime_database_path": "C:\\My Project\\rice-duck-be\\data\\model_c_runtime_ZWnkIa7u-MX0prMJVRE9mrD1.db",
+  "runtime_database_path": "C:\\My Project\\rice-duck-be\\data\\model_c_runtime_WWqw-p8t_ANufXPU4Csvj-ib.db",
   "main_database_before": {
     "sha256": "b8e5fa23c274cc9da8afcb53d737fda6806ad22ee8359e3a4150f9ad4b9892a9",
     "bytes": 274432
@@ -17,14 +17,14 @@
   },
   "main_database_unchanged": true,
   "health": {
-    "timestamp": "2026-08-24T16:45:01.853231+00:00",
+    "timestamp": "2026-08-24T18:13:59.324019+00:00",
     "request": null,
     "http_status": 200,
-    "raw_response": "{\"status\":\"ok\",\"service\":\"rice-duck-dss-backend\",\"runtime_instance_id\":\"ZWnkIa7u-MX0prMJVRE9mrD1\"}",
+    "raw_response": "{\"status\":\"ok\",\"service\":\"rice-duck-dss-backend\",\"runtime_instance_id\":\"WWqw-p8t_ANufXPU4Csvj-ib\"}",
     "response": {
       "status": "ok",
       "service": "rice-duck-dss-backend",
-      "runtime_instance_id": "ZWnkIa7u-MX0prMJVRE9mrD1"
+      "runtime_instance_id": "WWqw-p8t_ANufXPU4Csvj-ib"
     }
   },
   "holdout_p_duck_buy_source": {
@@ -33,9 +33,15 @@
     "join_key": "Excel Row (Sumber)",
     "field": "Buy Price Duck (Rp/ekor)"
   },
+  "holdout_planting_date_source": {
+    "file": "DSS_Padi_Bebek_Rekap_Bersih_v10(1).xlsx",
+    "sheet": "Dataset Actual Bersih",
+    "join_key": "Excel Row (Sumber)",
+    "field": "Tanggal Tanam (Sumber)"
+  },
   "holdout": [
     {
-      "timestamp": "2026-08-24T16:45:01.878856+00:00",
+      "timestamp": "2026-08-24T18:13:59.345349+00:00",
       "request": {
         "land_area_are": 3.6,
         "duck_count": 13,
@@ -121,11 +127,13 @@
       },
       "id": "H01",
       "raw_row": 8,
+      "source_planting_date": null,
       "actual_yield": 45.83,
       "backend_yield": 50.0,
       "error": 4.170000000000002,
       "density_expected": 3.611111111111111,
       "density_returned": 3.611111111111111,
+      "density_status": "RECOMMENDED",
       "revenue_expected": 1080000.0,
       "revenue_returned": 1080000.0,
       "revenue_check": true,
@@ -137,10 +145,17 @@
       "cash_contribution_backend": 1340000.0,
       "cash_contribution_check": true,
       "p_duck_buy_provenance_runtime": true,
+      "calendar_window": {
+        "release_date_min": null,
+        "release_date_max": null,
+        "withdraw_date_min": null,
+        "withdraw_date_max": null
+      },
+      "calendar_check": true,
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T16:45:01.883898+00:00",
+      "timestamp": "2026-08-24T18:13:59.351106+00:00",
       "request": {
         "land_area_are": 5.1,
         "duck_count": 5,
@@ -226,11 +241,13 @@
       },
       "id": "H02",
       "raw_row": 9,
+      "source_planting_date": null,
       "actual_yield": 48.04,
       "backend_yield": 50.0,
       "error": 1.9600000000000009,
       "density_expected": 0.9803921568627452,
       "density_returned": 0.9803921568627451,
+      "density_status": "UNDER",
       "revenue_expected": 1529999.9999999998,
       "revenue_returned": 1530000.0,
       "revenue_check": true,
@@ -242,10 +259,17 @@
       "cash_contribution_backend": 1630000.0,
       "cash_contribution_check": true,
       "p_duck_buy_provenance_runtime": true,
+      "calendar_window": {
+        "release_date_min": null,
+        "release_date_max": null,
+        "withdraw_date_min": null,
+        "withdraw_date_max": null
+      },
+      "calendar_check": true,
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T16:45:01.886934+00:00",
+      "timestamp": "2026-08-24T18:13:59.356246+00:00",
       "request": {
         "land_area_are": 10,
         "duck_count": 65,
@@ -331,11 +355,13 @@
       },
       "id": "H03",
       "raw_row": 11,
+      "source_planting_date": null,
       "actual_yield": 60.5,
       "backend_yield": 50.0,
       "error": -10.5,
       "density_expected": 6.5,
       "density_returned": 6.5,
+      "density_status": "WARNING_ABOVE_RECOMMENDED",
       "revenue_expected": 3000000,
       "revenue_returned": 3000000.0,
       "revenue_check": true,
@@ -347,10 +373,17 @@
       "cash_contribution_backend": 5434965.0,
       "cash_contribution_check": true,
       "p_duck_buy_provenance_runtime": true,
+      "calendar_window": {
+        "release_date_min": null,
+        "release_date_max": null,
+        "withdraw_date_min": null,
+        "withdraw_date_max": null
+      },
+      "calendar_check": true,
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T16:45:01.889391+00:00",
+      "timestamp": "2026-08-24T18:13:59.360968+00:00",
       "request": {
         "land_area_are": 7.26,
         "duck_count": 9,
@@ -436,11 +469,13 @@
       },
       "id": "H04",
       "raw_row": 14,
+      "source_planting_date": null,
       "actual_yield": 59.37,
       "backend_yield": 50.0,
       "error": -9.369999999999997,
       "density_expected": 1.2396694214876034,
       "density_returned": 1.2396694214876034,
+      "density_status": "UNDER",
       "revenue_expected": 2722500.0,
       "revenue_returned": 2722500.0,
       "revenue_check": true,
@@ -452,10 +487,17 @@
       "cash_contribution_backend": 2927500.00002,
       "cash_contribution_check": true,
       "p_duck_buy_provenance_runtime": true,
+      "calendar_window": {
+        "release_date_min": null,
+        "release_date_max": null,
+        "withdraw_date_min": null,
+        "withdraw_date_max": null
+      },
+      "calendar_check": true,
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T16:45:01.891468+00:00",
+      "timestamp": "2026-08-24T18:13:59.366884+00:00",
       "request": {
         "land_area_are": 5.1,
         "duck_count": 10,
@@ -541,11 +583,13 @@
       },
       "id": "H05",
       "raw_row": 23,
+      "source_planting_date": null,
       "actual_yield": 21.02,
       "backend_yield": 50.0,
       "error": 28.98,
       "density_expected": 1.9607843137254903,
       "density_returned": 1.9607843137254901,
+      "density_status": "UNDER",
       "revenue_expected": 1912499.9999999998,
       "revenue_returned": 1912500.0,
       "revenue_check": true,
@@ -557,10 +601,17 @@
       "cash_contribution_backend": 2312500.0,
       "cash_contribution_check": true,
       "p_duck_buy_provenance_runtime": true,
+      "calendar_window": {
+        "release_date_min": null,
+        "release_date_max": null,
+        "withdraw_date_min": null,
+        "withdraw_date_max": null
+      },
+      "calendar_check": true,
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T16:45:01.896464+00:00",
+      "timestamp": "2026-08-24T18:13:59.391025+00:00",
       "request": {
         "land_area_are": 14.41,
         "duck_count": 30,
@@ -646,11 +697,13 @@
       },
       "id": "H06",
       "raw_row": 25,
+      "source_planting_date": null,
       "actual_yield": 52.43,
       "backend_yield": 50.0,
       "error": -2.4299999999999997,
       "density_expected": 2.081887578070784,
       "density_returned": 2.081887578070784,
+      "density_status": "RECOMMENDED",
       "revenue_expected": 5403750.0,
       "revenue_returned": 5403750.0,
       "revenue_check": true,
@@ -662,10 +715,17 @@
       "cash_contribution_backend": 6453750.0,
       "cash_contribution_check": true,
       "p_duck_buy_provenance_runtime": true,
+      "calendar_window": {
+        "release_date_min": null,
+        "release_date_max": null,
+        "withdraw_date_min": null,
+        "withdraw_date_max": null
+      },
+      "calendar_check": true,
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T16:45:01.901897+00:00",
+      "timestamp": "2026-08-24T18:13:59.407372+00:00",
       "request": {
         "land_area_are": 10,
         "duck_count": 32,
@@ -674,10 +734,11 @@
         "duck_age_days": 21,
         "p_gabah": 6300,
         "p_duck_buy": 0,
-        "p_duck_sell": 45000
+        "p_duck_sell": 45000,
+        "planting_date": "2024-04-22"
       },
       "http_status": 200,
-      "raw_response": "{\"model_variant\":\"C_FARMER_GROUPED_LOCAL\",\"yield_are_kg\":50.0,\"yield_total_kg\":500.0,\"model_validation_status\":\"LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE\",\"parameter_uncertainty_y0_95pct\":[42.81,55.78],\"age_status\":\"LOCAL_READY\",\"density_are\":3.2,\"density_ha\":320.0,\"density_status\":\"RECOMMENDED\",\"release_hst_min\":21,\"release_hst_max\":30,\"withdraw_hst_min\":56,\"withdraw_hst_max\":60,\"release_date_min\":null,\"release_date_max\":null,\"withdraw_date_min\":null,\"withdraw_date_max\":null,\"survival_risk\":null,\"revenue_gabah\":3150000.0,\"revenue_duck_all_sold_scenario\":1440000.0,\"cost_duck_buy\":0.0,\"cost_feed_scenario\":null,\"cost_infra_cycle\":null,\"cash_contribution_before_optional\":4590000.0,\"cash_contribution_after_optional\":null,\"warnings\":[],\"provenance\":{\"yield\":{\"source\":\"farmer-grouped calibration\",\"status\":\"local-calibrated\",\"Y0_C\":50,\"calibration_cycles\":25,\"calibration_farmers\":13,\"selection\":\"one-standard-error rule\",\"parameter_uncertainty\":\"descriptive; not individual prediction interval\"},\"validation\":{\"untouched_holdout_cycles\":11,\"untouched_holdout_farmers\":6,\"MAE\":11.979,\"RMSE\":15.99,\"MedAE\":9.583,\"Bias\":7.307,\"limitation\":\"limited holdout performance\"},\"prices\":{\"p_gabah\":{\"value\":6300.0,\"source\":\"runtime\",\"status\":\"runtime\"},\"p_duck_buy\":{\"value\":0.0,\"source\":\"runtime\",\"status\":\"runtime\"},\"p_duck_sell\":{\"value\":45000.0,\"source\":\"runtime\",\"status\":\"runtime\"}},\"survival\":{\"note\":\"numerical survival not modeled\"}}}",
+      "raw_response": "{\"model_variant\":\"C_FARMER_GROUPED_LOCAL\",\"yield_are_kg\":50.0,\"yield_total_kg\":500.0,\"model_validation_status\":\"LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE\",\"parameter_uncertainty_y0_95pct\":[42.81,55.78],\"age_status\":\"LOCAL_READY\",\"density_are\":3.2,\"density_ha\":320.0,\"density_status\":\"RECOMMENDED\",\"release_hst_min\":21,\"release_hst_max\":30,\"withdraw_hst_min\":56,\"withdraw_hst_max\":60,\"release_date_min\":\"2024-05-13\",\"release_date_max\":\"2024-05-22\",\"withdraw_date_min\":\"2024-06-17\",\"withdraw_date_max\":\"2024-06-21\",\"survival_risk\":null,\"revenue_gabah\":3150000.0,\"revenue_duck_all_sold_scenario\":1440000.0,\"cost_duck_buy\":0.0,\"cost_feed_scenario\":null,\"cost_infra_cycle\":null,\"cash_contribution_before_optional\":4590000.0,\"cash_contribution_after_optional\":null,\"warnings\":[],\"provenance\":{\"yield\":{\"source\":\"farmer-grouped calibration\",\"status\":\"local-calibrated\",\"Y0_C\":50,\"calibration_cycles\":25,\"calibration_farmers\":13,\"selection\":\"one-standard-error rule\",\"parameter_uncertainty\":\"descriptive; not individual prediction interval\"},\"validation\":{\"untouched_holdout_cycles\":11,\"untouched_holdout_farmers\":6,\"MAE\":11.979,\"RMSE\":15.99,\"MedAE\":9.583,\"Bias\":7.307,\"limitation\":\"limited holdout performance\"},\"prices\":{\"p_gabah\":{\"value\":6300.0,\"source\":\"runtime\",\"status\":\"runtime\"},\"p_duck_buy\":{\"value\":0.0,\"source\":\"runtime\",\"status\":\"runtime\"},\"p_duck_sell\":{\"value\":45000.0,\"source\":\"runtime\",\"status\":\"runtime\"}},\"survival\":{\"note\":\"numerical survival not modeled\"}}}",
       "response": {
         "model_variant": "C_FARMER_GROUPED_LOCAL",
         "yield_are_kg": 50.0,
@@ -695,10 +756,10 @@
         "release_hst_max": 30,
         "withdraw_hst_min": 56,
         "withdraw_hst_max": 60,
-        "release_date_min": null,
-        "release_date_max": null,
-        "withdraw_date_min": null,
-        "withdraw_date_max": null,
+        "release_date_min": "2024-05-13",
+        "release_date_max": "2024-05-22",
+        "withdraw_date_min": "2024-06-17",
+        "withdraw_date_max": "2024-06-21",
         "survival_risk": null,
         "revenue_gabah": 3150000.0,
         "revenue_duck_all_sold_scenario": 1440000.0,
@@ -751,11 +812,13 @@
       },
       "id": "H07",
       "raw_row": 38,
+      "source_planting_date": "2024-04-22",
       "actual_yield": 53.4,
       "backend_yield": 50.0,
       "error": -3.3999999999999986,
       "density_expected": 3.2,
       "density_returned": 3.2,
+      "density_status": "RECOMMENDED",
       "revenue_expected": 3150000,
       "revenue_returned": 3150000.0,
       "revenue_check": true,
@@ -767,10 +830,17 @@
       "cash_contribution_backend": 4590000.0,
       "cash_contribution_check": true,
       "p_duck_buy_provenance_runtime": true,
+      "calendar_window": {
+        "release_date_min": "2024-05-13",
+        "release_date_max": "2024-05-22",
+        "withdraw_date_min": "2024-06-17",
+        "withdraw_date_max": "2024-06-21"
+      },
+      "calendar_check": true,
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T16:45:01.925658+00:00",
+      "timestamp": "2026-08-24T18:13:59.423165+00:00",
       "request": {
         "land_area_are": 3.6,
         "duck_count": 15,
@@ -779,10 +849,11 @@
         "duck_age_days": 21,
         "p_gabah": 6000,
         "p_duck_buy": 0,
-        "p_duck_sell": 45000
+        "p_duck_sell": 45000,
+        "planting_date": "2024-10-01"
       },
       "http_status": 200,
-      "raw_response": "{\"model_variant\":\"C_FARMER_GROUPED_LOCAL\",\"yield_are_kg\":50.0,\"yield_total_kg\":180.0,\"model_validation_status\":\"LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE\",\"parameter_uncertainty_y0_95pct\":[42.81,55.78],\"age_status\":\"LOCAL_READY\",\"density_are\":4.166666666666667,\"density_ha\":416.6666666666667,\"density_status\":\"WARNING_ABOVE_RECOMMENDED\",\"release_hst_min\":21,\"release_hst_max\":30,\"withdraw_hst_min\":56,\"withdraw_hst_max\":60,\"release_date_min\":null,\"release_date_max\":null,\"withdraw_date_min\":null,\"withdraw_date_max\":null,\"survival_risk\":null,\"revenue_gabah\":1080000.0,\"revenue_duck_all_sold_scenario\":675000.0,\"cost_duck_buy\":0.0,\"cost_feed_scenario\":null,\"cost_infra_cycle\":null,\"cash_contribution_before_optional\":1755000.0,\"cash_contribution_after_optional\":null,\"warnings\":[],\"provenance\":{\"yield\":{\"source\":\"farmer-grouped calibration\",\"status\":\"local-calibrated\",\"Y0_C\":50,\"calibration_cycles\":25,\"calibration_farmers\":13,\"selection\":\"one-standard-error rule\",\"parameter_uncertainty\":\"descriptive; not individual prediction interval\"},\"validation\":{\"untouched_holdout_cycles\":11,\"untouched_holdout_farmers\":6,\"MAE\":11.979,\"RMSE\":15.99,\"MedAE\":9.583,\"Bias\":7.307,\"limitation\":\"limited holdout performance\"},\"prices\":{\"p_gabah\":{\"value\":6000.0,\"source\":\"runtime\",\"status\":\"runtime\"},\"p_duck_buy\":{\"value\":0.0,\"source\":\"runtime\",\"status\":\"runtime\"},\"p_duck_sell\":{\"value\":45000.0,\"source\":\"runtime\",\"status\":\"runtime\"}},\"survival\":{\"note\":\"numerical survival not modeled\"}}}",
+      "raw_response": "{\"model_variant\":\"C_FARMER_GROUPED_LOCAL\",\"yield_are_kg\":50.0,\"yield_total_kg\":180.0,\"model_validation_status\":\"LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE\",\"parameter_uncertainty_y0_95pct\":[42.81,55.78],\"age_status\":\"LOCAL_READY\",\"density_are\":4.166666666666667,\"density_ha\":416.6666666666667,\"density_status\":\"WARNING_ABOVE_RECOMMENDED\",\"release_hst_min\":21,\"release_hst_max\":30,\"withdraw_hst_min\":56,\"withdraw_hst_max\":60,\"release_date_min\":\"2024-10-22\",\"release_date_max\":\"2024-10-31\",\"withdraw_date_min\":\"2024-11-26\",\"withdraw_date_max\":\"2024-11-30\",\"survival_risk\":null,\"revenue_gabah\":1080000.0,\"revenue_duck_all_sold_scenario\":675000.0,\"cost_duck_buy\":0.0,\"cost_feed_scenario\":null,\"cost_infra_cycle\":null,\"cash_contribution_before_optional\":1755000.0,\"cash_contribution_after_optional\":null,\"warnings\":[],\"provenance\":{\"yield\":{\"source\":\"farmer-grouped calibration\",\"status\":\"local-calibrated\",\"Y0_C\":50,\"calibration_cycles\":25,\"calibration_farmers\":13,\"selection\":\"one-standard-error rule\",\"parameter_uncertainty\":\"descriptive; not individual prediction interval\"},\"validation\":{\"untouched_holdout_cycles\":11,\"untouched_holdout_farmers\":6,\"MAE\":11.979,\"RMSE\":15.99,\"MedAE\":9.583,\"Bias\":7.307,\"limitation\":\"limited holdout performance\"},\"prices\":{\"p_gabah\":{\"value\":6000.0,\"source\":\"runtime\",\"status\":\"runtime\"},\"p_duck_buy\":{\"value\":0.0,\"source\":\"runtime\",\"status\":\"runtime\"},\"p_duck_sell\":{\"value\":45000.0,\"source\":\"runtime\",\"status\":\"runtime\"}},\"survival\":{\"note\":\"numerical survival not modeled\"}}}",
       "response": {
         "model_variant": "C_FARMER_GROUPED_LOCAL",
         "yield_are_kg": 50.0,
@@ -800,10 +871,10 @@
         "release_hst_max": 30,
         "withdraw_hst_min": 56,
         "withdraw_hst_max": 60,
-        "release_date_min": null,
-        "release_date_max": null,
-        "withdraw_date_min": null,
-        "withdraw_date_max": null,
+        "release_date_min": "2024-10-22",
+        "release_date_max": "2024-10-31",
+        "withdraw_date_min": "2024-11-26",
+        "withdraw_date_max": "2024-11-30",
         "survival_risk": null,
         "revenue_gabah": 1080000.0,
         "revenue_duck_all_sold_scenario": 675000.0,
@@ -856,11 +927,13 @@
       },
       "id": "H08",
       "raw_row": 43,
+      "source_planting_date": "2024-10-01",
       "actual_yield": 40.42,
       "backend_yield": 50.0,
       "error": 9.579999999999998,
       "density_expected": 4.166666666666667,
       "density_returned": 4.166666666666667,
+      "density_status": "WARNING_ABOVE_RECOMMENDED",
       "revenue_expected": 1080000.0,
       "revenue_returned": 1080000.0,
       "revenue_check": true,
@@ -872,10 +945,17 @@
       "cash_contribution_backend": 1755000.0,
       "cash_contribution_check": true,
       "p_duck_buy_provenance_runtime": true,
+      "calendar_window": {
+        "release_date_min": "2024-10-22",
+        "release_date_max": "2024-10-31",
+        "withdraw_date_min": "2024-11-26",
+        "withdraw_date_max": "2024-11-30"
+      },
+      "calendar_check": true,
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T16:45:01.940327+00:00",
+      "timestamp": "2026-08-24T18:13:59.428700+00:00",
       "request": {
         "land_area_are": 10,
         "duck_count": 29,
@@ -884,10 +964,11 @@
         "duck_age_days": 21,
         "p_gabah": 6000,
         "p_duck_buy": 0,
-        "p_duck_sell": 45000
+        "p_duck_sell": 45000,
+        "planting_date": "2024-09-28"
       },
       "http_status": 200,
-      "raw_response": "{\"model_variant\":\"C_FARMER_GROUPED_LOCAL\",\"yield_are_kg\":50.0,\"yield_total_kg\":500.0,\"model_validation_status\":\"LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE\",\"parameter_uncertainty_y0_95pct\":[42.81,55.78],\"age_status\":\"LOCAL_READY\",\"density_are\":2.9,\"density_ha\":290.0,\"density_status\":\"RECOMMENDED\",\"release_hst_min\":21,\"release_hst_max\":30,\"withdraw_hst_min\":56,\"withdraw_hst_max\":60,\"release_date_min\":null,\"release_date_max\":null,\"withdraw_date_min\":null,\"withdraw_date_max\":null,\"survival_risk\":null,\"revenue_gabah\":3000000.0,\"revenue_duck_all_sold_scenario\":1305000.0,\"cost_duck_buy\":0.0,\"cost_feed_scenario\":null,\"cost_infra_cycle\":null,\"cash_contribution_before_optional\":4305000.0,\"cash_contribution_after_optional\":null,\"warnings\":[],\"provenance\":{\"yield\":{\"source\":\"farmer-grouped calibration\",\"status\":\"local-calibrated\",\"Y0_C\":50,\"calibration_cycles\":25,\"calibration_farmers\":13,\"selection\":\"one-standard-error rule\",\"parameter_uncertainty\":\"descriptive; not individual prediction interval\"},\"validation\":{\"untouched_holdout_cycles\":11,\"untouched_holdout_farmers\":6,\"MAE\":11.979,\"RMSE\":15.99,\"MedAE\":9.583,\"Bias\":7.307,\"limitation\":\"limited holdout performance\"},\"prices\":{\"p_gabah\":{\"value\":6000.0,\"source\":\"runtime\",\"status\":\"runtime\"},\"p_duck_buy\":{\"value\":0.0,\"source\":\"runtime\",\"status\":\"runtime\"},\"p_duck_sell\":{\"value\":45000.0,\"source\":\"runtime\",\"status\":\"runtime\"}},\"survival\":{\"note\":\"numerical survival not modeled\"}}}",
+      "raw_response": "{\"model_variant\":\"C_FARMER_GROUPED_LOCAL\",\"yield_are_kg\":50.0,\"yield_total_kg\":500.0,\"model_validation_status\":\"LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE\",\"parameter_uncertainty_y0_95pct\":[42.81,55.78],\"age_status\":\"LOCAL_READY\",\"density_are\":2.9,\"density_ha\":290.0,\"density_status\":\"RECOMMENDED\",\"release_hst_min\":21,\"release_hst_max\":30,\"withdraw_hst_min\":56,\"withdraw_hst_max\":60,\"release_date_min\":\"2024-10-19\",\"release_date_max\":\"2024-10-28\",\"withdraw_date_min\":\"2024-11-23\",\"withdraw_date_max\":\"2024-11-27\",\"survival_risk\":null,\"revenue_gabah\":3000000.0,\"revenue_duck_all_sold_scenario\":1305000.0,\"cost_duck_buy\":0.0,\"cost_feed_scenario\":null,\"cost_infra_cycle\":null,\"cash_contribution_before_optional\":4305000.0,\"cash_contribution_after_optional\":null,\"warnings\":[],\"provenance\":{\"yield\":{\"source\":\"farmer-grouped calibration\",\"status\":\"local-calibrated\",\"Y0_C\":50,\"calibration_cycles\":25,\"calibration_farmers\":13,\"selection\":\"one-standard-error rule\",\"parameter_uncertainty\":\"descriptive; not individual prediction interval\"},\"validation\":{\"untouched_holdout_cycles\":11,\"untouched_holdout_farmers\":6,\"MAE\":11.979,\"RMSE\":15.99,\"MedAE\":9.583,\"Bias\":7.307,\"limitation\":\"limited holdout performance\"},\"prices\":{\"p_gabah\":{\"value\":6000.0,\"source\":\"runtime\",\"status\":\"runtime\"},\"p_duck_buy\":{\"value\":0.0,\"source\":\"runtime\",\"status\":\"runtime\"},\"p_duck_sell\":{\"value\":45000.0,\"source\":\"runtime\",\"status\":\"runtime\"}},\"survival\":{\"note\":\"numerical survival not modeled\"}}}",
       "response": {
         "model_variant": "C_FARMER_GROUPED_LOCAL",
         "yield_are_kg": 50.0,
@@ -905,10 +986,10 @@
         "release_hst_max": 30,
         "withdraw_hst_min": 56,
         "withdraw_hst_max": 60,
-        "release_date_min": null,
-        "release_date_max": null,
-        "withdraw_date_min": null,
-        "withdraw_date_max": null,
+        "release_date_min": "2024-10-19",
+        "release_date_max": "2024-10-28",
+        "withdraw_date_min": "2024-11-23",
+        "withdraw_date_max": "2024-11-27",
         "survival_risk": null,
         "revenue_gabah": 3000000.0,
         "revenue_duck_all_sold_scenario": 1305000.0,
@@ -961,11 +1042,13 @@
       },
       "id": "H09",
       "raw_row": 44,
+      "source_planting_date": "2024-09-28",
       "actual_yield": 38.65,
       "backend_yield": 50.0,
       "error": 11.350000000000001,
       "density_expected": 2.9,
       "density_returned": 2.9,
+      "density_status": "RECOMMENDED",
       "revenue_expected": 3000000,
       "revenue_returned": 3000000.0,
       "revenue_check": true,
@@ -977,10 +1060,17 @@
       "cash_contribution_backend": 4305000.0,
       "cash_contribution_check": true,
       "p_duck_buy_provenance_runtime": true,
+      "calendar_window": {
+        "release_date_min": "2024-10-19",
+        "release_date_max": "2024-10-28",
+        "withdraw_date_min": "2024-11-23",
+        "withdraw_date_max": "2024-11-27"
+      },
+      "calendar_check": true,
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T16:45:01.956077+00:00",
+      "timestamp": "2026-08-24T18:13:59.453672+00:00",
       "request": {
         "land_area_are": 3,
         "duck_count": 6,
@@ -1066,11 +1156,13 @@
       },
       "id": "H10",
       "raw_row": 47,
+      "source_planting_date": null,
       "actual_yield": 13.5,
       "backend_yield": 50.0,
       "error": 36.5,
       "density_expected": 2.0,
       "density_returned": 2.0,
+      "density_status": "RECOMMENDED",
       "revenue_expected": 900000,
       "revenue_returned": 900000.0,
       "revenue_check": true,
@@ -1082,10 +1174,17 @@
       "cash_contribution_backend": 1020000.0,
       "cash_contribution_check": true,
       "p_duck_buy_provenance_runtime": true,
+      "calendar_window": {
+        "release_date_min": null,
+        "release_date_max": null,
+        "withdraw_date_min": null,
+        "withdraw_date_max": null
+      },
+      "calendar_check": true,
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T16:45:01.971919+00:00",
+      "timestamp": "2026-08-24T18:13:59.469150+00:00",
       "request": {
         "land_area_are": 3.77,
         "duck_count": 8,
@@ -1171,11 +1270,13 @@
       },
       "id": "H11",
       "raw_row": 62,
+      "source_planting_date": null,
       "actual_yield": 36.47,
       "backend_yield": 50.0,
       "error": 13.530000000000001,
       "density_expected": 2.1220159151193636,
       "density_returned": 2.1220159151193636,
+      "density_status": "RECOMMENDED",
       "revenue_expected": 1131000.0,
       "revenue_returned": 1131000.0,
       "revenue_check": true,
@@ -1187,6 +1288,13 @@
       "cash_contribution_backend": 1291000.0,
       "cash_contribution_check": true,
       "p_duck_buy_provenance_runtime": true,
+      "calendar_window": {
+        "release_date_min": null,
+        "release_date_max": null,
+        "withdraw_date_min": null,
+        "withdraw_date_max": null
+      },
+      "calendar_check": true,
       "pass": true
     }
   ],
@@ -1204,7 +1312,7 @@
   },
   "synthetic": [
     {
-      "timestamp": "2026-08-24T16:45:01.975432+00:00",
+      "timestamp": "2026-08-24T18:13:59.475059+00:00",
       "request": {
         "land_area_are": 10,
         "rice_variety": "sertani",
@@ -1289,7 +1397,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T16:45:02.003482+00:00",
+      "timestamp": "2026-08-24T18:13:59.500394+00:00",
       "request": {
         "land_area_are": 10,
         "rice_variety": "sertani",
@@ -1374,7 +1482,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T16:45:02.018322+00:00",
+      "timestamp": "2026-08-24T18:13:59.516023+00:00",
       "request": {
         "land_area_are": 10,
         "rice_variety": "sertani",
@@ -1459,7 +1567,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T16:45:02.034752+00:00",
+      "timestamp": "2026-08-24T18:13:59.532141+00:00",
       "request": {
         "land_area_are": 10,
         "rice_variety": "sertani",
@@ -1544,7 +1652,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T16:45:02.049383+00:00",
+      "timestamp": "2026-08-24T18:13:59.538020+00:00",
       "request": {
         "land_area_are": 10,
         "rice_variety": "sertani",
@@ -1631,7 +1739,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T16:45:02.063717+00:00",
+      "timestamp": "2026-08-24T18:13:59.542447+00:00",
       "request": {
         "land_area_are": 10,
         "rice_variety": "sertani",
@@ -1716,7 +1824,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T16:45:02.069124+00:00",
+      "timestamp": "2026-08-24T18:13:59.548072+00:00",
       "request": {
         "land_area_are": 10,
         "rice_variety": "sertani",
@@ -1801,7 +1909,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T16:45:02.071986+00:00",
+      "timestamp": "2026-08-24T18:13:59.579186+00:00",
       "request": {
         "land_area_are": 10,
         "rice_variety": "sertani",
@@ -1914,7 +2022,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T16:45:02.139983+00:00",
+      "timestamp": "2026-08-24T18:13:59.604758+00:00",
       "request": {
         "land_area_are": 10,
         "rice_variety": "sertani",
@@ -1999,7 +2107,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T16:45:02.143600+00:00",
+      "timestamp": "2026-08-24T18:13:59.609803+00:00",
       "request": {
         "land_area_are": 10,
         "rice_variety": "sertani",
@@ -2084,7 +2192,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T16:45:02.171171+00:00",
+      "timestamp": "2026-08-24T18:13:59.625049+00:00",
       "request": {
         "land_area_are": 10,
         "rice_variety": "sertani",
@@ -2169,7 +2277,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T16:45:02.187165+00:00",
+      "timestamp": "2026-08-24T18:13:59.630683+00:00",
       "request": {
         "land_area_are": 0,
         "duck_count": 1,
@@ -2198,7 +2306,7 @@
     }
   ],
   "calendar": {
-    "timestamp": "2026-08-24T16:45:02.190049+00:00",
+    "timestamp": "2026-08-24T18:13:59.636412+00:00",
     "request": {
       "land_area_are": 10,
       "duck_count": 20,
@@ -2281,7 +2389,7 @@
       }
     },
     "unanchored": {
-      "timestamp": "2026-08-24T16:45:02.192021+00:00",
+      "timestamp": "2026-08-24T18:13:59.641107+00:00",
       "request": {
         "land_area_are": 10,
         "duck_count": 20,
@@ -2368,27 +2476,27 @@
   "history": {
     "steps": [
       {
-        "timestamp": "2026-08-24T16:45:02.482828+00:00",
+        "timestamp": "2026-08-24T18:14:00.292021+00:00",
         "request": {
           "name": "Model C Runtime",
-          "email": "model-c-1787589902192057@example.com",
+          "email": "model-c-1787595239641225@example.com",
           "password": "[REDACTED]"
         },
         "http_status": 201,
-        "raw_response": "{\"message\":\"User registered successfully\",\"user\":{\"id\":\"0a52afa5-797d-43e2-a219-5a603c39c7bb\",\"name\":\"Model C Runtime\",\"email\":\"model-c-1787589902192057@example.com\"}}",
+        "raw_response": "{\"message\":\"User registered successfully\",\"user\":{\"id\":\"bf88913a-f7c5-49a4-8d38-47e50e5e0abf\",\"name\":\"Model C Runtime\",\"email\":\"model-c-1787595239641225@example.com\"}}",
         "response": {
           "message": "User registered successfully",
           "user": {
-            "id": "0a52afa5-797d-43e2-a219-5a603c39c7bb",
+            "id": "bf88913a-f7c5-49a4-8d38-47e50e5e0abf",
             "name": "Model C Runtime",
-            "email": "model-c-1787589902192057@example.com"
+            "email": "model-c-1787595239641225@example.com"
           }
         }
       },
       {
-        "timestamp": "2026-08-24T16:45:02.770585+00:00",
+        "timestamp": "2026-08-24T18:14:00.946701+00:00",
         "request": {
-          "email": "model-c-1787589902192057@example.com",
+          "email": "model-c-1787595239641225@example.com",
           "password": "[REDACTED]"
         },
         "http_status": 200,
@@ -2397,14 +2505,14 @@
           "access_token": "[REDACTED]",
           "token_type": "Bearer",
           "user": {
-            "id": "0a52afa5-797d-43e2-a219-5a603c39c7bb",
+            "id": "bf88913a-f7c5-49a4-8d38-47e50e5e0abf",
             "name": "Model C Runtime",
-            "email": "model-c-1787589902192057@example.com"
+            "email": "model-c-1787595239641225@example.com"
           }
         }
       },
       {
-        "timestamp": "2026-08-24T16:45:02.807310+00:00",
+        "timestamp": "2026-08-24T18:14:00.972249+00:00",
         "request": {
           "land_area_are": 10,
           "duck_count": 20,
@@ -2487,16 +2595,16 @@
         }
       },
       {
-        "timestamp": "2026-08-24T16:45:02.817053+00:00",
+        "timestamp": "2026-08-24T18:14:01.007133+00:00",
         "request": null,
         "http_status": 200,
-        "raw_response": "{\"data\":[{\"id\":\"aa489443-7bd6-4881-a0b9-5f820476276c\",\"schema_version\":4,\"created_at\":\"2026-08-24T16:45:02.795391Z\",\"summary\":{\"rice_variety\":\"sertani\",\"planting_system\":\"jajar_legowo\",\"duck_count\":20,\"land_area_are\":10.0,\"density_are\":2.0,\"yield_are_kg\":50.0}}]}",
+        "raw_response": "{\"data\":[{\"id\":\"f1152974-2c01-4311-84ea-3175891a079d\",\"schema_version\":4,\"created_at\":\"2026-08-24T18:14:00.953352Z\",\"summary\":{\"rice_variety\":\"sertani\",\"planting_system\":\"jajar_legowo\",\"duck_count\":20,\"land_area_are\":10.0,\"density_are\":2.0,\"yield_are_kg\":50.0}}]}",
         "response": {
           "data": [
             {
-              "id": "aa489443-7bd6-4881-a0b9-5f820476276c",
+              "id": "f1152974-2c01-4311-84ea-3175891a079d",
               "schema_version": 4,
-              "created_at": "2026-08-24T16:45:02.795391Z",
+              "created_at": "2026-08-24T18:14:00.953352Z",
               "summary": {
                 "rice_variety": "sertani",
                 "planting_system": "jajar_legowo",
@@ -2510,7 +2618,7 @@
         }
       },
       {
-        "timestamp": "2026-08-24T16:45:02.843455+00:00",
+        "timestamp": "2026-08-24T18:14:01.017584+00:00",
         "request": null,
         "http_status": 200,
         "raw_response": "{\"model_variant\":\"C_FARMER_GROUPED_LOCAL\",\"yield_are_kg\":50.0,\"yield_total_kg\":500.0,\"model_validation_status\":\"LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE\",\"parameter_uncertainty_y0_95pct\":[42.81,55.78],\"age_status\":\"LOCAL_READY\",\"density_are\":2.0,\"density_ha\":200.0,\"density_status\":\"RECOMMENDED\",\"release_hst_min\":21,\"release_hst_max\":30,\"withdraw_hst_min\":56,\"withdraw_hst_max\":60,\"release_date_min\":null,\"release_date_max\":null,\"withdraw_date_min\":null,\"withdraw_date_max\":null,\"survival_risk\":null,\"revenue_gabah\":3000000.0,\"revenue_duck_all_sold_scenario\":900000.0,\"cost_duck_buy\":500000.0,\"cost_feed_scenario\":null,\"cost_infra_cycle\":null,\"cash_contribution_before_optional\":3400000.0,\"cash_contribution_after_optional\":null,\"warnings\":[],\"provenance\":{\"prices\":{\"p_duck_buy\":{\"source\":\"branch-C default\",\"status\":\"local-calibrated\",\"value\":25000.0},\"p_duck_sell\":{\"source\":\"branch-C default\",\"status\":\"local-estimate\",\"value\":45000.0},\"p_gabah\":{\"source\":\"branch-C default\",\"status\":\"local-calibrated\",\"value\":6000.0}},\"survival\":{\"note\":\"numerical survival not modeled\"},\"validation\":{\"Bias\":7.307,\"MAE\":11.979,\"MedAE\":9.583,\"RMSE\":15.99,\"limitation\":\"limited holdout performance\",\"untouched_holdout_cycles\":11,\"untouched_holdout_farmers\":6},\"yield\":{\"Y0_C\":50,\"calibration_cycles\":25,\"calibration_farmers\":13,\"parameter_uncertainty\":\"descriptive; not individual prediction interval\",\"selection\":\"one-standard-error rule\",\"source\":\"farmer-grouped calibration\",\"status\":\"local-calibrated\"}}}",
@@ -2587,7 +2695,7 @@
         }
       },
       {
-        "timestamp": "2026-08-24T16:45:02.853279+00:00",
+        "timestamp": "2026-08-24T18:14:01.068358+00:00",
         "request": null,
         "http_status": 200,
         "raw_response": "{\"message\":\"Simulation history deleted successfully\"}",
@@ -2596,14 +2704,14 @@
         }
       },
       {
-        "timestamp": "2026-08-24T16:45:02.858815+00:00",
+        "timestamp": "2026-08-24T18:14:01.080634+00:00",
         "request": null,
         "http_status": 404,
-        "raw_response": "{\"error\":{\"code\":\"not_found\",\"message\":\"History 'aa489443-7bd6-4881-a0b9-5f820476276c' was not found.\",\"field\":\"history_id\",\"issues\":null}}",
+        "raw_response": "{\"error\":{\"code\":\"not_found\",\"message\":\"History 'f1152974-2c01-4311-84ea-3175891a079d' was not found.\",\"field\":\"history_id\",\"issues\":null}}",
         "response": {
           "error": {
             "code": "not_found",
-            "message": "History 'aa489443-7bd6-4881-a0b9-5f820476276c' was not found.",
+            "message": "History 'f1152974-2c01-4311-84ea-3175891a079d' was not found.",
             "field": "history_id",
             "issues": null
           }
@@ -2618,7 +2726,7 @@
         "legacy-runtime-v3"
       ],
       "list": {
-        "timestamp": "2026-08-24T16:45:02.872775+00:00",
+        "timestamp": "2026-08-24T18:14:01.109201+00:00",
         "request": null,
         "http_status": 200,
         "raw_response": "{\"data\":[]}",
@@ -2630,7 +2738,7 @@
         {
           "id": "legacy-runtime-v1",
           "detail": {
-            "timestamp": "2026-08-24T16:45:02.890492+00:00",
+            "timestamp": "2026-08-24T18:14:01.119620+00:00",
             "request": null,
             "http_status": 404,
             "raw_response": "{\"error\":{\"code\":\"not_found\",\"message\":\"History 'legacy-runtime-v1' was not found.\",\"field\":\"history_id\",\"issues\":null}}",
@@ -2644,7 +2752,7 @@
             }
           },
           "delete": {
-            "timestamp": "2026-08-24T16:45:02.905724+00:00",
+            "timestamp": "2026-08-24T18:14:01.143777+00:00",
             "request": null,
             "http_status": 404,
             "raw_response": "{\"error\":{\"code\":\"not_found\",\"message\":\"History 'legacy-runtime-v1' was not found.\",\"field\":\"history_id\",\"issues\":null}}",
@@ -2662,7 +2770,7 @@
         {
           "id": "legacy-runtime-v2",
           "detail": {
-            "timestamp": "2026-08-24T16:45:02.937441+00:00",
+            "timestamp": "2026-08-24T18:14:01.153994+00:00",
             "request": null,
             "http_status": 404,
             "raw_response": "{\"error\":{\"code\":\"not_found\",\"message\":\"History 'legacy-runtime-v2' was not found.\",\"field\":\"history_id\",\"issues\":null}}",
@@ -2676,7 +2784,7 @@
             }
           },
           "delete": {
-            "timestamp": "2026-08-24T16:45:02.969812+00:00",
+            "timestamp": "2026-08-24T18:14:01.163437+00:00",
             "request": null,
             "http_status": 404,
             "raw_response": "{\"error\":{\"code\":\"not_found\",\"message\":\"History 'legacy-runtime-v2' was not found.\",\"field\":\"history_id\",\"issues\":null}}",
@@ -2694,7 +2802,7 @@
         {
           "id": "legacy-runtime-v3",
           "detail": {
-            "timestamp": "2026-08-24T16:45:02.997430+00:00",
+            "timestamp": "2026-08-24T18:14:01.172729+00:00",
             "request": null,
             "http_status": 404,
             "raw_response": "{\"error\":{\"code\":\"not_found\",\"message\":\"History 'legacy-runtime-v3' was not found.\",\"field\":\"history_id\",\"issues\":null}}",
@@ -2708,7 +2816,7 @@
             }
           },
           "delete": {
-            "timestamp": "2026-08-24T16:45:03.004438+00:00",
+            "timestamp": "2026-08-24T18:14:01.181643+00:00",
             "request": null,
             "http_status": 404,
             "raw_response": "{\"error\":{\"code\":\"not_found\",\"message\":\"History 'legacy-runtime-v3' was not found.\",\"field\":\"history_id\",\"issues\":null}}",
@@ -2736,6 +2844,8 @@
     "holdout_cost_duck_buy_audit_total": 11,
     "holdout_cash_contribution_audit_pass": 11,
     "holdout_cash_contribution_audit_total": 11,
+    "holdout_calendar_audit_pass": 11,
+    "holdout_calendar_audit_total": 11,
     "synthetic_pass": 12,
     "synthetic_total": 12,
     "calendar_pass": true,

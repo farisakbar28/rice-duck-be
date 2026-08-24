@@ -142,9 +142,9 @@ def test_calendar_range_with_and_without_anchor():
     )] == ["2026-01-22", "2026-01-31", "2026-02-26", "2026-03-02"]
 
 
-def test_untouched_holdout_replay_uses_frozen_c0_and_documented_metrics():
-    # H01-H11 are the fixed, untouched rows in docs/tes_skenario.md. These
-    # numbers are intentionally not a source for runtime fitting.
+def test_pre_specified_holdout_replay_uses_frozen_c0_and_documented_metrics():
+    # H01-H11 are fixed pre-specified holdout rows. The holdout is now opened,
+    # so these numbers must never become a source for runtime fitting.
     holdout = [
         ("H01", 8, 3.60, 13, "sertani", "jajar_legowo", 45.83, 6_000, 25_000, None),
         ("H02", 9, 5.10, 5, "sertani", "jajar_legowo", 48.04, 6_000, 25_000, None),
