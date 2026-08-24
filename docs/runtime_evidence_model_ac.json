@@ -1,17 +1,17 @@
 {
   "branch": "focus-model-ac",
-  "tested_clean_head": "164b6471acce61a3d7f0ad5906b85720c31e9435",
+  "tested_clean_head": "309de75a640785e868c27be98dc77bd5631a0c42",
   "working_tree_dirty": false,
-  "captured_at": "2026-08-24T18:30:22.837247+00:00",
-  "server_url": "http://127.0.0.1:65203",
-  "runtime_instance_id": "9a0f4643dddf45e29d17ff465734ba9a",
-  "backend_start_command": "C:\\Users\\Hype\\AppData\\Local\\Programs\\Python\\Python314\\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 65203",
-  "runtime_database_path": "C:\\My Project\\rice-duck-be\\data\\runtime_model_ac_58d07abb713541ea8341fc6e3b154458.db",
+  "captured_at": "2026-08-24T19:19:46.006269+00:00",
+  "server_url": "http://127.0.0.1:57423",
+  "runtime_instance_id": "d17431499e594dcf84db44fa1d7dca5e",
+  "backend_start_command": "C:\\Users\\Hype\\AppData\\Local\\Programs\\Python\\Python314\\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 57423",
+  "runtime_database_path": "C:\\My Project\\rice-duck-be\\data\\runtime_model_ac_bafd02b04a914688a6547ebd56c71e7d.db",
   "main_database_before": "846fc85a753db96c058443e60042f7a91d3146acf50ceeb9db98375ca340e676",
   "health": {
     "status": "ok",
     "service": "rice-duck-dss-backend",
-    "runtime_instance_id": "9a0f4643dddf45e29d17ff465734ba9a"
+    "runtime_instance_id": "d17431499e594dcf84db44fa1d7dca5e"
   },
   "runtime_nonce_verified": true,
   "shared_c_acceptance": [
@@ -1538,9 +1538,9 @@
         "p_duck_buy": 25000,
         "p_duck_sell": 45000
       },
-      "actual_yield_are": 45.83,
-      "actual_gabah_revenue": 989928.0,
-      "error_backend_minus_actual": 4.170000000000002,
+      "actual_yield_are": 45.83333333,
+      "actual_gabah_revenue": 990000,
+      "error_backend_minus_actual": 4.166666669999998,
       "http_status": 200,
       "response": {
         "model_variant": "AC_DUAL_EVIDENCE",
@@ -1639,9 +1639,9 @@
         "p_duck_buy": 25000,
         "p_duck_sell": 45000
       },
-      "actual_yield_are": 48.04,
-      "actual_gabah_revenue": 1470024.0,
-      "error_backend_minus_actual": 1.9600000000000009,
+      "actual_yield_are": 48.03921569,
+      "actual_gabah_revenue": 1470000,
+      "error_backend_minus_actual": 1.960784310000001,
       "http_status": 200,
       "response": {
         "model_variant": "AC_DUAL_EVIDENCE",
@@ -1741,7 +1741,7 @@
         "p_duck_sell": 45000
       },
       "actual_yield_are": 60.5,
-      "actual_gabah_revenue": 3630000.0,
+      "actual_gabah_revenue": 3630000,
       "error_backend_minus_actual": -10.5,
       "http_status": 200,
       "response": {
@@ -1841,9 +1841,9 @@
         "p_duck_buy": 22222.22222,
         "p_duck_sell": 45000
       },
-      "actual_yield_are": 59.37,
-      "actual_gabah_revenue": 3232696.4999999995,
-      "error_backend_minus_actual": -9.369999999999997,
+      "actual_yield_are": 59.36639118,
+      "actual_gabah_revenue": 3232500,
+      "error_backend_minus_actual": -9.36639118,
       "http_status": 200,
       "response": {
         "model_variant": "AC_DUAL_EVIDENCE",
@@ -1942,9 +1942,9 @@
         "p_duck_buy": 5000,
         "p_duck_sell": 45000
       },
-      "actual_yield_are": 21.02,
-      "actual_gabah_revenue": 804014.9999999999,
-      "error_backend_minus_actual": 28.98,
+      "actual_yield_are": 21.01960784,
+      "actual_gabah_revenue": 804000,
+      "error_backend_minus_actual": 28.98039216,
       "http_status": 200,
       "response": {
         "model_variant": "AC_DUAL_EVIDENCE",
@@ -2043,9 +2043,9 @@
         "p_duck_buy": 10000,
         "p_duck_sell": 45000
       },
-      "actual_yield_are": 52.43,
-      "actual_gabah_revenue": 5666372.25,
-      "error_backend_minus_actual": -2.4299999999999997,
+      "actual_yield_are": 52.42886884,
+      "actual_gabah_revenue": 5666250,
+      "error_backend_minus_actual": -2.42886884,
       "http_status": 200,
       "response": {
         "model_variant": "AC_DUAL_EVIDENCE",
@@ -2146,7 +2146,7 @@
         "planting_date": "2024-04-22"
       },
       "actual_yield_are": 53.4,
-      "actual_gabah_revenue": 3364200.0,
+      "actual_gabah_revenue": 3364200,
       "error_backend_minus_actual": -3.3999999999999986,
       "http_status": 200,
       "response": {
@@ -2247,9 +2247,9 @@
         "p_duck_sell": 45000,
         "planting_date": "2024-10-01"
       },
-      "actual_yield_are": 40.42,
-      "actual_gabah_revenue": 873072.0,
-      "error_backend_minus_actual": 9.579999999999998,
+      "actual_yield_are": 40.41666667,
+      "actual_gabah_revenue": 873000,
+      "error_backend_minus_actual": 9.583333330000002,
       "http_status": 200,
       "response": {
         "model_variant": "AC_DUAL_EVIDENCE",
@@ -2350,7 +2350,7 @@
         "planting_date": "2024-09-28"
       },
       "actual_yield_are": 38.65,
-      "actual_gabah_revenue": 2319000.0,
+      "actual_gabah_revenue": 2319000,
       "error_backend_minus_actual": 11.350000000000001,
       "http_status": 200,
       "response": {
@@ -2451,7 +2451,7 @@
         "p_duck_sell": 45000
       },
       "actual_yield_are": 13.5,
-      "actual_gabah_revenue": 243000.0,
+      "actual_gabah_revenue": 243000,
       "error_backend_minus_actual": 36.5,
       "http_status": 200,
       "response": {
@@ -2551,9 +2551,9 @@
         "p_duck_buy": 25000,
         "p_duck_sell": 45000
       },
-      "actual_yield_are": 36.47,
-      "actual_gabah_revenue": 824951.3999999999,
-      "error_backend_minus_actual": 13.530000000000001,
+      "actual_yield_are": 36.47214854,
+      "actual_gabah_revenue": 825000,
+      "error_backend_minus_actual": 13.52785146,
       "http_status": 200,
       "response": {
         "model_variant": "AC_DUAL_EVIDENCE",
@@ -2641,10 +2641,10 @@
     }
   ],
   "holdout_metrics": {
-    "MAE": 11.97909090909091,
-    "RMSE": 15.990032406584932,
-    "MedAE": 9.579999999999998,
-    "Bias": 7.306363636363637
+    "MAE": 11.978571631818182,
+    "RMSE": 15.989835255314372,
+    "MedAE": 9.583333330000002,
+    "Bias": 7.306706173636363
   },
   "history": {
     "v4_round_trip": true,
