@@ -178,8 +178,16 @@ def main() -> None:
         evidence["main_database_after"] = sha(MAIN_DB)
         evidence["main_database_unchanged"] = before == evidence["main_database_after"]
         EVIDENCE.write_text(json.dumps(evidence, ensure_ascii=False, indent=2), encoding="utf-8")
-        if runtime_db.exists():
-            runtime_db.unlink()
+        # Windows can retain SQLite's file handle briefly after Uvicorn exits.
+        # Cleanup must not turn a completed acceptance run into a false failure.
+        for _ in range(30):
+            if not runtime_db.exists():
+                break
+            try:
+                runtime_db.unlink()
+                break
+            except PermissionError:
+                time.sleep(0.1)
     print(json.dumps(evidence.get("summary", {}), indent=2))
 
 
