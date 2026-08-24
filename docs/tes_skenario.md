@@ -177,3 +177,9 @@ Branch dianggap sesuai SoT jika:
 - tidak ada averaging/weighted fusion antara primary C dan reference A;
 - reference Xiong tidak pernah mengubah `revenue_gabah_primary` atau cash contribution;
 - raw farmer profit tidak dipakai sebagai numerical ground truth cash contribution.
+
+## 10. Corrected A+C purchase-price replay and runtime evidence
+
+The authoritative `Buy Price Duck (Rp/ekor)` mapping is H01 25000, H02 25000, H03 7539, H04 22222.22222, H05 5000, H06 10000, H07 0, H08 0, H09 0, H10 25000, H11 25000. Explicit zero is a runtime source value, never a missing-value fallback. Expected `Cost_duck_buy` is respectively 325000, 125000, 490035, 199999.99998, 50000, 300000, 0, 0, 0, 150000, 200000; expected primary cash contribution is 1340000, 1630000, 5434965, 2927500.00002, 2312500, 6453750, 4590000, 1755000, 4305000, 1020000, 1291000.
+
+Real HTTP execution on branch `focus-model-ac` is recorded in `docs/runtime_evidence_model_ac.json`: H01-H11 11/11 passed, purchase-cost and cash audits 11/11, reference abstention 11/11, AC-R01–R05 plus `t=32` 6/6, primary/reference decoupling passed, calendar isolation passed, history v4 round-trip/delete passed, and the main database hash was unchanged.

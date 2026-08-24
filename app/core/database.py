@@ -135,3 +135,9 @@ def initialize_database() -> None:
                 connection.execute(
                     f"ALTER TABLE dss_simulation_histories ADD COLUMN {column_def}"
                 )
+        existing_columns = {
+            row["name"]
+            for row in connection.execute("PRAGMA table_info(dss_simulation_histories)").fetchall()
+        }
+        if "model_ac_payload_json" not in existing_columns:
+            connection.execute("ALTER TABLE dss_simulation_histories ADD COLUMN model_ac_payload_json TEXT")

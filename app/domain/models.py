@@ -70,9 +70,9 @@ class DSSConstants:
     feed_natural_saving_rate: float | None = None
     feed_greedy_kg_per_duck_day: float | None = None
     rice_duck_price_rp_per_kg: float | None = None
-    duck_sale_price_rp_per_duck: float = 52500.0   # SoT §9: p_duck_sell
-    duck_buy_price_rp_per_duck: float = 0.0         # placeholder; actual from request
-    duck_target_out_max_days: int = 65
+    duck_sale_price_rp_per_duck: float = 45000.0
+    duck_buy_price_rp_per_duck: float = 25000.0
+    duck_target_out_max_days: int = 60
     feed_price_rp_per_kg: float | None = None
     nitrogen_price_rp_per_kg: float = 1800.0
     potassium_price_rp_per_kg: float = 9500.0

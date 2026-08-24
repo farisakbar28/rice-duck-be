@@ -20,12 +20,10 @@ class LookupRepository:
         return list(PLANTING_SYSTEMS)
 
     def get_rice_variety(self, code: str) -> RiceVariety | None:
-        normalized = code.strip().lower()
-        return next((item for item in RICE_VARIETIES if item.code == normalized), None)
+        return next((item for item in RICE_VARIETIES if item.code == code), None)
 
     def get_planting_system(self, code: str) -> PlantingSystem | None:
-        normalized = code.strip().lower()
-        return next((item for item in PLANTING_SYSTEMS if item.code == normalized), None)
+        return next((item for item in PLANTING_SYSTEMS if item.code == code), None)
 
     def get_constants(self) -> DSSConstants:
         return DSS_CONSTANTS

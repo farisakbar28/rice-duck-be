@@ -1,0 +1,1577 @@
+{
+  "branch": "focus-model-ac",
+  "base_head": "c660741171dd975e8abb7233eee19cc1505e27a5",
+  "working_tree_dirty": true,
+  "captured_at": "2026-08-24T17:12:27.901427+00:00",
+  "server_url": "http://127.0.0.1:58026",
+  "runtime_instance_id": "844709f1ba7a4da4b24c124964794fb6",
+  "backend_start_command": "C:\\My Project\\rice-duck-be\\.venv\\Scripts\\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 58026",
+  "runtime_database_path": "C:\\My Project\\rice-duck-be\\data\\runtime_model_ac_4d711db2aeaa4a17a8983c06e6fb653b.db",
+  "main_database_before": "b8e5fa23c274cc9da8afcb53d737fda6806ad22ee8359e3a4150f9ad4b9892a9",
+  "health": {
+    "status": "ok",
+    "service": "rice-duck-dss-backend"
+  },
+  "reference_cases": [
+    {
+      "id": "AC-R01",
+      "response": {
+        "model_variant": "AC_DUAL_EVIDENCE",
+        "yield_are_kg": 50.0,
+        "yield_total_kg": 500.0,
+        "model_validation_status": "LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE",
+        "parameter_uncertainty_y0_95pct": [
+          42.81,
+          55.78
+        ],
+        "literature_reference_status": "OUTSIDE_LITERATURE_DOMAIN",
+        "yield_literature_reference_are_kg": null,
+        "yield_literature_reference_total_kg": null,
+        "literature_gap_kg_are": null,
+        "age_status": "LOCAL_READY",
+        "density_are": 4.0,
+        "density_ha": 400.0,
+        "density_status": "RECOMMENDED",
+        "release_hst_min": 21,
+        "release_hst_max": 30,
+        "withdraw_hst_min": 56,
+        "withdraw_hst_max": 60,
+        "release_date_min": null,
+        "release_date_max": null,
+        "withdraw_date_min": null,
+        "withdraw_date_max": null,
+        "survival_risk": null,
+        "revenue_gabah": 3000000.0,
+        "revenue_duck_all_sold_scenario": 1800000.0,
+        "cost_duck_buy": 1000000.0,
+        "cost_feed_scenario": null,
+        "cost_infra_cycle": null,
+        "cash_contribution_before_optional": 3800000.0,
+        "cash_contribution_after_optional": null,
+        "warnings": [
+          "Xiong requires 0 < density_ha <= 600 and 50 <= literature_duration_days <= 80"
+        ],
+        "provenance": {
+          "primary_local": {
+            "Y0_C": 50.0,
+            "source": "25 calibration cycles / 13 farmers",
+            "status": "local-calibrated",
+            "selection": "farmer-grouped LOFO; one-standard-error rule",
+            "parameter_uncertainty_95pct": "descriptive baseline-parameter uncertainty; not an individual field prediction interval"
+          },
+          "validation": {
+            "untouched_holdout_cycles": 11,
+            "untouched_holdout_farmers": 6,
+            "MAE": 11.979,
+            "RMSE": 15.99,
+            "MedAE": 9.583,
+            "Bias": 7.307,
+            "limitation": "limited holdout performance"
+          },
+          "literature_reference": {
+            "source": "Xiong et al. (2014)",
+            "status": "literature-uncalibrated",
+            "domain": "0 < density_ha <= 600 and 50 <= literature_duration_days <= 80",
+            "availability": "OUTSIDE_LITERATURE_DOMAIN",
+            "reason": "Xiong requires 0 < density_ha <= 600 and 50 <= literature_duration_days <= 80"
+          },
+          "prices": {
+            "p_gabah": {
+              "value": 6000.0,
+              "source": "fallback",
+              "status": "local-calibrated"
+            },
+            "p_duck_buy": {
+              "value": 25000.0,
+              "source": "fallback",
+              "status": "local-calibrated"
+            },
+            "p_duck_sell": {
+              "value": 45000.0,
+              "source": "fallback",
+              "status": "local-estimate"
+            }
+          },
+          "survival": {
+            "note": "numerical survival not modeled"
+          }
+        }
+      }
+    },
+    {
+      "id": "AC-R02",
+      "response": {
+        "model_variant": "AC_DUAL_EVIDENCE",
+        "yield_are_kg": 50.0,
+        "yield_total_kg": 500.0,
+        "model_validation_status": "LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE",
+        "parameter_uncertainty_y0_95pct": [
+          42.81,
+          55.78
+        ],
+        "literature_reference_status": "VALID",
+        "yield_literature_reference_are_kg": 65.00445497615651,
+        "yield_literature_reference_total_kg": 650.0445497615651,
+        "literature_gap_kg_are": 15.00445497615651,
+        "age_status": "LOCAL_READY",
+        "density_are": 4.0,
+        "density_ha": 400.0,
+        "density_status": "RECOMMENDED",
+        "release_hst_min": 21,
+        "release_hst_max": 30,
+        "withdraw_hst_min": 56,
+        "withdraw_hst_max": 60,
+        "release_date_min": null,
+        "release_date_max": null,
+        "withdraw_date_min": null,
+        "withdraw_date_max": null,
+        "survival_risk": null,
+        "revenue_gabah": 3000000.0,
+        "revenue_duck_all_sold_scenario": 1800000.0,
+        "cost_duck_buy": 1000000.0,
+        "cost_feed_scenario": null,
+        "cost_infra_cycle": null,
+        "cash_contribution_before_optional": 3800000.0,
+        "cash_contribution_after_optional": null,
+        "warnings": [],
+        "provenance": {
+          "primary_local": {
+            "Y0_C": 50.0,
+            "source": "25 calibration cycles / 13 farmers",
+            "status": "local-calibrated",
+            "selection": "farmer-grouped LOFO; one-standard-error rule",
+            "parameter_uncertainty_95pct": "descriptive baseline-parameter uncertainty; not an individual field prediction interval"
+          },
+          "validation": {
+            "untouched_holdout_cycles": 11,
+            "untouched_holdout_farmers": 6,
+            "MAE": 11.979,
+            "RMSE": 15.99,
+            "MedAE": 9.583,
+            "Bias": 7.307,
+            "limitation": "limited holdout performance"
+          },
+          "literature_reference": {
+            "source": "Xiong et al. (2014)",
+            "status": "literature-uncalibrated",
+            "domain": "0 < density_ha <= 600 and 50 <= literature_duration_days <= 80",
+            "availability": "VALID",
+            "reason": null
+          },
+          "prices": {
+            "p_gabah": {
+              "value": 6000.0,
+              "source": "fallback",
+              "status": "local-calibrated"
+            },
+            "p_duck_buy": {
+              "value": 25000.0,
+              "source": "fallback",
+              "status": "local-calibrated"
+            },
+            "p_duck_sell": {
+              "value": 45000.0,
+              "source": "fallback",
+              "status": "local-estimate"
+            }
+          },
+          "survival": {
+            "note": "numerical survival not modeled"
+          }
+        }
+      }
+    },
+    {
+      "id": "AC-R03",
+      "response": {
+        "model_variant": "AC_DUAL_EVIDENCE",
+        "yield_are_kg": 50.0,
+        "yield_total_kg": 500.0,
+        "model_validation_status": "LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE",
+        "parameter_uncertainty_y0_95pct": [
+          42.81,
+          55.78
+        ],
+        "literature_reference_status": "VALID",
+        "yield_literature_reference_are_kg": 69.7396,
+        "yield_literature_reference_total_kg": 697.396,
+        "literature_gap_kg_are": 19.7396,
+        "age_status": "LOCAL_READY",
+        "density_are": 4.0,
+        "density_ha": 400.0,
+        "density_status": "RECOMMENDED",
+        "release_hst_min": 21,
+        "release_hst_max": 30,
+        "withdraw_hst_min": 56,
+        "withdraw_hst_max": 60,
+        "release_date_min": null,
+        "release_date_max": null,
+        "withdraw_date_min": null,
+        "withdraw_date_max": null,
+        "survival_risk": null,
+        "revenue_gabah": 3000000.0,
+        "revenue_duck_all_sold_scenario": 1800000.0,
+        "cost_duck_buy": 1000000.0,
+        "cost_feed_scenario": null,
+        "cost_infra_cycle": null,
+        "cash_contribution_before_optional": 3800000.0,
+        "cash_contribution_after_optional": null,
+        "warnings": [],
+        "provenance": {
+          "primary_local": {
+            "Y0_C": 50.0,
+            "source": "25 calibration cycles / 13 farmers",
+            "status": "local-calibrated",
+            "selection": "farmer-grouped LOFO; one-standard-error rule",
+            "parameter_uncertainty_95pct": "descriptive baseline-parameter uncertainty; not an individual field prediction interval"
+          },
+          "validation": {
+            "untouched_holdout_cycles": 11,
+            "untouched_holdout_farmers": 6,
+            "MAE": 11.979,
+            "RMSE": 15.99,
+            "MedAE": 9.583,
+            "Bias": 7.307,
+            "limitation": "limited holdout performance"
+          },
+          "literature_reference": {
+            "source": "Xiong et al. (2014)",
+            "status": "literature-uncalibrated",
+            "domain": "0 < density_ha <= 600 and 50 <= literature_duration_days <= 80",
+            "availability": "VALID",
+            "reason": null
+          },
+          "prices": {
+            "p_gabah": {
+              "value": 6000.0,
+              "source": "fallback",
+              "status": "local-calibrated"
+            },
+            "p_duck_buy": {
+              "value": 25000.0,
+              "source": "fallback",
+              "status": "local-calibrated"
+            },
+            "p_duck_sell": {
+              "value": 45000.0,
+              "source": "fallback",
+              "status": "local-estimate"
+            }
+          },
+          "survival": {
+            "note": "numerical survival not modeled"
+          }
+        }
+      }
+    },
+    {
+      "id": "AC-R04",
+      "response": {
+        "model_variant": "AC_DUAL_EVIDENCE",
+        "yield_are_kg": 50.0,
+        "yield_total_kg": 500.0,
+        "model_validation_status": "LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE",
+        "parameter_uncertainty_y0_95pct": [
+          42.81,
+          55.78
+        ],
+        "literature_reference_status": "OUTSIDE_LITERATURE_DOMAIN",
+        "yield_literature_reference_are_kg": null,
+        "yield_literature_reference_total_kg": null,
+        "literature_gap_kg_are": null,
+        "age_status": "LOCAL_READY",
+        "density_are": 4.0,
+        "density_ha": 400.0,
+        "density_status": "RECOMMENDED",
+        "release_hst_min": 21,
+        "release_hst_max": 30,
+        "withdraw_hst_min": 56,
+        "withdraw_hst_max": 60,
+        "release_date_min": null,
+        "release_date_max": null,
+        "withdraw_date_min": null,
+        "withdraw_date_max": null,
+        "survival_risk": null,
+        "revenue_gabah": 3000000.0,
+        "revenue_duck_all_sold_scenario": 1800000.0,
+        "cost_duck_buy": 1000000.0,
+        "cost_feed_scenario": null,
+        "cost_infra_cycle": null,
+        "cash_contribution_before_optional": 3800000.0,
+        "cash_contribution_after_optional": null,
+        "warnings": [
+          "Xiong requires 0 < density_ha <= 600 and 50 <= literature_duration_days <= 80"
+        ],
+        "provenance": {
+          "primary_local": {
+            "Y0_C": 50.0,
+            "source": "25 calibration cycles / 13 farmers",
+            "status": "local-calibrated",
+            "selection": "farmer-grouped LOFO; one-standard-error rule",
+            "parameter_uncertainty_95pct": "descriptive baseline-parameter uncertainty; not an individual field prediction interval"
+          },
+          "validation": {
+            "untouched_holdout_cycles": 11,
+            "untouched_holdout_farmers": 6,
+            "MAE": 11.979,
+            "RMSE": 15.99,
+            "MedAE": 9.583,
+            "Bias": 7.307,
+            "limitation": "limited holdout performance"
+          },
+          "literature_reference": {
+            "source": "Xiong et al. (2014)",
+            "status": "literature-uncalibrated",
+            "domain": "0 < density_ha <= 600 and 50 <= literature_duration_days <= 80",
+            "availability": "OUTSIDE_LITERATURE_DOMAIN",
+            "reason": "Xiong requires 0 < density_ha <= 600 and 50 <= literature_duration_days <= 80"
+          },
+          "prices": {
+            "p_gabah": {
+              "value": 6000.0,
+              "source": "fallback",
+              "status": "local-calibrated"
+            },
+            "p_duck_buy": {
+              "value": 25000.0,
+              "source": "fallback",
+              "status": "local-calibrated"
+            },
+            "p_duck_sell": {
+              "value": 45000.0,
+              "source": "fallback",
+              "status": "local-estimate"
+            }
+          },
+          "survival": {
+            "note": "numerical survival not modeled"
+          }
+        }
+      }
+    },
+    {
+      "id": "AC-R05",
+      "response": {
+        "model_variant": "AC_DUAL_EVIDENCE",
+        "yield_are_kg": 50.0,
+        "yield_total_kg": 500.0,
+        "model_validation_status": "LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE",
+        "parameter_uncertainty_y0_95pct": [
+          42.81,
+          55.78
+        ],
+        "literature_reference_status": "OUTSIDE_LITERATURE_DOMAIN",
+        "yield_literature_reference_are_kg": null,
+        "yield_literature_reference_total_kg": null,
+        "literature_gap_kg_are": null,
+        "age_status": "LOCAL_READY",
+        "density_are": 6.1,
+        "density_ha": 610.0,
+        "density_status": "WARNING_ABOVE_RECOMMENDED",
+        "release_hst_min": 21,
+        "release_hst_max": 30,
+        "withdraw_hst_min": 56,
+        "withdraw_hst_max": 60,
+        "release_date_min": null,
+        "release_date_max": null,
+        "withdraw_date_min": null,
+        "withdraw_date_max": null,
+        "survival_risk": null,
+        "revenue_gabah": 3000000.0,
+        "revenue_duck_all_sold_scenario": 2745000.0,
+        "cost_duck_buy": 1525000.0,
+        "cost_feed_scenario": null,
+        "cost_infra_cycle": null,
+        "cash_contribution_before_optional": 4220000.0,
+        "cash_contribution_after_optional": null,
+        "warnings": [
+          "Xiong requires 0 < density_ha <= 600 and 50 <= literature_duration_days <= 80"
+        ],
+        "provenance": {
+          "primary_local": {
+            "Y0_C": 50.0,
+            "source": "25 calibration cycles / 13 farmers",
+            "status": "local-calibrated",
+            "selection": "farmer-grouped LOFO; one-standard-error rule",
+            "parameter_uncertainty_95pct": "descriptive baseline-parameter uncertainty; not an individual field prediction interval"
+          },
+          "validation": {
+            "untouched_holdout_cycles": 11,
+            "untouched_holdout_farmers": 6,
+            "MAE": 11.979,
+            "RMSE": 15.99,
+            "MedAE": 9.583,
+            "Bias": 7.307,
+            "limitation": "limited holdout performance"
+          },
+          "literature_reference": {
+            "source": "Xiong et al. (2014)",
+            "status": "literature-uncalibrated",
+            "domain": "0 < density_ha <= 600 and 50 <= literature_duration_days <= 80",
+            "availability": "OUTSIDE_LITERATURE_DOMAIN",
+            "reason": "Xiong requires 0 < density_ha <= 600 and 50 <= literature_duration_days <= 80"
+          },
+          "prices": {
+            "p_gabah": {
+              "value": 6000.0,
+              "source": "fallback",
+              "status": "local-calibrated"
+            },
+            "p_duck_buy": {
+              "value": 25000.0,
+              "source": "fallback",
+              "status": "local-calibrated"
+            },
+            "p_duck_sell": {
+              "value": 45000.0,
+              "source": "fallback",
+              "status": "local-estimate"
+            }
+          },
+          "survival": {
+            "note": "numerical survival not modeled"
+          }
+        }
+      }
+    },
+    {
+      "id": "AC-R32",
+      "response": {
+        "model_variant": "AC_DUAL_EVIDENCE",
+        "yield_are_kg": 50.0,
+        "yield_total_kg": 500.0,
+        "model_validation_status": "LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE",
+        "parameter_uncertainty_y0_95pct": [
+          42.81,
+          55.78
+        ],
+        "literature_reference_status": "OUTSIDE_LITERATURE_DOMAIN",
+        "yield_literature_reference_are_kg": null,
+        "yield_literature_reference_total_kg": null,
+        "literature_gap_kg_are": null,
+        "age_status": "LOCAL_READY",
+        "density_are": 4.0,
+        "density_ha": 400.0,
+        "density_status": "RECOMMENDED",
+        "release_hst_min": 21,
+        "release_hst_max": 30,
+        "withdraw_hst_min": 56,
+        "withdraw_hst_max": 60,
+        "release_date_min": null,
+        "release_date_max": null,
+        "withdraw_date_min": null,
+        "withdraw_date_max": null,
+        "survival_risk": null,
+        "revenue_gabah": 3000000.0,
+        "revenue_duck_all_sold_scenario": 1800000.0,
+        "cost_duck_buy": 1000000.0,
+        "cost_feed_scenario": null,
+        "cost_infra_cycle": null,
+        "cash_contribution_before_optional": 3800000.0,
+        "cash_contribution_after_optional": null,
+        "warnings": [
+          "Xiong requires 0 < density_ha <= 600 and 50 <= literature_duration_days <= 80"
+        ],
+        "provenance": {
+          "primary_local": {
+            "Y0_C": 50.0,
+            "source": "25 calibration cycles / 13 farmers",
+            "status": "local-calibrated",
+            "selection": "farmer-grouped LOFO; one-standard-error rule",
+            "parameter_uncertainty_95pct": "descriptive baseline-parameter uncertainty; not an individual field prediction interval"
+          },
+          "validation": {
+            "untouched_holdout_cycles": 11,
+            "untouched_holdout_farmers": 6,
+            "MAE": 11.979,
+            "RMSE": 15.99,
+            "MedAE": 9.583,
+            "Bias": 7.307,
+            "limitation": "limited holdout performance"
+          },
+          "literature_reference": {
+            "source": "Xiong et al. (2014)",
+            "status": "literature-uncalibrated",
+            "domain": "0 < density_ha <= 600 and 50 <= literature_duration_days <= 80",
+            "availability": "OUTSIDE_LITERATURE_DOMAIN",
+            "reason": "Xiong requires 0 < density_ha <= 600 and 50 <= literature_duration_days <= 80"
+          },
+          "prices": {
+            "p_gabah": {
+              "value": 6000.0,
+              "source": "fallback",
+              "status": "local-calibrated"
+            },
+            "p_duck_buy": {
+              "value": 25000.0,
+              "source": "fallback",
+              "status": "local-calibrated"
+            },
+            "p_duck_sell": {
+              "value": 45000.0,
+              "source": "fallback",
+              "status": "local-estimate"
+            }
+          },
+          "survival": {
+            "note": "numerical survival not modeled"
+          }
+        }
+      }
+    }
+  ],
+  "calendar": {
+    "model_variant": "AC_DUAL_EVIDENCE",
+    "yield_are_kg": 50.0,
+    "yield_total_kg": 500.0,
+    "model_validation_status": "LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE",
+    "parameter_uncertainty_y0_95pct": [
+      42.81,
+      55.78
+    ],
+    "literature_reference_status": "OUTSIDE_LITERATURE_DOMAIN",
+    "yield_literature_reference_are_kg": null,
+    "yield_literature_reference_total_kg": null,
+    "literature_gap_kg_are": null,
+    "age_status": "LOCAL_READY",
+    "density_are": 4.0,
+    "density_ha": 400.0,
+    "density_status": "RECOMMENDED",
+    "release_hst_min": 21,
+    "release_hst_max": 30,
+    "withdraw_hst_min": 56,
+    "withdraw_hst_max": 60,
+    "release_date_min": "2026-01-22",
+    "release_date_max": "2026-01-31",
+    "withdraw_date_min": "2026-02-26",
+    "withdraw_date_max": "2026-03-02",
+    "survival_risk": null,
+    "revenue_gabah": 3000000.0,
+    "revenue_duck_all_sold_scenario": 1800000.0,
+    "cost_duck_buy": 1000000.0,
+    "cost_feed_scenario": null,
+    "cost_infra_cycle": null,
+    "cash_contribution_before_optional": 3800000.0,
+    "cash_contribution_after_optional": null,
+    "warnings": [
+      "literature_duration_days was not supplied"
+    ],
+    "provenance": {
+      "primary_local": {
+        "Y0_C": 50.0,
+        "source": "25 calibration cycles / 13 farmers",
+        "status": "local-calibrated",
+        "selection": "farmer-grouped LOFO; one-standard-error rule",
+        "parameter_uncertainty_95pct": "descriptive baseline-parameter uncertainty; not an individual field prediction interval"
+      },
+      "validation": {
+        "untouched_holdout_cycles": 11,
+        "untouched_holdout_farmers": 6,
+        "MAE": 11.979,
+        "RMSE": 15.99,
+        "MedAE": 9.583,
+        "Bias": 7.307,
+        "limitation": "limited holdout performance"
+      },
+      "literature_reference": {
+        "source": "Xiong et al. (2014)",
+        "status": "literature-uncalibrated",
+        "domain": "0 < density_ha <= 600 and 50 <= literature_duration_days <= 80",
+        "availability": "OUTSIDE_LITERATURE_DOMAIN",
+        "reason": "literature_duration_days was not supplied"
+      },
+      "prices": {
+        "p_gabah": {
+          "value": 6000.0,
+          "source": "fallback",
+          "status": "local-calibrated"
+        },
+        "p_duck_buy": {
+          "value": 25000.0,
+          "source": "fallback",
+          "status": "local-calibrated"
+        },
+        "p_duck_sell": {
+          "value": 45000.0,
+          "source": "fallback",
+          "status": "local-estimate"
+        }
+      },
+      "survival": {
+        "note": "numerical survival not modeled"
+      }
+    }
+  },
+  "primary_reference_decoupling_pass": true,
+  "holdout": [
+    {
+      "id": "H01",
+      "response": {
+        "model_variant": "AC_DUAL_EVIDENCE",
+        "yield_are_kg": 50.0,
+        "yield_total_kg": 180.0,
+        "model_validation_status": "LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE",
+        "parameter_uncertainty_y0_95pct": [
+          42.81,
+          55.78
+        ],
+        "literature_reference_status": "OUTSIDE_LITERATURE_DOMAIN",
+        "yield_literature_reference_are_kg": null,
+        "yield_literature_reference_total_kg": null,
+        "literature_gap_kg_are": null,
+        "age_status": "LOCAL_READY",
+        "density_are": 3.611111111111111,
+        "density_ha": 361.1111111111111,
+        "density_status": "RECOMMENDED",
+        "release_hst_min": 21,
+        "release_hst_max": 30,
+        "withdraw_hst_min": 56,
+        "withdraw_hst_max": 60,
+        "release_date_min": null,
+        "release_date_max": null,
+        "withdraw_date_min": null,
+        "withdraw_date_max": null,
+        "survival_risk": null,
+        "revenue_gabah": 1080000.0,
+        "revenue_duck_all_sold_scenario": 585000.0,
+        "cost_duck_buy": 325000.0,
+        "cost_feed_scenario": null,
+        "cost_infra_cycle": null,
+        "cash_contribution_before_optional": 1340000.0,
+        "cash_contribution_after_optional": null,
+        "warnings": [
+          "literature_duration_days was not supplied"
+        ],
+        "provenance": {
+          "primary_local": {
+            "Y0_C": 50.0,
+            "source": "25 calibration cycles / 13 farmers",
+            "status": "local-calibrated",
+            "selection": "farmer-grouped LOFO; one-standard-error rule",
+            "parameter_uncertainty_95pct": "descriptive baseline-parameter uncertainty; not an individual field prediction interval"
+          },
+          "validation": {
+            "untouched_holdout_cycles": 11,
+            "untouched_holdout_farmers": 6,
+            "MAE": 11.979,
+            "RMSE": 15.99,
+            "MedAE": 9.583,
+            "Bias": 7.307,
+            "limitation": "limited holdout performance"
+          },
+          "literature_reference": {
+            "source": "Xiong et al. (2014)",
+            "status": "literature-uncalibrated",
+            "domain": "0 < density_ha <= 600 and 50 <= literature_duration_days <= 80",
+            "availability": "OUTSIDE_LITERATURE_DOMAIN",
+            "reason": "literature_duration_days was not supplied"
+          },
+          "prices": {
+            "p_gabah": {
+              "value": 6000.0,
+              "source": "runtime",
+              "status": "runtime"
+            },
+            "p_duck_buy": {
+              "value": 25000.0,
+              "source": "runtime",
+              "status": "runtime"
+            },
+            "p_duck_sell": {
+              "value": 45000.0,
+              "source": "runtime",
+              "status": "runtime"
+            }
+          },
+          "survival": {
+            "note": "numerical survival not modeled"
+          }
+        }
+      },
+      "actual_yield_are": 45.83
+    },
+    {
+      "id": "H02",
+      "response": {
+        "model_variant": "AC_DUAL_EVIDENCE",
+        "yield_are_kg": 50.0,
+        "yield_total_kg": 255.0,
+        "model_validation_status": "LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE",
+        "parameter_uncertainty_y0_95pct": [
+          42.81,
+          55.78
+        ],
+        "literature_reference_status": "OUTSIDE_LITERATURE_DOMAIN",
+        "yield_literature_reference_are_kg": null,
+        "yield_literature_reference_total_kg": null,
+        "literature_gap_kg_are": null,
+        "age_status": "LOCAL_READY",
+        "density_are": 0.9803921568627451,
+        "density_ha": 98.03921568627452,
+        "density_status": "UNDER",
+        "release_hst_min": 21,
+        "release_hst_max": 30,
+        "withdraw_hst_min": 56,
+        "withdraw_hst_max": 60,
+        "release_date_min": null,
+        "release_date_max": null,
+        "withdraw_date_min": null,
+        "withdraw_date_max": null,
+        "survival_risk": null,
+        "revenue_gabah": 1530000.0,
+        "revenue_duck_all_sold_scenario": 225000.0,
+        "cost_duck_buy": 125000.0,
+        "cost_feed_scenario": null,
+        "cost_infra_cycle": null,
+        "cash_contribution_before_optional": 1630000.0,
+        "cash_contribution_after_optional": null,
+        "warnings": [
+          "literature_duration_days was not supplied"
+        ],
+        "provenance": {
+          "primary_local": {
+            "Y0_C": 50.0,
+            "source": "25 calibration cycles / 13 farmers",
+            "status": "local-calibrated",
+            "selection": "farmer-grouped LOFO; one-standard-error rule",
+            "parameter_uncertainty_95pct": "descriptive baseline-parameter uncertainty; not an individual field prediction interval"
+          },
+          "validation": {
+            "untouched_holdout_cycles": 11,
+            "untouched_holdout_farmers": 6,
+            "MAE": 11.979,
+            "RMSE": 15.99,
+            "MedAE": 9.583,
+            "Bias": 7.307,
+            "limitation": "limited holdout performance"
+          },
+          "literature_reference": {
+            "source": "Xiong et al. (2014)",
+            "status": "literature-uncalibrated",
+            "domain": "0 < density_ha <= 600 and 50 <= literature_duration_days <= 80",
+            "availability": "OUTSIDE_LITERATURE_DOMAIN",
+            "reason": "literature_duration_days was not supplied"
+          },
+          "prices": {
+            "p_gabah": {
+              "value": 6000.0,
+              "source": "runtime",
+              "status": "runtime"
+            },
+            "p_duck_buy": {
+              "value": 25000.0,
+              "source": "runtime",
+              "status": "runtime"
+            },
+            "p_duck_sell": {
+              "value": 45000.0,
+              "source": "runtime",
+              "status": "runtime"
+            }
+          },
+          "survival": {
+            "note": "numerical survival not modeled"
+          }
+        }
+      },
+      "actual_yield_are": 48.04
+    },
+    {
+      "id": "H03",
+      "response": {
+        "model_variant": "AC_DUAL_EVIDENCE",
+        "yield_are_kg": 50.0,
+        "yield_total_kg": 500.0,
+        "model_validation_status": "LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE",
+        "parameter_uncertainty_y0_95pct": [
+          42.81,
+          55.78
+        ],
+        "literature_reference_status": "OUTSIDE_LITERATURE_DOMAIN",
+        "yield_literature_reference_are_kg": null,
+        "yield_literature_reference_total_kg": null,
+        "literature_gap_kg_are": null,
+        "age_status": "LOCAL_READY",
+        "density_are": 6.5,
+        "density_ha": 650.0,
+        "density_status": "WARNING_ABOVE_RECOMMENDED",
+        "release_hst_min": 21,
+        "release_hst_max": 30,
+        "withdraw_hst_min": 56,
+        "withdraw_hst_max": 60,
+        "release_date_min": null,
+        "release_date_max": null,
+        "withdraw_date_min": null,
+        "withdraw_date_max": null,
+        "survival_risk": null,
+        "revenue_gabah": 3000000.0,
+        "revenue_duck_all_sold_scenario": 2925000.0,
+        "cost_duck_buy": 490035.0,
+        "cost_feed_scenario": null,
+        "cost_infra_cycle": null,
+        "cash_contribution_before_optional": 5434965.0,
+        "cash_contribution_after_optional": null,
+        "warnings": [
+          "literature_duration_days was not supplied"
+        ],
+        "provenance": {
+          "primary_local": {
+            "Y0_C": 50.0,
+            "source": "25 calibration cycles / 13 farmers",
+            "status": "local-calibrated",
+            "selection": "farmer-grouped LOFO; one-standard-error rule",
+            "parameter_uncertainty_95pct": "descriptive baseline-parameter uncertainty; not an individual field prediction interval"
+          },
+          "validation": {
+            "untouched_holdout_cycles": 11,
+            "untouched_holdout_farmers": 6,
+            "MAE": 11.979,
+            "RMSE": 15.99,
+            "MedAE": 9.583,
+            "Bias": 7.307,
+            "limitation": "limited holdout performance"
+          },
+          "literature_reference": {
+            "source": "Xiong et al. (2014)",
+            "status": "literature-uncalibrated",
+            "domain": "0 < density_ha <= 600 and 50 <= literature_duration_days <= 80",
+            "availability": "OUTSIDE_LITERATURE_DOMAIN",
+            "reason": "literature_duration_days was not supplied"
+          },
+          "prices": {
+            "p_gabah": {
+              "value": 6000.0,
+              "source": "runtime",
+              "status": "runtime"
+            },
+            "p_duck_buy": {
+              "value": 7539.0,
+              "source": "runtime",
+              "status": "runtime"
+            },
+            "p_duck_sell": {
+              "value": 45000.0,
+              "source": "runtime",
+              "status": "runtime"
+            }
+          },
+          "survival": {
+            "note": "numerical survival not modeled"
+          }
+        }
+      },
+      "actual_yield_are": 60.5
+    },
+    {
+      "id": "H04",
+      "response": {
+        "model_variant": "AC_DUAL_EVIDENCE",
+        "yield_are_kg": 50.0,
+        "yield_total_kg": 363.0,
+        "model_validation_status": "LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE",
+        "parameter_uncertainty_y0_95pct": [
+          42.81,
+          55.78
+        ],
+        "literature_reference_status": "OUTSIDE_LITERATURE_DOMAIN",
+        "yield_literature_reference_are_kg": null,
+        "yield_literature_reference_total_kg": null,
+        "literature_gap_kg_are": null,
+        "age_status": "LOCAL_READY",
+        "density_are": 1.2396694214876034,
+        "density_ha": 123.96694214876032,
+        "density_status": "UNDER",
+        "release_hst_min": 21,
+        "release_hst_max": 30,
+        "withdraw_hst_min": 56,
+        "withdraw_hst_max": 60,
+        "release_date_min": null,
+        "release_date_max": null,
+        "withdraw_date_min": null,
+        "withdraw_date_max": null,
+        "survival_risk": null,
+        "revenue_gabah": 2722500.0,
+        "revenue_duck_all_sold_scenario": 405000.0,
+        "cost_duck_buy": 199999.99998,
+        "cost_feed_scenario": null,
+        "cost_infra_cycle": null,
+        "cash_contribution_before_optional": 2927500.00002,
+        "cash_contribution_after_optional": null,
+        "warnings": [
+          "literature_duration_days was not supplied"
+        ],
+        "provenance": {
+          "primary_local": {
+            "Y0_C": 50.0,
+            "source": "25 calibration cycles / 13 farmers",
+            "status": "local-calibrated",
+            "selection": "farmer-grouped LOFO; one-standard-error rule",
+            "parameter_uncertainty_95pct": "descriptive baseline-parameter uncertainty; not an individual field prediction interval"
+          },
+          "validation": {
+            "untouched_holdout_cycles": 11,
+            "untouched_holdout_farmers": 6,
+            "MAE": 11.979,
+            "RMSE": 15.99,
+            "MedAE": 9.583,
+            "Bias": 7.307,
+            "limitation": "limited holdout performance"
+          },
+          "literature_reference": {
+            "source": "Xiong et al. (2014)",
+            "status": "literature-uncalibrated",
+            "domain": "0 < density_ha <= 600 and 50 <= literature_duration_days <= 80",
+            "availability": "OUTSIDE_LITERATURE_DOMAIN",
+            "reason": "literature_duration_days was not supplied"
+          },
+          "prices": {
+            "p_gabah": {
+              "value": 7500.0,
+              "source": "runtime",
+              "status": "runtime"
+            },
+            "p_duck_buy": {
+              "value": 22222.22222,
+              "source": "runtime",
+              "status": "runtime"
+            },
+            "p_duck_sell": {
+              "value": 45000.0,
+              "source": "runtime",
+              "status": "runtime"
+            }
+          },
+          "survival": {
+            "note": "numerical survival not modeled"
+          }
+        }
+      },
+      "actual_yield_are": 59.37
+    },
+    {
+      "id": "H05",
+      "response": {
+        "model_variant": "AC_DUAL_EVIDENCE",
+        "yield_are_kg": 50.0,
+        "yield_total_kg": 255.0,
+        "model_validation_status": "LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE",
+        "parameter_uncertainty_y0_95pct": [
+          42.81,
+          55.78
+        ],
+        "literature_reference_status": "OUTSIDE_LITERATURE_DOMAIN",
+        "yield_literature_reference_are_kg": null,
+        "yield_literature_reference_total_kg": null,
+        "literature_gap_kg_are": null,
+        "age_status": "LOCAL_READY",
+        "density_are": 1.9607843137254901,
+        "density_ha": 196.07843137254903,
+        "density_status": "UNDER",
+        "release_hst_min": 21,
+        "release_hst_max": 30,
+        "withdraw_hst_min": 56,
+        "withdraw_hst_max": 60,
+        "release_date_min": null,
+        "release_date_max": null,
+        "withdraw_date_min": null,
+        "withdraw_date_max": null,
+        "survival_risk": null,
+        "revenue_gabah": 1912500.0,
+        "revenue_duck_all_sold_scenario": 450000.0,
+        "cost_duck_buy": 50000.0,
+        "cost_feed_scenario": null,
+        "cost_infra_cycle": null,
+        "cash_contribution_before_optional": 2312500.0,
+        "cash_contribution_after_optional": null,
+        "warnings": [
+          "literature_duration_days was not supplied"
+        ],
+        "provenance": {
+          "primary_local": {
+            "Y0_C": 50.0,
+            "source": "25 calibration cycles / 13 farmers",
+            "status": "local-calibrated",
+            "selection": "farmer-grouped LOFO; one-standard-error rule",
+            "parameter_uncertainty_95pct": "descriptive baseline-parameter uncertainty; not an individual field prediction interval"
+          },
+          "validation": {
+            "untouched_holdout_cycles": 11,
+            "untouched_holdout_farmers": 6,
+            "MAE": 11.979,
+            "RMSE": 15.99,
+            "MedAE": 9.583,
+            "Bias": 7.307,
+            "limitation": "limited holdout performance"
+          },
+          "literature_reference": {
+            "source": "Xiong et al. (2014)",
+            "status": "literature-uncalibrated",
+            "domain": "0 < density_ha <= 600 and 50 <= literature_duration_days <= 80",
+            "availability": "OUTSIDE_LITERATURE_DOMAIN",
+            "reason": "literature_duration_days was not supplied"
+          },
+          "prices": {
+            "p_gabah": {
+              "value": 7500.0,
+              "source": "runtime",
+              "status": "runtime"
+            },
+            "p_duck_buy": {
+              "value": 5000.0,
+              "source": "runtime",
+              "status": "runtime"
+            },
+            "p_duck_sell": {
+              "value": 45000.0,
+              "source": "runtime",
+              "status": "runtime"
+            }
+          },
+          "survival": {
+            "note": "numerical survival not modeled"
+          }
+        }
+      },
+      "actual_yield_are": 21.02
+    },
+    {
+      "id": "H06",
+      "response": {
+        "model_variant": "AC_DUAL_EVIDENCE",
+        "yield_are_kg": 50.0,
+        "yield_total_kg": 720.5,
+        "model_validation_status": "LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE",
+        "parameter_uncertainty_y0_95pct": [
+          42.81,
+          55.78
+        ],
+        "literature_reference_status": "OUTSIDE_LITERATURE_DOMAIN",
+        "yield_literature_reference_are_kg": null,
+        "yield_literature_reference_total_kg": null,
+        "literature_gap_kg_are": null,
+        "age_status": "LOCAL_READY",
+        "density_are": 2.081887578070784,
+        "density_ha": 208.18875780707842,
+        "density_status": "RECOMMENDED",
+        "release_hst_min": 21,
+        "release_hst_max": 30,
+        "withdraw_hst_min": 56,
+        "withdraw_hst_max": 60,
+        "release_date_min": null,
+        "release_date_max": null,
+        "withdraw_date_min": null,
+        "withdraw_date_max": null,
+        "survival_risk": null,
+        "revenue_gabah": 5403750.0,
+        "revenue_duck_all_sold_scenario": 1350000.0,
+        "cost_duck_buy": 300000.0,
+        "cost_feed_scenario": null,
+        "cost_infra_cycle": null,
+        "cash_contribution_before_optional": 6453750.0,
+        "cash_contribution_after_optional": null,
+        "warnings": [
+          "literature_duration_days was not supplied"
+        ],
+        "provenance": {
+          "primary_local": {
+            "Y0_C": 50.0,
+            "source": "25 calibration cycles / 13 farmers",
+            "status": "local-calibrated",
+            "selection": "farmer-grouped LOFO; one-standard-error rule",
+            "parameter_uncertainty_95pct": "descriptive baseline-parameter uncertainty; not an individual field prediction interval"
+          },
+          "validation": {
+            "untouched_holdout_cycles": 11,
+            "untouched_holdout_farmers": 6,
+            "MAE": 11.979,
+            "RMSE": 15.99,
+            "MedAE": 9.583,
+            "Bias": 7.307,
+            "limitation": "limited holdout performance"
+          },
+          "literature_reference": {
+            "source": "Xiong et al. (2014)",
+            "status": "literature-uncalibrated",
+            "domain": "0 < density_ha <= 600 and 50 <= literature_duration_days <= 80",
+            "availability": "OUTSIDE_LITERATURE_DOMAIN",
+            "reason": "literature_duration_days was not supplied"
+          },
+          "prices": {
+            "p_gabah": {
+              "value": 7500.0,
+              "source": "runtime",
+              "status": "runtime"
+            },
+            "p_duck_buy": {
+              "value": 10000.0,
+              "source": "runtime",
+              "status": "runtime"
+            },
+            "p_duck_sell": {
+              "value": 45000.0,
+              "source": "runtime",
+              "status": "runtime"
+            }
+          },
+          "survival": {
+            "note": "numerical survival not modeled"
+          }
+        }
+      },
+      "actual_yield_are": 52.43
+    },
+    {
+      "id": "H07",
+      "response": {
+        "model_variant": "AC_DUAL_EVIDENCE",
+        "yield_are_kg": 50.0,
+        "yield_total_kg": 500.0,
+        "model_validation_status": "LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE",
+        "parameter_uncertainty_y0_95pct": [
+          42.81,
+          55.78
+        ],
+        "literature_reference_status": "OUTSIDE_LITERATURE_DOMAIN",
+        "yield_literature_reference_are_kg": null,
+        "yield_literature_reference_total_kg": null,
+        "literature_gap_kg_are": null,
+        "age_status": "LOCAL_READY",
+        "density_are": 3.2,
+        "density_ha": 320.0,
+        "density_status": "RECOMMENDED",
+        "release_hst_min": 21,
+        "release_hst_max": 30,
+        "withdraw_hst_min": 56,
+        "withdraw_hst_max": 60,
+        "release_date_min": null,
+        "release_date_max": null,
+        "withdraw_date_min": null,
+        "withdraw_date_max": null,
+        "survival_risk": null,
+        "revenue_gabah": 3150000.0,
+        "revenue_duck_all_sold_scenario": 1440000.0,
+        "cost_duck_buy": 0.0,
+        "cost_feed_scenario": null,
+        "cost_infra_cycle": null,
+        "cash_contribution_before_optional": 4590000.0,
+        "cash_contribution_after_optional": null,
+        "warnings": [
+          "literature_duration_days was not supplied"
+        ],
+        "provenance": {
+          "primary_local": {
+            "Y0_C": 50.0,
+            "source": "25 calibration cycles / 13 farmers",
+            "status": "local-calibrated",
+            "selection": "farmer-grouped LOFO; one-standard-error rule",
+            "parameter_uncertainty_95pct": "descriptive baseline-parameter uncertainty; not an individual field prediction interval"
+          },
+          "validation": {
+            "untouched_holdout_cycles": 11,
+            "untouched_holdout_farmers": 6,
+            "MAE": 11.979,
+            "RMSE": 15.99,
+            "MedAE": 9.583,
+            "Bias": 7.307,
+            "limitation": "limited holdout performance"
+          },
+          "literature_reference": {
+            "source": "Xiong et al. (2014)",
+            "status": "literature-uncalibrated",
+            "domain": "0 < density_ha <= 600 and 50 <= literature_duration_days <= 80",
+            "availability": "OUTSIDE_LITERATURE_DOMAIN",
+            "reason": "literature_duration_days was not supplied"
+          },
+          "prices": {
+            "p_gabah": {
+              "value": 6300.0,
+              "source": "runtime",
+              "status": "runtime"
+            },
+            "p_duck_buy": {
+              "value": 0.0,
+              "source": "runtime",
+              "status": "runtime"
+            },
+            "p_duck_sell": {
+              "value": 45000.0,
+              "source": "runtime",
+              "status": "runtime"
+            }
+          },
+          "survival": {
+            "note": "numerical survival not modeled"
+          }
+        }
+      },
+      "actual_yield_are": 53.4
+    },
+    {
+      "id": "H08",
+      "response": {
+        "model_variant": "AC_DUAL_EVIDENCE",
+        "yield_are_kg": 50.0,
+        "yield_total_kg": 180.0,
+        "model_validation_status": "LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE",
+        "parameter_uncertainty_y0_95pct": [
+          42.81,
+          55.78
+        ],
+        "literature_reference_status": "OUTSIDE_LITERATURE_DOMAIN",
+        "yield_literature_reference_are_kg": null,
+        "yield_literature_reference_total_kg": null,
+        "literature_gap_kg_are": null,
+        "age_status": "LOCAL_READY",
+        "density_are": 4.166666666666667,
+        "density_ha": 416.6666666666667,
+        "density_status": "WARNING_ABOVE_RECOMMENDED",
+        "release_hst_min": 21,
+        "release_hst_max": 30,
+        "withdraw_hst_min": 56,
+        "withdraw_hst_max": 60,
+        "release_date_min": null,
+        "release_date_max": null,
+        "withdraw_date_min": null,
+        "withdraw_date_max": null,
+        "survival_risk": null,
+        "revenue_gabah": 1080000.0,
+        "revenue_duck_all_sold_scenario": 675000.0,
+        "cost_duck_buy": 0.0,
+        "cost_feed_scenario": null,
+        "cost_infra_cycle": null,
+        "cash_contribution_before_optional": 1755000.0,
+        "cash_contribution_after_optional": null,
+        "warnings": [
+          "literature_duration_days was not supplied"
+        ],
+        "provenance": {
+          "primary_local": {
+            "Y0_C": 50.0,
+            "source": "25 calibration cycles / 13 farmers",
+            "status": "local-calibrated",
+            "selection": "farmer-grouped LOFO; one-standard-error rule",
+            "parameter_uncertainty_95pct": "descriptive baseline-parameter uncertainty; not an individual field prediction interval"
+          },
+          "validation": {
+            "untouched_holdout_cycles": 11,
+            "untouched_holdout_farmers": 6,
+            "MAE": 11.979,
+            "RMSE": 15.99,
+            "MedAE": 9.583,
+            "Bias": 7.307,
+            "limitation": "limited holdout performance"
+          },
+          "literature_reference": {
+            "source": "Xiong et al. (2014)",
+            "status": "literature-uncalibrated",
+            "domain": "0 < density_ha <= 600 and 50 <= literature_duration_days <= 80",
+            "availability": "OUTSIDE_LITERATURE_DOMAIN",
+            "reason": "literature_duration_days was not supplied"
+          },
+          "prices": {
+            "p_gabah": {
+              "value": 6000.0,
+              "source": "runtime",
+              "status": "runtime"
+            },
+            "p_duck_buy": {
+              "value": 0.0,
+              "source": "runtime",
+              "status": "runtime"
+            },
+            "p_duck_sell": {
+              "value": 45000.0,
+              "source": "runtime",
+              "status": "runtime"
+            }
+          },
+          "survival": {
+            "note": "numerical survival not modeled"
+          }
+        }
+      },
+      "actual_yield_are": 40.42
+    },
+    {
+      "id": "H09",
+      "response": {
+        "model_variant": "AC_DUAL_EVIDENCE",
+        "yield_are_kg": 50.0,
+        "yield_total_kg": 500.0,
+        "model_validation_status": "LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE",
+        "parameter_uncertainty_y0_95pct": [
+          42.81,
+          55.78
+        ],
+        "literature_reference_status": "OUTSIDE_LITERATURE_DOMAIN",
+        "yield_literature_reference_are_kg": null,
+        "yield_literature_reference_total_kg": null,
+        "literature_gap_kg_are": null,
+        "age_status": "LOCAL_READY",
+        "density_are": 2.9,
+        "density_ha": 290.0,
+        "density_status": "RECOMMENDED",
+        "release_hst_min": 21,
+        "release_hst_max": 30,
+        "withdraw_hst_min": 56,
+        "withdraw_hst_max": 60,
+        "release_date_min": null,
+        "release_date_max": null,
+        "withdraw_date_min": null,
+        "withdraw_date_max": null,
+        "survival_risk": null,
+        "revenue_gabah": 3000000.0,
+        "revenue_duck_all_sold_scenario": 1305000.0,
+        "cost_duck_buy": 0.0,
+        "cost_feed_scenario": null,
+        "cost_infra_cycle": null,
+        "cash_contribution_before_optional": 4305000.0,
+        "cash_contribution_after_optional": null,
+        "warnings": [
+          "literature_duration_days was not supplied"
+        ],
+        "provenance": {
+          "primary_local": {
+            "Y0_C": 50.0,
+            "source": "25 calibration cycles / 13 farmers",
+            "status": "local-calibrated",
+            "selection": "farmer-grouped LOFO; one-standard-error rule",
+            "parameter_uncertainty_95pct": "descriptive baseline-parameter uncertainty; not an individual field prediction interval"
+          },
+          "validation": {
+            "untouched_holdout_cycles": 11,
+            "untouched_holdout_farmers": 6,
+            "MAE": 11.979,
+            "RMSE": 15.99,
+            "MedAE": 9.583,
+            "Bias": 7.307,
+            "limitation": "limited holdout performance"
+          },
+          "literature_reference": {
+            "source": "Xiong et al. (2014)",
+            "status": "literature-uncalibrated",
+            "domain": "0 < density_ha <= 600 and 50 <= literature_duration_days <= 80",
+            "availability": "OUTSIDE_LITERATURE_DOMAIN",
+            "reason": "literature_duration_days was not supplied"
+          },
+          "prices": {
+            "p_gabah": {
+              "value": 6000.0,
+              "source": "runtime",
+              "status": "runtime"
+            },
+            "p_duck_buy": {
+              "value": 0.0,
+              "source": "runtime",
+              "status": "runtime"
+            },
+            "p_duck_sell": {
+              "value": 45000.0,
+              "source": "runtime",
+              "status": "runtime"
+            }
+          },
+          "survival": {
+            "note": "numerical survival not modeled"
+          }
+        }
+      },
+      "actual_yield_are": 38.65
+    },
+    {
+      "id": "H10",
+      "response": {
+        "model_variant": "AC_DUAL_EVIDENCE",
+        "yield_are_kg": 50.0,
+        "yield_total_kg": 150.0,
+        "model_validation_status": "LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE",
+        "parameter_uncertainty_y0_95pct": [
+          42.81,
+          55.78
+        ],
+        "literature_reference_status": "OUTSIDE_LITERATURE_DOMAIN",
+        "yield_literature_reference_are_kg": null,
+        "yield_literature_reference_total_kg": null,
+        "literature_gap_kg_are": null,
+        "age_status": "LOCAL_READY",
+        "density_are": 2.0,
+        "density_ha": 200.0,
+        "density_status": "RECOMMENDED",
+        "release_hst_min": 21,
+        "release_hst_max": 30,
+        "withdraw_hst_min": 56,
+        "withdraw_hst_max": 60,
+        "release_date_min": null,
+        "release_date_max": null,
+        "withdraw_date_min": null,
+        "withdraw_date_max": null,
+        "survival_risk": null,
+        "revenue_gabah": 900000.0,
+        "revenue_duck_all_sold_scenario": 270000.0,
+        "cost_duck_buy": 150000.0,
+        "cost_feed_scenario": null,
+        "cost_infra_cycle": null,
+        "cash_contribution_before_optional": 1020000.0,
+        "cash_contribution_after_optional": null,
+        "warnings": [
+          "literature_duration_days was not supplied"
+        ],
+        "provenance": {
+          "primary_local": {
+            "Y0_C": 50.0,
+            "source": "25 calibration cycles / 13 farmers",
+            "status": "local-calibrated",
+            "selection": "farmer-grouped LOFO; one-standard-error rule",
+            "parameter_uncertainty_95pct": "descriptive baseline-parameter uncertainty; not an individual field prediction interval"
+          },
+          "validation": {
+            "untouched_holdout_cycles": 11,
+            "untouched_holdout_farmers": 6,
+            "MAE": 11.979,
+            "RMSE": 15.99,
+            "MedAE": 9.583,
+            "Bias": 7.307,
+            "limitation": "limited holdout performance"
+          },
+          "literature_reference": {
+            "source": "Xiong et al. (2014)",
+            "status": "literature-uncalibrated",
+            "domain": "0 < density_ha <= 600 and 50 <= literature_duration_days <= 80",
+            "availability": "OUTSIDE_LITERATURE_DOMAIN",
+            "reason": "literature_duration_days was not supplied"
+          },
+          "prices": {
+            "p_gabah": {
+              "value": 6000.0,
+              "source": "runtime",
+              "status": "runtime"
+            },
+            "p_duck_buy": {
+              "value": 25000.0,
+              "source": "runtime",
+              "status": "runtime"
+            },
+            "p_duck_sell": {
+              "value": 45000.0,
+              "source": "runtime",
+              "status": "runtime"
+            }
+          },
+          "survival": {
+            "note": "numerical survival not modeled"
+          }
+        }
+      },
+      "actual_yield_are": 13.5
+    },
+    {
+      "id": "H11",
+      "response": {
+        "model_variant": "AC_DUAL_EVIDENCE",
+        "yield_are_kg": 50.0,
+        "yield_total_kg": 188.5,
+        "model_validation_status": "LOCAL_CALIBRATED_WITH_LIMITED_HOLDOUT_PERFORMANCE",
+        "parameter_uncertainty_y0_95pct": [
+          42.81,
+          55.78
+        ],
+        "literature_reference_status": "OUTSIDE_LITERATURE_DOMAIN",
+        "yield_literature_reference_are_kg": null,
+        "yield_literature_reference_total_kg": null,
+        "literature_gap_kg_are": null,
+        "age_status": "LOCAL_READY",
+        "density_are": 2.1220159151193636,
+        "density_ha": 212.20159151193633,
+        "density_status": "RECOMMENDED",
+        "release_hst_min": 21,
+        "release_hst_max": 30,
+        "withdraw_hst_min": 56,
+        "withdraw_hst_max": 60,
+        "release_date_min": null,
+        "release_date_max": null,
+        "withdraw_date_min": null,
+        "withdraw_date_max": null,
+        "survival_risk": null,
+        "revenue_gabah": 1131000.0,
+        "revenue_duck_all_sold_scenario": 360000.0,
+        "cost_duck_buy": 200000.0,
+        "cost_feed_scenario": null,
+        "cost_infra_cycle": null,
+        "cash_contribution_before_optional": 1291000.0,
+        "cash_contribution_after_optional": null,
+        "warnings": [
+          "literature_duration_days was not supplied"
+        ],
+        "provenance": {
+          "primary_local": {
+            "Y0_C": 50.0,
+            "source": "25 calibration cycles / 13 farmers",
+            "status": "local-calibrated",
+            "selection": "farmer-grouped LOFO; one-standard-error rule",
+            "parameter_uncertainty_95pct": "descriptive baseline-parameter uncertainty; not an individual field prediction interval"
+          },
+          "validation": {
+            "untouched_holdout_cycles": 11,
+            "untouched_holdout_farmers": 6,
+            "MAE": 11.979,
+            "RMSE": 15.99,
+            "MedAE": 9.583,
+            "Bias": 7.307,
+            "limitation": "limited holdout performance"
+          },
+          "literature_reference": {
+            "source": "Xiong et al. (2014)",
+            "status": "literature-uncalibrated",
+            "domain": "0 < density_ha <= 600 and 50 <= literature_duration_days <= 80",
+            "availability": "OUTSIDE_LITERATURE_DOMAIN",
+            "reason": "literature_duration_days was not supplied"
+          },
+          "prices": {
+            "p_gabah": {
+              "value": 6000.0,
+              "source": "runtime",
+              "status": "runtime"
+            },
+            "p_duck_buy": {
+              "value": 25000.0,
+              "source": "runtime",
+              "status": "runtime"
+            },
+            "p_duck_sell": {
+              "value": 45000.0,
+              "source": "runtime",
+              "status": "runtime"
+            }
+          },
+          "survival": {
+            "note": "numerical survival not modeled"
+          }
+        }
+      },
+      "actual_yield_are": 36.47
+    }
+  ],
+  "holdout_metrics": {
+    "MAE": 11.97909090909091,
+    "RMSE": 15.990032406584932,
+    "MedAE": 9.579999999999998,
+    "Bias": 7.306363636363637
+  },
+  "summary": {
+    "holdout_pass": "11/11",
+    "holdout_metrics_pass": true,
+    "holdout_cost_duck_buy_audit_pass": "11/11",
+    "holdout_cash_contribution_audit_pass": "11/11",
+    "holdout_reference_abstention_pass": "11/11",
+    "reference_cases_pass": "6/6",
+    "primary_reference_decoupling_pass": true,
+    "calendar_pass": true
+  },
+  "history": {
+    "schema_version": 4,
+    "round_trip": true,
+    "delete_then_404": true
+  },
+  "main_database_after": "b8e5fa23c274cc9da8afcb53d737fda6806ad22ee8359e3a4150f9ad4b9892a9",
+  "main_database_unchanged": true
+}

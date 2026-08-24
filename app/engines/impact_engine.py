@@ -1,7 +1,7 @@
 """SoT §10 Research/Sandbox engines — docs/Model Matematika Data Collection DSS Padi Bebek FINAL.md
 
-SANDBOX components are fully excluded from Core_Cash_Cost and Net_Cash_Contribution_DSS.
-They are informational/research outputs only.
+These helpers are archived research-only code and are not imported by the
+A+C simulation or primary-economics paths.
 
 SoT §10.1 Weeding:
     k_weeding = 21000 Rp/are/kegiatan
