@@ -146,20 +146,20 @@ def test_pre_specified_holdout_replay_uses_frozen_c0_and_documented_metrics():
     # H01-H11 are fixed pre-specified holdout rows. The holdout is now opened,
     # so these numbers must never become a source for runtime fitting.
     holdout = [
-        ("H01", 8, 3.60, 13, "sertani", "jajar_legowo", 45.83, 6_000, 25_000, None),
-        ("H02", 9, 5.10, 5, "sertani", "jajar_legowo", 48.04, 6_000, 25_000, None),
-        ("H03", 11, 10.00, 65, "sertani", "jajar_legowo", 60.50, 6_000, 7_539, None),
-        ("H04", 14, 7.26, 9, "sertani", "jajar_legowo", 59.37, 7_500, 22_222.22222, None),
-        ("H05", 23, 5.10, 10, "inpari", "jajar_legowo", 21.02, 7_500, 5_000, None),
-        ("H06", 25, 14.41, 30, "sertani", "jajar_legowo", 52.43, 7_500, 10_000, None),
-        ("H07", 38, 10.00, 32, "sertani", "jajar_legowo", 53.40, 6_300, 0, "2024-04-22"),
-        ("H08", 43, 3.60, 15, "sertani", "jajar_legowo", 40.42, 6_000, 0, "2024-10-01"),
-        ("H09", 44, 10.00, 29, "inpari", "tegel", 38.65, 6_000, 0, "2024-09-28"),
-        ("H10", 47, 3.00, 6, "sertani", "jajar_legowo", 13.50, 6_000, 25_000, None),
-        ("H11", 62, 3.77, 8, "sertani", "jajar_legowo", 36.47, 6_000, 25_000, None),
+        ("H01", 8, 3.60, 13, "sertani", "jajar_legowo", 45.83333333, 990_000, 6_000, 25_000, None),
+        ("H02", 9, 5.10, 5, "sertani", "jajar_legowo", 48.03921569, 1_470_000, 6_000, 25_000, None),
+        ("H03", 11, 10.00, 65, "sertani", "jajar_legowo", 60.5, 3_630_000, 6_000, 7_539, None),
+        ("H04", 14, 7.26, 9, "sertani", "jajar_legowo", 59.36639118, 3_232_500, 7_500, 22_222.22222, None),
+        ("H05", 23, 5.10, 10, "inpari", "jajar_legowo", 21.01960784, 804_000, 7_500, 5_000, None),
+        ("H06", 25, 14.41, 30, "sertani", "jajar_legowo", 52.42886884, 5_666_250, 7_500, 10_000, None),
+        ("H07", 38, 10.00, 32, "sertani", "jajar_legowo", 53.4, 3_364_200, 6_300, 0, "2024-04-22"),
+        ("H08", 43, 3.60, 15, "sertani", "jajar_legowo", 40.41666667, 873_000, 6_000, 0, "2024-10-01"),
+        ("H09", 44, 10.00, 29, "inpari", "tegel", 38.65, 2_319_000, 6_000, 0, "2024-09-28"),
+        ("H10", 47, 3.00, 6, "sertani", "jajar_legowo", 13.5, 243_000, 6_000, 25_000, None),
+        ("H11", 62, 3.77, 8, "sertani", "jajar_legowo", 36.47214854, 825_000, 6_000, 25_000, None),
     ]
     errors = []
-    for _, _, area, ducks, variety, system, actual, rice_price, duck_buy_price, planting_date in holdout:
+    for _, _, area, ducks, variety, system, actual, actual_gabah_revenue, rice_price, duck_buy_price, planting_date in holdout:
         payload = {
             "land_area_are": area,
             "duck_count": ducks,
@@ -180,6 +180,9 @@ def test_pre_specified_holdout_replay_uses_frozen_c0_and_documented_metrics():
         assert body["yield_total_kg"] == pytest.approx(50 * area)
         assert body["density_are"] == pytest.approx(ducks / area)
         assert body["revenue_gabah"] == pytest.approx(50 * area * rice_price)
+        # Actual Gabah Revenue is an explicit workbook source field, not a
+        # reconstruction from a rounded displayed actual yield.
+        assert actual_gabah_revenue in {990_000, 1_470_000, 3_630_000, 3_232_500, 804_000, 5_666_250, 3_364_200, 873_000, 2_319_000, 243_000, 825_000}
         assert body["cost_duck_buy"] == pytest.approx(ducks * duck_buy_price, abs=0.01)
         assert body["provenance"]["prices"]["p_duck_buy"]["source"] == "runtime"
         assert body["provenance"]["prices"]["p_duck_buy"]["status"] == "runtime"
@@ -192,12 +195,10 @@ def test_pre_specified_holdout_replay_uses_frozen_c0_and_documented_metrics():
             assert body["withdraw_date_max"] is not None
         errors.append(body["yield_are_kg"] - actual)
     absolute_errors = sorted(abs(error) for error in errors)
-    assert sum(abs(error) for error in errors) / len(errors) == pytest.approx(11.979, abs=0.001)
-    assert (sum(error * error for error in errors) / len(errors)) ** 0.5 == pytest.approx(15.990, abs=0.001)
-    # Public scenario rows show yield with two decimal places, while the SoT's
-    # frozen MedAE uses the higher-precision source values.
-    assert absolute_errors[len(absolute_errors) // 2] == pytest.approx(9.583, abs=0.005)
-    assert sum(errors) / len(errors) == pytest.approx(7.307, abs=0.001)
+    assert sum(abs(error) for error in errors) / len(errors) == pytest.approx(11.9785716318, abs=1e-9)
+    assert (sum(error * error for error in errors) / len(errors)) ** 0.5 == pytest.approx(15.9898352553, abs=1e-9)
+    assert absolute_errors[len(absolute_errors) // 2] == pytest.approx(9.5833333300, abs=1e-9)
+    assert sum(errors) / len(errors) == pytest.approx(7.3067061736, abs=1e-9)
 
 
 def test_zero_runtime_duck_purchase_price_is_not_a_fallback():
