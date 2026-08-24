@@ -8,7 +8,7 @@
 | Final untouched holdout | 11 cycles / 6 farmers |
 | Production parameter | `Y0_C = 50 kg/are` |
 | Descriptive bootstrap interval | `[42.81, 55.78] kg/are` |
-| Holdout MAE / RMSE / MedAE / Bias | `11.979 / 15.990 / 9.583 / +7.307 kg/are` |
+| Holdout MAE / RMSE / MedAE / Bias | `11.979091 / 15.990032 / 9.580000 / +7.306364 kg/are` |
 
 C0 is the sole production and economics path. The interval is parameter uncertainty, not an individual-field prediction interval. No post-holdout retuning is permitted.
 

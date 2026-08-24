@@ -1,11 +1,25 @@
-# A+C stale semantics audit
+# Stale-semantics audit — A+C evidence freeze
 
-Checked active Python, docs, tests, Postman, and scripts for: `47.8767507`, `Y_BASE`, `N_survive`, `survival_rate`, `compute_surviving_ducks`, `0.60`, `52500`, `Cost_feed`, `Net_Cash_Contribution_DSS`, `HST_OUT`, `T_ACTIVE`, `109`, `116`, `FINAL_BANGET`, `Yield_are_pred`, `Revenue_duck_potential`, `average`, `weighted`, `ensemble`, `blend`, `w_A`, `w_C`, `alpha_bio`, `F_density_bio`, `F_sys`, `F_var`, `A_STRICT_SEPARATION`, and `C_FARMER_GROUPED_LOCAL`.
+Generated after the A+C cleanup with a repository-wide text search (source, tests, scripts, docs, tracked configuration, and Postman paths; Git object history excluded). Search terms included legacy yield/survival/calendar/economics symbols, numerical fusion words, optimizer labels, and prior model constants.
 
-| Classification | Result |
-| --- | --- |
-| Active production path | No old yield, survival, feed, calendar, or fusion semantics remain. Production uses only `compute_primary_yield` and `compute_economics_from_primary`. |
-| Historical documentation | Previous release notes retain historical terminology only. |
-| Research provenance | Candidate C1/C3/C4 and Xiong source remain described in the SoT, never invoked as production modifiers. |
-| Negative tests | `tests/test_model_ac.py` asserts reference/economics invariance, strict input, high-risk abstention, and no visualization survival rate. |
-| Legacy persistence | v1-v3 table columns stay physically available; current route queries schema version 4 only. |
+| Retained occurrence | Classification | Why it is unambiguous |
+| --- | --- | --- |
+| `app/core/database.py` v1-v3 columns such as `hst_out`, `t_active`, `n_survive`, legacy yield/economics fields | **Legacy physical persistence only** | The comments state v1-v3 are historical physical storage; current repository reads, lists, details, and deletes only `schema_version=4`. Live HTTP evidence seeds v1/v2/v3 and proves hidden/list-detail-delete behavior while rows persist. |
+| `docs/Model Matematika Data Collection DSS Padi Bebek FINAL.md` legacy terms/numbers | **Authoritative rejection and historical rationale** | The SoT explicitly identifies them as rejected/obsolete and specifies C0 primary plus separate Xiong reference. It is not executable and is not contradicted by runtime. |
+| `CHANGELOG.md` optimizer references | **Historical/removal record** | It says the legacy optimizer was removed and is absent from router/OpenAPI. |
+| `README.md` words such as average/ensemble/optimizer | **Negative current-contract statements** | They explicitly prohibit fusion and state that no optimizer endpoint is exposed. |
+| `tests/test_model_ac.py` / `scripts/validate_model_ac_runtime.py` `cost_feed_scenario`, optimizer-path, and survival-rate checks | **Current negative/optional-cost tests** | These verify optional scenario cost only, optimizer absence, and absence of numerical survival; they are not legacy model arithmetic. |
+| `app/schemas/dss.py`, `app/services/simulation_service.py`, `app/engines/formula_engine.py`, `app/services/visualization_service.py` optional feed/all-sold fields and non-fused language | **Current A+C contract** | Optional costs are runtime scenario inputs; C0 remains the only economics yield. HIGH risk abstains from all-sold revenue without calculating survival. |
+| `docs/runtime_evidence_model_ac.json` `cost_feed_scenario: null` | **Generated current runtime evidence** | It records the current optional field as null when omitted, not a legacy Core-feed default. |
+| This audit document | **Audit vocabulary** | Terms are retained solely to classify search findings. |
+
+## Confirmed removals from current-model exposure
+
+- No `DSSConstants` class, instantiation, or lookup endpoint remains.
+- No current domain type contains old harvest windows, fixed 21/65/44 semantics, numerical survival, `N_survive`, or old predicted-yield/economic DTOs.
+- `impact_engine.py` is an archive notice only and is not imported by DSS Core.
+- Optimizer router/schema are deleted; OpenAPI exposes no optimizer tag/path.
+- No tracked operational JWT secret exists; `.env.example` has a placeholder only.
+- Runtime status uses only `VALID_DOMAIN` or `OUTSIDE_LITERATURE_DOMAIN`.
+
+The retained legacy strings above are all either physical v1-v3 compatibility, explicit historical/rejection evidence, negative tests, or current optional-field names. None can route into the current A+C scientific output.
