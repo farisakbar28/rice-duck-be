@@ -146,28 +146,33 @@ def test_untouched_holdout_replay_uses_frozen_c0_and_documented_metrics():
     # H01-H11 are the fixed, untouched rows in docs/tes_skenario.md. These
     # numbers are intentionally not a source for runtime fitting.
     holdout = [
-        ("H01", 8, 3.60, 13, "sertani", "jajar_legowo", 45.83, 6_000, 25_000),
-        ("H02", 9, 5.10, 5, "sertani", "jajar_legowo", 48.04, 6_000, 25_000),
-        ("H03", 11, 10.00, 65, "sertani", "jajar_legowo", 60.50, 6_000, 7_539),
-        ("H04", 14, 7.26, 9, "sertani", "jajar_legowo", 59.37, 7_500, 22_222.22222),
-        ("H05", 23, 5.10, 10, "inpari", "jajar_legowo", 21.02, 7_500, 5_000),
-        ("H06", 25, 14.41, 30, "sertani", "jajar_legowo", 52.43, 7_500, 10_000),
-        ("H07", 38, 10.00, 32, "sertani", "jajar_legowo", 53.40, 6_300, 0),
-        ("H08", 43, 3.60, 15, "sertani", "jajar_legowo", 40.42, 6_000, 0),
-        ("H09", 44, 10.00, 29, "inpari", "tegel", 38.65, 6_000, 0),
-        ("H10", 47, 3.00, 6, "sertani", "jajar_legowo", 13.50, 6_000, 25_000),
-        ("H11", 62, 3.77, 8, "sertani", "jajar_legowo", 36.47, 6_000, 25_000),
+        ("H01", 8, 3.60, 13, "sertani", "jajar_legowo", 45.83, 6_000, 25_000, None),
+        ("H02", 9, 5.10, 5, "sertani", "jajar_legowo", 48.04, 6_000, 25_000, None),
+        ("H03", 11, 10.00, 65, "sertani", "jajar_legowo", 60.50, 6_000, 7_539, None),
+        ("H04", 14, 7.26, 9, "sertani", "jajar_legowo", 59.37, 7_500, 22_222.22222, None),
+        ("H05", 23, 5.10, 10, "inpari", "jajar_legowo", 21.02, 7_500, 5_000, None),
+        ("H06", 25, 14.41, 30, "sertani", "jajar_legowo", 52.43, 7_500, 10_000, None),
+        ("H07", 38, 10.00, 32, "sertani", "jajar_legowo", 53.40, 6_300, 0, "2024-04-22"),
+        ("H08", 43, 3.60, 15, "sertani", "jajar_legowo", 40.42, 6_000, 0, "2024-10-01"),
+        ("H09", 44, 10.00, 29, "inpari", "tegel", 38.65, 6_000, 0, "2024-09-28"),
+        ("H10", 47, 3.00, 6, "sertani", "jajar_legowo", 13.50, 6_000, 25_000, None),
+        ("H11", 62, 3.77, 8, "sertani", "jajar_legowo", 36.47, 6_000, 25_000, None),
     ]
     errors = []
-    for _, _, area, ducks, variety, system, actual, rice_price, duck_buy_price in holdout:
+    for _, _, area, ducks, variety, system, actual, rice_price, duck_buy_price, planting_date in holdout:
+        payload = {
+            "land_area_are": area,
+            "duck_count": ducks,
+            "rice_variety": variety,
+            "planting_system": system,
+            "p_gabah": rice_price,
+            "p_duck_buy": duck_buy_price,
+            "p_duck_sell": 45_000,
+        }
+        if planting_date is not None:
+            payload["planting_date"] = planting_date
         response = post(
-            land_area_are=area,
-            duck_count=ducks,
-            rice_variety=variety,
-            planting_system=system,
-            p_gabah=rice_price,
-            p_duck_buy=duck_buy_price,
-            p_duck_sell=45_000,
+            **payload,
         )
         assert response.status_code == 200
         body = response.json()
@@ -178,6 +183,13 @@ def test_untouched_holdout_replay_uses_frozen_c0_and_documented_metrics():
         assert body["cost_duck_buy"] == pytest.approx(ducks * duck_buy_price, abs=0.01)
         assert body["provenance"]["prices"]["p_duck_buy"]["source"] == "runtime"
         assert body["provenance"]["prices"]["p_duck_buy"]["status"] == "runtime"
+        if planting_date is None:
+            assert all(body[key] is None for key in (
+                "release_date_min", "release_date_max", "withdraw_date_min", "withdraw_date_max"
+            ))
+        else:
+            assert body["release_date_min"] is not None
+            assert body["withdraw_date_max"] is not None
         errors.append(body["yield_are_kg"] - actual)
     absolute_errors = sorted(abs(error) for error in errors)
     assert sum(abs(error) for error in errors) / len(errors) == pytest.approx(11.979, abs=0.001)
@@ -301,6 +313,8 @@ def test_openapi_documents_complete_model_c_contract():
     assert response["example"]["model_variant"] == "C_FARMER_GROUPED_LOCAL"
     assert set(FORBIDDEN_FIELDS).isdisjoint(response["properties"])
     assert all(field.get("description") for field in response["properties"].values())
+    assert not any(path.startswith("/api/v1/optimizer") for path in app.openapi()["paths"])
+    assert client.post("/api/v1/optimizer/recommend", json={}).status_code == 404
 
 
 def test_runtime_validator_covers_live_legacy_history_and_postman_has_assertions():

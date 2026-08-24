@@ -12,7 +12,9 @@ class Settings(BaseSettings):
     runtime_instance_id: str = ""
     database_path: str = "data/rice_duck.db"
     cors_allowed_origins: str = "*"
-    jwt_secret_key: str = "mSXdI785UBtEkxe1ejL5AqYnt5uD2jEeSDmrD60I3Jw"
+    # Required: signing material must come from the environment (or an
+    # untracked .env), never from a tracked default.
+    jwt_secret_key: str
     jwt_access_token_minutes: int = 120
     password_hash_iterations: int = 600_000
 

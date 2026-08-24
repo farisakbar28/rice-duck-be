@@ -32,7 +32,7 @@ Default harga Model C adalah gabah Rp6.000/kg dan beli bebek Rp25.000/ekor (kedu
 
 ## History dan validasi
 
-Historical holdout replay mengirim dan memverifikasi arithmetic cycle-specific source `p_duck_buy`, termasuk nilai runtime `0`; fallback Rp25.000 diuji terpisah oleh S-C09.
+Historical holdout replay mengirim dan memverifikasi arithmetic cycle-specific source `p_duck_buy`, termasuk nilai runtime `0`; fallback Rp25.000 diuji terpisah oleh S-C09. H07, H08, dan H09 juga mengirim `planting_date` sumber (`2024-04-22`, `2024-10-01`, dan `2024-09-28`); row source yang tanggal tanamnya kosong tetap tidak mengirim field itu.
 
 Simulasi dengan Bearer token disimpan sebagai `schema_version=4`, menyimpan request dan response Model C secara deterministik. Row v1–v3 dipertahankan secara fisik tetapi tidak ditampilkan, dibaca, atau dihapus sebagai history Model C.
 
@@ -43,4 +43,4 @@ python -m pytest -q
 python scripts/validate_model_c_runtime.py
 ```
 
-Runner menyalakan Uvicorn pada loopback port acak dengan SQLite runtime terisolasi, memverifikasi nonce `/health`, menjalankan H01–H11, S-C01–S-C12, kalender, dan history v4. Bukti raw HTTP tersimpan di [docs/runtime_evidence_model_c.json](docs/runtime_evidence_model_c.json). Optimizer tetap fitur terpisah dan di luar scope DSS Core.
+Runner menyalakan Uvicorn pada loopback port acak dengan SQLite runtime terisolasi, memakai JWT disposable dari environment, memverifikasi nonce `/health`, menjalankan H01–H11, S-C01–S-C12, kalender, dan history v4. Bukti raw HTTP tersimpan di [docs/runtime_evidence_model_c.json](docs/runtime_evidence_model_c.json). API riset Model C tidak mengekspos endpoint optimizer.

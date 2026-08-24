@@ -29,14 +29,6 @@ OPENAPI_TAGS = [
             "Tidak mengandung fitur optimizer/rekomendasi."
         ),
     },
-    {
-        "name": "optimizer",
-        "description": (
-            "Optimizer/rekomendasi (FITUR TERPISAH, di luar cakupan SoT). "
-            "Boleh memakai formula literatur lama; tidak boleh reuse engine "
-            "DSS core tanpa memanggil endpoint /api/v1/dss/simulate."
-        ),
-    },
 ]
 
 
@@ -49,8 +41,7 @@ def create_app() -> FastAPI:
             "Endpoint `/api/v1/dss/simulate` mengikuti model SoT "
             "docs/Model Matematika Data Collection DSS Padi Bebek FINAL.md. "
             "lima input inti, output C0 dan scenario cash contribution. "
-            "Endpoint `/api/v1/optimizer/recommend` adalah fitur produk terpisah di luar "
-            "cakupan SoT."
+            "API riset ini hanya mengekspos kontrak Model C yang frozen."
         ),
         version=settings.app_version,
         debug=settings.app_debug,

@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Final research-integrity patch: H07/H08/H09 now replay their recorded source planting dates over real HTTP, while all other missing source dates remain omitted. The resulting calendar fields are audited without changing Model C yield or economics.
+- The obsolete numerical impact engine is now archive-only; the optimizer route and schemas were removed from the active research API; JWT signing material is environment-only.
+- Added the Model C evidence manifest, actual H01–H11 result table, and refreshed stale-semantics audit documentation.
 - Restored cycle-specific `p_duck_buy` values to H01-H11 holdout replay using cleaned source-row mapping, enabling source-level audit of `cost_duck_buy` and scenario cash contribution without changing frozen Model C yield parameters or holdout metrics.
 - **Breaking: Model C migration.** The active production formula is frozen C0: 50 kg/are from the farmer-grouped calibration partition. C1/C3/C4 candidate coefficients remain research-only and cannot enter `/api/v1/dss/simulate`.
 - The simulation API now has five core inputs, strict finite JSON-number validation, optional calendar/prices/scenario costs, and no Xiong or literature-duration runtime contract.

@@ -21,6 +21,9 @@ Endpoint canonical: `POST /api/v1/dss/simulate`.
 - `duck_age_days=21` pada replay adalah estimasi clean dataset dan tidak dinilai sebagai biological ground truth.
 - `N_sold_actual`, feed historical, duck sale revenue, dan raw farmer profit bukan target langsung output model.
 - Bila source `planting_date` kosong, **omit/null**; jangan membuat tanggal sintetis.
+- Source `Tanggal Tanam (Sumber)` tersedia hanya untuk H07/raw row 38
+  (`2024-04-22`), H08/raw row 43 (`2024-10-01`), dan H09/raw row 44
+  (`2024-09-28`); ketiganya harus dikirim dalam request HTTP replay.
 - Runtime `p_gabah` dan `p_duck_buy` pada replay menggunakan source value agar arithmetic economics dapat diaudit; nilai default hanya diuji pada synthetic cases.
 
 ## 3. Untouched Holdout Replay
@@ -42,6 +45,11 @@ Endpoint canonical: `POST /api/v1/dss/simulate`.
 \* `DefaultJarwo` = `Null(default Jarwo 2:1)` pada clean dataset; provenance harus dipertahankan.
 
 Mapping `p_duck_buy` memakai source file `DSS_Padi_Bebek_Rekap_Bersih_v10(1).xlsx`, sheet `Dataset Actual Bersih`, join key `Excel Row (Sumber)`, field `Buy Price Duck (Rp/ekor)`. Join dilakukan memakai raw row, bukan nama farmer, karena satu farmer dapat memiliki beberapa cycle. Nilai `0` pada H07, H08, dan H09 adalah runtime source value eksplisit; H09 mempunyai evidence operasional bahwa bebek memakai cycle sebelumnya, sedangkan H07/H08 hanya didokumentasikan sebagai `recorded source value = Rp0/duck`.
+
+Mapping `planting_date` memakai workbook/sheet/join key yang sama, dengan field
+`Tanggal Tanam (Sumber)`. H07/H08/H09 membawa tanggal sumber di atas; seluruh
+row lain tidak membawa field itu dalam HTTP request sehingga backend wajib
+mempertahankan returned date fields sebagai `null`.
 
 Source-level duck purchase prices were subsequently restored to the holdout replay fixture from the cleaned local dataset using the original source-row identifier. This correction affects only the arithmetic audit of `Cost_duck_buy` and scenario cash contribution. It does not alter the frozen yield model, model-selection process, holdout composition, or yield-validation metrics.
 
@@ -89,6 +97,16 @@ Jangan kirim historical feed sebagai Core default. Feed hanya boleh diuji terpis
 - `cost_duck_buy=J*p_duck_buy` menggunakan source runtime input, termasuk `0` bila source memang `0`.
 - `cash_contribution_before_optional = revenue_gabah + J*45000 - cost_duck_buy`; gunakan toleransi Rp0.01 untuk H04 karena harga sumber decimal.
 - cash contribution tidak dibandingkan ke raw farmer profit sebagai accuracy metric.
+
+### Comparison validity
+
+Perbandingan yang valid adalah backend yield terhadap actual yield, predicted
+`revenue_gabah` terhadap Actual Gabah Revenue (`actual_yield × A × source
+p_gabah`), dan `cost_duck_buy` terhadap `J × source p_duck_buy`. Skenario
+`revenue_duck_all_sold_scenario` **tidak** valid dibandingkan dengan raw Duck
+Sale Revenue, karena ia adalah ceiling scenario seluruh bebek terjual. Demikian
+juga `cash_contribution_before_optional` **tidak** valid dibandingkan dengan
+raw farmer profit; ia bukan realized profit petani.
 
 
 ## 6. Synthetic Contract & Boundary Tests
