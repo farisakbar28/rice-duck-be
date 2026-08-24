@@ -4,9 +4,11 @@ from pathlib import Path
 from app.core.config import settings
 
 
-# v3 explicit columns — SoT FINAL
-# schema_version=3 rows written by /dss/simulate (authenticated)
-# schema_version<=2 legacy rows remain readable via SimulationHistoryLegacy
+# Historical v3 explicit columns retained solely for migration compatibility.
+# Model A writes only schema version 4. Every v3-named field below is legacy
+# storage only and is never read or written by the Model A response path.
+# v1-v3 rows remain physically preserved and are intentionally not exposed as
+# Model A detail/list responses.
 HISTORY_V3_COLUMNS = (
     # Input snapshot
     "land_area_are REAL NOT NULL DEFAULT 0",
@@ -89,7 +91,7 @@ def initialize_database() -> None:
                 lookup_json TEXT NOT NULL DEFAULT '{}',
                 validation_json TEXT NOT NULL DEFAULT '{}',
                 data_readiness_json TEXT NOT NULL DEFAULT '{}',
-                -- schema_version: 1/2=legacy JSON, 3=v3 explicit columns (SoT FINAL)
+                -- schema_version: 1/2/3 are historical formats; 4 is Model A.
                 schema_version INTEGER NOT NULL DEFAULT 1,
                 created_at TEXT NOT NULL,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -135,3 +137,6 @@ def initialize_database() -> None:
                 connection.execute(
                     f"ALTER TABLE dss_simulation_histories ADD COLUMN {column_def}"
                 )
+        existing_columns = {row["name"] for row in connection.execute("PRAGMA table_info(dss_simulation_histories)").fetchall()}
+        if "model_a_payload_json" not in existing_columns:
+            connection.execute("ALTER TABLE dss_simulation_histories ADD COLUMN model_a_payload_json TEXT")

@@ -8,8 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- Aligned the Inpari harvest calendar with the latest local empirical reference window of 109–116 HST, including date derivation, options metadata, HTTP responses, persistence of new simulations, tests, and active API documentation. The prior 134-HST generic estimate is no longer used for new calculations.
-- Migrated DSS Core to the 22 August 2026 Source of Truth: seven mandatory inputs, readiness-only age status, system-neutral yield baseline, density-triggered overload survival, Core feed cost, and `Net_Cash_Contribution_DSS`.
+- **Breaking:** Model A strict separation replaces the former DSS request/response contract with five core inputs, optional calendar/prices/scenario costs, nullable unavailable outputs, and scenario cash-contribution terminology.
+- Completed the **Evidence Reset**: test-only 36-cycle data is not used to fit, tune, or calibrate production parameters.
+- Added the guarded, literature-uncalibrated Xiong equation; numerical yield abstains outside `0 < d_ha <= 600` and `50 <= t <= 80`.
+- Removed numerical-survival semantics and migrated the calendar from fixed points to release `21–30` HST and withdraw `56–60` HST ranges.
+- New simulations persist as versioned schema-v4 payloads; v1–v3 remain historical and are not reinterpreted as Model A.
+- Updated unit/integration tests, live runtime scenarios, OpenAPI, README, Postman collection, and Postman environment for the Model A contract.
+- Runtime acceptance runner now launches its own isolated backend/database, verifies the main database is unchanged, and records exact HTTP response bodies (with authentication credentials redacted).
+- Enforced strict integer wire semantics for `duck_count` and `duck_age_days`; completed OpenAPI descriptions for optional scenario-cost inputs and allocation denominators.
+- Enforced JSON-number-only semantics for all Decimal request fields and published standard OpenAPI numeric bounds without string alternatives.
+- Documented every Model A response field and its null/abstention semantics in OpenAPI, including an explicit unavailable-output example.
+
+## [Legacy migration draft — superseded]
+
+### Changed
+- A superseded migration draft described Model A strict separation with optional calendar/prices, a Xiong literature validity guard, nullable scientific outputs, no numerical survival, scenario cash-contribution terminology, and schema-v4 history payloads.
+- Rebuilt API tests, visualization, OpenAPI descriptions, Postman collection, and runtime validation documentation for Model A.
+- A superseded draft aligned Inpari to a 109–116 HST window; it is not a current Core calendar.
+- A superseded draft used seven mandatory inputs, a system-neutral yield baseline, overload survival, Core feed cost, and `Net_Cash_Contribution_DSS`; none are the current Model A contract.
 - Removed public `F_sys` and monetary infrastructure outputs; infrastructure is now context-only sandbox information.
 - Restored v3 history detail read-back using persisted canonical values and deterministic sandbox context.
 - Updated API tests, Postman collection, and README to the final contract.

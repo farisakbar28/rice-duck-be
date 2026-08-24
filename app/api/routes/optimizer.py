@@ -1,19 +1,16 @@
 """Optimizer routes — STAND-ALONE feature, OUT OF SoT scope.
 
-See ``app.schemas.optimizer`` for the scope notice. The optimizer uses a
-legacy literature-based formula set (Xiong-style, ``alpha_local``-calibrated,
-grid-search ``argmax``). It MUST NOT import or call
+See ``app.schemas.optimizer`` for the scope notice. This endpoint is a
+non-calculating product stub; it MUST NOT import or call
 ``app.engines.formula_engine`` or ``app.engines.impact_engine`` directly;
-it is designed to call the DSS core endpoint
-(``/api/v1/dss/simulate``) and pass the result through.
+and it does not call the DSS core endpoint.
 
 The route below is intentionally minimal: it returns a structured response
-saying the optimizer is currently a stub. Real product work would re-implement
-the legacy grid-search here without touching DSS core.
+saying the optimizer is currently a stub. Any future optimizer work remains
+isolated from DSS Core.
 """
 
 from fastapi import APIRouter
-from pydantic import BaseModel
 
 from app.schemas.optimizer import (
     OptimizerRecommendRequest,
@@ -124,13 +121,11 @@ def _stub_environment() -> ScenarioEnvironment:
     summary="Optimizer recommendation (OUT OF SoT scope)",
     description=(
         "Stand-alone optimizer feature. NOT aligned with the local-calibrated "
-        "DSS core documented in FINAL_BANGET.md. May use legacy Xiong-style "
-        "formulas internally."
+        "DSS Core Model A. This stub does not provide or reuse legacy DSS formulas."
     ),
 )
 def optimizer_recommend(payload: OptimizerRecommendRequest) -> OptimizerRecommendResponse:
-    # Placeholder: real implementation will re-introduce the legacy grid
-    # search here, OUTSIDE the DSS core calculator.
+    # Placeholder only: no optimizer calculation is implemented in this build.
     actual = ActualScenario(
         duck_count=payload.duck_count,
         land_area_are=payload.land_area_are,
@@ -151,7 +146,7 @@ def optimizer_recommend(payload: OptimizerRecommendRequest) -> OptimizerRecommen
         risk_status="unknown",
         rey=None,
         rey_status="not-computed",
-        rey_notes="Optimizer stub; legacy grid-search not yet re-implemented here.",
+        rey_notes="Optimizer stub; no optimizer calculation is implemented.",
     )
     recommended = RecommendedScenario(
         recommended_duck_count=payload.duck_count,
@@ -247,4 +242,3 @@ def optimizer_recommend(payload: OptimizerRecommendRequest) -> OptimizerRecommen
         ),
         assumptions=["Optimizer is a stand-alone stub in this build."],
     )
-

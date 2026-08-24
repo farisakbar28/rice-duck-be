@@ -4,6 +4,7 @@ from pydantic import BaseModel
 class HealthResponse(BaseModel):
     status: str
     service: str
+    runtime_instance_id: str | None = None
 
 
 class ErrorDetail(BaseModel):

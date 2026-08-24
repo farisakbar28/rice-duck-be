@@ -1,118 +1,20 @@
 from fastapi import APIRouter, Depends
-
 from app.api.dependencies import get_current_user, get_optional_current_user
 from app.domain.models import AuthContext
 from app.schemas.common import ErrorResponse
-from app.schemas.dss import (
-    DeleteHistoryResponse,
-    DSSOptionsResponse,
-    DSSSimulationRequest,
-    DSSSimulationResponse,
-    HistoryListResponse,
-    VisualizationResponse,
-)
+from app.schemas.dss import DeleteHistoryResponse, DSSOptionsResponse, DSSSimulationRequest, DSSSimulationResponse, HistoryListResponse, VisualizationResponse
 from app.services.simulation_service import dss_service
 from app.services.visualization_service import visualization_service
-
-router = APIRouter(prefix="/dss")
-
-
-@router.get(
-    "/options",
-    response_model=DSSOptionsResponse,
-    summary="Get DSS dropdown options",
-    description=(
-        "Mengembalikan dropdown varietas padi dan sistem tanam. "
-        "jajar_legowo hanya mewakili Jajar Legowo 2:1 (SoT §3)."
-    ),
-)
-def get_dss_options() -> DSSOptionsResponse:
-    return dss_service.get_options()
-
-
-@router.post(
-    "/simulate",
-    response_model=DSSSimulationResponse,
-    summary="Run DSS simulation",
-    description=(
-        "Menjalankan model matematika deterministik padi-bebek per SoT FINAL. "
-        "7 input wajib. p_duck_buy>=0, tidak ada fallback. "
-        "Output canonical: Net_Cash_Contribution_DSS."
-    ),
-    responses={
-        400: {"model": ErrorResponse, "description": "Input tidak valid."},
-        401: {"model": ErrorResponse, "description": "Bearer token tidak valid."},
-        422: {
-            "model": ErrorResponse,
-            "description": "Referensi varietas atau sistem tanam tidak ditemukan.",
-        },
-    },
-)
-def simulate_dss(
-    payload: DSSSimulationRequest,
-    auth: AuthContext | None = Depends(get_optional_current_user),
-) -> DSSSimulationResponse:
-    return dss_service.simulate(
-        payload,
-        user_id=auth.user.id if auth is not None else None,
-    )
-
-
-@router.get(
-    "/histories",
-    response_model=HistoryListResponse,
-    responses={401: {"model": ErrorResponse, "description": "Access token diperlukan."}},
-)
-def list_histories(
-    auth: AuthContext = Depends(get_current_user),
-) -> HistoryListResponse:
-    return dss_service.list_histories(auth.user.id)
-
-
-@router.get(
-    "/histories/{history_id}",
-    response_model=DSSSimulationResponse,
-    responses={
-        401: {"model": ErrorResponse, "description": "Access token diperlukan."},
-        404: {"model": ErrorResponse, "description": "History tidak ditemukan."},
-    },
-)
-def get_history(
-    history_id: str,
-    auth: AuthContext = Depends(get_current_user),
-) -> DSSSimulationResponse:
-    return dss_service.get_history(history_id, auth.user.id)
-
-
-@router.delete(
-    "/histories/{history_id}",
-    response_model=DeleteHistoryResponse,
-    responses={
-        401: {"model": ErrorResponse, "description": "Access token diperlukan."},
-        404: {"model": ErrorResponse, "description": "History tidak ditemukan."},
-    },
-)
-def delete_history(
-    history_id: str,
-    auth: AuthContext = Depends(get_current_user),
-) -> DeleteHistoryResponse:
-    return dss_service.delete_history(history_id, auth.user.id)
-
-
-@router.post(
-    "/visualize",
-    response_model=VisualizationResponse,
-    summary="Get visualization zone series",
-    description=(
-        "Menghasilkan data visualisasi grafik zona density, zona umur bebek, "
-        "dan financial waterfall berdasarkan SoT FINAL. "
-        "Tidak menggunakan R_age, F_density_bio, lambda_eff, atau koefisien legacy lainnya."
-    ),
-    responses={
-        422: {"model": ErrorResponse, "description": "Request tidak valid."},
-    },
-)
-def visualize_dss(
-    payload: DSSSimulationRequest,
-) -> VisualizationResponse:
-    return visualization_service.generate_visualization_series(payload)
+router=APIRouter(prefix="/dss")
+@router.get("/options",response_model=DSSOptionsResponse,summary="Model A reference options",description="Canonical rice-variety and planting-system reference codes; these references do not alter the Xiong equation.")
+def get_dss_options(): return dss_service.get_options()
+@router.post("/simulate",response_model=DSSSimulationResponse,summary="Run Model A strict-separation simulation",description="Xiong yield is conditional on an explicit literature-duration input and valid domain.",responses={400:{"model":ErrorResponse},401:{"model":ErrorResponse},422:{"model":ErrorResponse}})
+def simulate_dss(payload:DSSSimulationRequest,auth:AuthContext|None=Depends(get_optional_current_user)): return dss_service.simulate(payload,auth.user.id if auth else None)
+@router.get("/histories",response_model=HistoryListResponse,summary="List Model A v4 histories",description="Lists only version-4 Model A records for the authenticated user. v1-v3 remain historical and are not reinterpreted.")
+def list_histories(auth:AuthContext=Depends(get_current_user)): return dss_service.list_histories(auth.user.id)
+@router.get("/histories/{history_id}",response_model=DSSSimulationResponse,summary="Get exact Model A v4 history",description="Returns the typed Model A response persisted with a v4 history record; non-v4 records are not exposed as Model A.")
+def get_history(history_id:str,auth:AuthContext=Depends(get_current_user)): return dss_service.get_history(history_id,auth.user.id)
+@router.delete("/histories/{history_id}",response_model=DeleteHistoryResponse,summary="Delete Model A v4 history",description="Deletes only the authenticated user's v4 Model A record. Historical v1-v3 rows are preserved.")
+def delete_history(history_id:str,auth:AuthContext=Depends(get_current_user)): return dss_service.delete_history(history_id,auth.user.id)
+@router.post("/visualize",response_model=VisualizationResponse,summary="Model A reference visualization",description="Shows Model A density/readiness zones and conditional scenario economics without a numerical survival curve or fabricated unavailable values.")
+def visualize_dss(payload:DSSSimulationRequest): return visualization_service.generate_visualization_series(payload)

@@ -162,6 +162,109 @@ discrepancy:
 
 ## 8. Pass/Fail Global
 
+## 9. Runtime Evidence — 2026-08-24
+
+Raw request/response evidence for every HTTP call is stored in [runtime_evidence_model_a.json](runtime_evidence_model_a.json). It includes timestamps, request JSON, HTTP status, expected semantics, the exact raw response body, and PASS/FAIL for A01–A36, S-A01–S-A19, health, and the authenticated v4 history sequence. The credential-bearing login body is redacted before writing, while its original byte length and SHA-256 commitment are retained so the exact received body remains independently verifiable without publishing a bearer token.
+
+- Branch: `focus-model-a`; base HEAD: `c93137f79a2ef724f53348396257b76b0ffeb068`; `working_tree_dirty=true`.
+- Runtime capture timestamp (UTC): `2026-08-24T14:15:01.976387+00:00`.
+
+<!-- RUNTIME_GENERATED_SUMMARY_START -->
+- Generated from the latest real HTTP run at `2026-08-24T14:15:01.976387+00:00`.
+- Required branch `focus-model-a`; captured branch `focus-model-a`.
+- Isolated runtime database: `data\model_a_runtime_20260824141459031847.db` (launcher PID `16780`).
+- Isolation verification: runtime DB changed=`True`; main DB unchanged by SHA-256 content snapshot=`True`.
+- Health: HTTP `200`, instance nonce verified, payload `{"status":"ok","service":"rice-duck-dss-backend","runtime_instance_id":"_J5rra_AAO1ynXlOeXXhzndMRaB9kaP5rL0bZK1k0jg"}`, PASS=`True`.
+- Historical A01-A36: `36/36` PASS.
+- Synthetic S-A01-S-A19: `19/19` PASS.
+- S-A14 actual: `yield_are_kg=65.00445497615651`, numerical difference `-4.349e-11`.
+- Calendar PASS=`True`; v4 history PASS=`True` with HTTP sequence `201,200,200,200,200,200,404`.
+- Discrepancy: `none`.
+<!-- RUNTIME_GENERATED_SUMMARY_END -->
+- Server: the validator launches and terminates its own backend subprocess on a free loopback port with a unique ignored `data/model_a_runtime_*.db`; evidence records its PID, URL, and before/after database metadata. Acceptance state is verified isolated from `data/rice_duck.db`.
+- Real HTTP replay A01–A36: **36/36 PASS**. Each request omitted `literature_duration_days`; each response had `yield_status=OUTSIDE_LITERATURE_DOMAIN` and `yield_are_kg=null`.
+- S-A14 real HTTP output: `yield_are_kg=65.00445497615651`, `cash_contribution_before_optional=4700267.298569391`; expected yield `65.0044549762` (difference below 5e-11).
+- Synthetic S-A01–S-A19: **19/19 PASS**. Key actual results: S-A05 `density_status=WARNING_ABOVE_RECOMMENDED`, `survival_risk=null`; S-A06 `density_status=HIGH_RISK`, `survival_risk=HIGH`, duck all-sold revenue `null`; S-A13/S-A16/S-A17 abstained; S-A15 returned `yield_are_kg=69.7396`; S-A18 returned HTTP 400; S-A19 returned `density_are=0`, `UNDER`, and null numerical yield.
+- Calendar contract: **PASS**. With `planting_date=2026-01-01`, actual release was `21–30` / `2026-01-22–2026-01-31`; withdraw was `56–60` / `2026-02-26–2026-03-02`.
+- Authenticated v4 history: **PASS**. Real HTTP register/login/simulate/list/detail/delete sequence returned `schema_version=4`; detail was semantically equal to the original response (only JSON object key order differed in the stored provenance object); GET after delete returned HTTP 404.
+
+### Actual HTTP results: historical replay A01–A36
+
+**Assertion coverage of this runtime run:**
+
+The runtime harness calculates expected `d_are=J/A_are`, `d_ha=100*d_are`,
+Xiong density-domain eligibility, and survival expectation from each request
+and the SoT before comparing them to the HTTP response. It does not derive
+these expected values from response fields. Synthetic accepted cases also
+assert their density arithmetic. S-A14 asserts yield, total yield, gabah
+revenue, all-sold duck revenue, duck-buy cost, and pre-optional cash
+contribution; S-A15 asserts both Xiong yield outputs.
+
+Every request below was sent to the running `POST /api/v1/dss/simulate` endpoint without `literature_duration_days`. `yield_are_kg=null` is therefore the expected and actual abstention result.
+
+| ID | HTTP | Actual d/are | Actual density status | survival risk | yield status | yield are kg | Result |
+|---|---:|---:|---|---|---|---|---|
+| A01 | 200 | 4.545454545454546 | WARNING_ABOVE_RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A02 | 200 | 2.6666666666666665 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A03 | 200 | 2.0833333333333335 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A04 | 200 | 3.5555555555555554 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A05 | 200 | 3.611111111111111 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A06 | 200 | 0.9803921568627451 | UNDER | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A07 | 200 | 3.125 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A08 | 200 | 6.5 | WARNING_ABOVE_RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A09 | 200 | 7.2727272727272725 | WARNING_ABOVE_RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A10 | 200 | 1.2396694214876034 | UNDER | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A11 | 200 | 4.545454545454546 | WARNING_ABOVE_RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A12 | 200 | 2.6666666666666665 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A13 | 200 | 1.6666666666666667 | UNDER | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A14 | 200 | 2.2222222222222223 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A15 | 200 | 1.9607843137254901 | UNDER | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A16 | 200 | 0.9375 | UNDER | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A17 | 200 | 2.081887578070784 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A18 | 200 | 9.090909090909092 | HIGH_RISK | HIGH | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A19 | 200 | 3.1496062992125986 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A20 | 200 | 3.1341821743388834 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A21 | 200 | 2.878787878787879 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A22 | 200 | 1.875 | UNDER | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A23 | 200 | 3.2 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A24 | 200 | 3.272727272727273 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A25 | 200 | 0.7874015748031497 | UNDER | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A26 | 200 | 4.166666666666667 | WARNING_ABOVE_RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A27 | 200 | 2.9 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A28 | 200 | 2 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A29 | 200 | 2 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A30 | 200 | 1.971830985915493 | UNDER | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A31 | 200 | 2.079002079002079 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A32 | 200 | 2.0833333333333335 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A33 | 200 | 2.028985507246377 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A34 | 200 | 2.027027027027027 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A35 | 200 | 2.0316027088036117 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A36 | 200 | 2.1220159151193636 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+
+### Actual HTTP results: synthetic S-A01–S-A19
+
+| ID | HTTP | Actual principal output | Result |
+|---|---:|---|---|
+| S-A01 | 200 | `d=1.9`, `UNDER` | PASS |
+| S-A02 | 200 | `d=2`, `RECOMMENDED` | PASS |
+| S-A03 | 200 | `d=4`, `RECOMMENDED` | PASS |
+| S-A04 | 200 | `d=4.1`, `WARNING_ABOVE_RECOMMENDED` | PASS |
+| S-A05 | 200 | `d=8`, `WARNING_ABOVE_RECOMMENDED`, `survival_risk=null` | PASS |
+| S-A06 | 200 | `d=8.1`, `HIGH_RISK`, `survival_risk=HIGH`, duck revenue `null` | PASS |
+| S-A07 | 200 | Tegel `d=3`, `RECOMMENDED` | PASS |
+| S-A08 | 200 | Tegel `d=3.1`, `WARNING_ABOVE_RECOMMENDED` | PASS |
+| S-A09 | 200 | `age_status=NOT_RECOMMENDED` | PASS |
+| S-A10 | 200 | `age_status=LOCAL_READY` | PASS |
+| S-A11 | 200 | `age_status=LOCAL_READY` | PASS |
+| S-A12 | 200 | `age_status=OLDER_CONSERVATIVE` | PASS |
+| S-A13 | 200 | `yield_status=OUTSIDE_LITERATURE_DOMAIN`, numerical yield `null` | PASS |
+| S-A14 | 200 | `yield_are_kg=65.00445497615651`, `yield_total_kg=650.0445497615651` | PASS |
+| S-A15 | 200 | `yield_are_kg=69.7396`, `yield_total_kg=697.396` | PASS |
+| S-A16 | 200 | `yield_status=OUTSIDE_LITERATURE_DOMAIN`, numerical yield `null` | PASS |
+| S-A17 | 200 | `density_ha=610`, `yield_status=OUTSIDE_LITERATURE_DOMAIN` | PASS |
+| S-A18 | 400 | validation error for `land_area_are=0` | PASS |
+| S-A19 | 200 | `duck_count=0`, `density_are=0`, `UNDER`, numerical yield `null` | PASS |
+
 Branch A dianggap sesuai SoT hanya jika:
 
 - historical local replay **tidak** memaksakan numerical Xiong yield;

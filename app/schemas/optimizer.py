@@ -4,16 +4,15 @@ WARNING — scope notice
 ----------------------
 The optimizer is a **separate product feature** and is **out of scope** of the
 rice-duck DSS mathematics documented in
-``docs/Model_Matematika_Data_Collection_DSS_Padi_Bebek_FINAL_BANGET.md``.
+``docs/Model Matematika Data Collection DSS Padi Bebek FINAL.md``.
 
-It is intentionally allowed to retain legacy literature-based formulas
-(``Xiong``-style, ``alpha_local``-calibrated, grid-search ``argmax``) because
-its scope is the academic recommendation layer — not the operational
-calculator that the rest of the backend exposes under ``/api/v1/dss/simulate``.
+It is a non-calculating product stub. It does not retain or execute legacy
+formula implementations. Its scope is the academic recommendation layer — not
+the operational calculator exposed under ``/api/v1/dss/simulate``.
 
 Do **not** import or reuse functions from ``app.engines.formula_engine`` or
-``app.engines.impact_engine`` from the core SoT here. If a derived metric is
-required, call the DSS core endpoint and pass its result through.
+``app.engines.impact_engine`` here. This stub does not call the DSS Core and
+does not expose Model A calculations as optimizer output.
 """
 
 from datetime import date
@@ -294,9 +293,7 @@ class DataReadinessSummary(BaseModel):
 class OptimizerRecommendRequest(BaseModel):
     """Minimal request — optimizer needs only the inputs already used by /dss/simulate.
 
-    The optimizer service must call the DSS core endpoint to obtain SoT-aligned
-    metrics; it must NOT call ``app.engines.formula_engine`` or
-    ``app.engines.impact_engine`` directly.
+    This stub does not call the DSS Core or execute optimizer calculations.
     """
 
     duck_count: int = Field(gt=0)
@@ -311,10 +308,8 @@ class OptimizerRecommendRequest(BaseModel):
 class OptimizerRecommendResponse(BaseModel):
     """Optimizer output (NOT a SoT response).
 
-    The core SoT calculator lives at ``/api/v1/dss/simulate``. This response
-    is provided as a stand-alone product feature. Field semantics follow the
-    literature-based optimizer model and are NOT verified against the local
-    rekap calibration.
+    This response is an explicit optimizer-stub placeholder and has no
+    literature, local-calibration, or Model A calculation semantics.
     """
 
     actual_scenario: ActualScenario
@@ -329,5 +324,5 @@ class OptimizerRecommendResponse(BaseModel):
     data_readiness: DataReadinessSummary
     assumptions: list[str]
     scope_notice: str = (
-        "Out of scope of Model_Matematika_Data_Collection_DSS_Padi_Bebek_FINAL_BANGET.md"
+        "Out of scope of the Model A DSS Core"
     )

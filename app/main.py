@@ -25,7 +25,7 @@ OPENAPI_TAGS = [
         "description": (
             "DSS Core calculator — kalkulator SoT padi-bebek "
             "(docs/Model Matematika Data Collection DSS Padi Bebek FINAL.md). "
-            "7 input wajib. Output canonical: Net_Cash_Contribution_DSS. "
+            "Model A strict separation dengan output nullable dan domain guard Xiong. "
             "Tidak mengandung fitur optimizer/rekomendasi."
         ),
     },
@@ -33,8 +33,7 @@ OPENAPI_TAGS = [
         "name": "optimizer",
         "description": (
             "Optimizer/rekomendasi (FITUR TERPISAH, di luar cakupan SoT). "
-            "Boleh memakai formula literatur lama; tidak boleh reuse engine "
-            "DSS core tanpa memanggil endpoint /api/v1/dss/simulate."
+            "Endpoint saat ini adalah stub dan tidak menjalankan atau memanggil formula DSS Core."
         ),
     },
 ]
@@ -48,7 +47,7 @@ def create_app() -> FastAPI:
             "Backend Decision Support System padi-bebek.\n\n"
             "Endpoint `/api/v1/dss/simulate` mengikuti model SoT "
             "docs/Model Matematika Data Collection DSS Padi Bebek FINAL.md. "
-            "7 input wajib, output canonical Net_Cash_Contribution_DSS. "
+            "Tanggal/harga opsional; yield Xiong abstain di luar domain literatur. "
             "Endpoint `/api/v1/optimizer/recommend` adalah fitur produk terpisah di luar "
             "cakupan SoT."
         ),
@@ -70,6 +69,31 @@ def create_app() -> FastAPI:
     app.add_exception_handler(RequestValidationError, validation_error_handler)
     app.include_router(health_router, tags=["health"])
     app.include_router(api_router, prefix=settings.api_v1_prefix)
+    # FastAPI's JSONable encoder omits None from schema examples by default.
+    # Restore explicit nulls here because unavailable Model A outputs are a
+    # critical part of the public scientific contract.
+    generated_openapi = app.openapi
+
+    def model_a_openapi() -> dict:
+        schema = generated_openapi()
+        response_example = schema["components"]["schemas"]["DSSSimulationResponse"]["example"]
+        response_example.update({
+            "release_date_min": None,
+            "release_date_max": None,
+            "withdraw_date_min": None,
+            "withdraw_date_max": None,
+            "survival_risk": None,
+            "yield_are_kg": None,
+            "yield_total_kg": None,
+            "revenue_gabah": None,
+            "cost_feed_scenario": None,
+            "cost_infra_cycle": None,
+            "cash_contribution_before_optional": None,
+            "cash_contribution_after_optional": None,
+        })
+        return schema
+
+    app.openapi = model_a_openapi
     return app
 
 
