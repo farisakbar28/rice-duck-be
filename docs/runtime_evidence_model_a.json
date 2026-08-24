@@ -1,16 +1,16 @@
 {
   "metadata": {
     "branch": "focus-model-a",
-    "base_head": "af5bbc167d0fb4eb5ad6c97db6c8d40e9c9f415b",
+    "base_head": "5d3c9d29f4dbfc43470076e3a001904ddb847bef",
     "working_tree_dirty_at_server_start": false,
-    "captured_at": "2026-08-24T18:01:21.674023+00:00",
-    "launcher_pid": 19716,
-    "runtime_database_path": "data\\model_a_runtime_20260824180117371681.db",
-    "runtime_database_path_absolute": "C:\\My Project\\rice-duck-be\\data\\model_a_runtime_20260824180117371681.db",
-    "server_url": "http://127.0.0.1:57419",
-    "runtime_instance_id": "wr1WsCf38NgS54O1w8rX31Tzrival5jgQIWS40Upf9w",
+    "captured_at": "2026-08-24T18:02:51.860807+00:00",
+    "launcher_pid": 2976,
+    "runtime_database_path": "data\\model_a_runtime_20260824180247553165.db",
+    "runtime_database_path_absolute": "C:\\My Project\\rice-duck-be\\data\\model_a_runtime_20260824180247553165.db",
+    "server_url": "http://127.0.0.1:60911",
+    "runtime_instance_id": "-JyrWOgVadubpI1m009p8jNrphyKlBg-7j9IZAj41dE",
     "working_directory": "C:\\My Project\\rice-duck-be",
-    "backend_start_command": "Set-Location 'C:\\My Project\\rice-duck-be'; $env:DATABASE_PATH='C:\\My Project\\rice-duck-be\\data\\model_a_runtime_20260824180117371681.db'; $env:RUNTIME_INSTANCE_ID='wr1WsCf38NgS54O1w8rX31Tzrival5jgQIWS40Upf9w'; & 'C:\\Users\\Hype\\AppData\\Local\\Programs\\Python\\Python314\\python.exe' -m uvicorn app.main:app --host 127.0.0.1 --port 57419",
+    "backend_start_command": "Set-Location 'C:\\My Project\\rice-duck-be'; $env:DATABASE_PATH='C:\\My Project\\rice-duck-be\\data\\model_a_runtime_20260824180247553165.db'; $env:RUNTIME_INSTANCE_ID='-JyrWOgVadubpI1m009p8jNrphyKlBg-7j9IZAj41dE'; & 'C:\\Users\\Hype\\AppData\\Local\\Programs\\Python\\Python314\\python.exe' -m uvicorn app.main:app --host 127.0.0.1 --port 60911",
     "backend_process_arguments": [
       "C:\\Users\\Hype\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
       "-m",
@@ -19,7 +19,7 @@
       "--host",
       "127.0.0.1",
       "--port",
-      "57419"
+      "60911"
     ],
     "database_before": {
       "exists": false,
@@ -36,8 +36,8 @@
     "runtime_database_after": {
       "exists": true,
       "size_bytes": 28672,
-      "modified_at_utc": "2026-08-24T18:01:21.648080+00:00",
-      "sha256": "a048d0d89b4ec948165b313b30165b45ea3f059b9e80eab838e4a7f9facd1fd9"
+      "modified_at_utc": "2026-08-24T18:02:51.817591+00:00",
+      "sha256": "76a3ea4294280b760300d456ac6a0ebec1f4b2404b764acc6d4507fe28992ed6"
     },
     "main_database_after": {
       "exists": true,
@@ -49,27 +49,27 @@
     "main_database_unchanged": true
   },
   "health": {
-    "timestamp": "2026-08-24T18:01:19.563688+00:00",
+    "timestamp": "2026-08-24T18:02:49.695552+00:00",
     "method": "GET",
     "path": "/health",
     "request_json": null,
     "http_status": 200,
-    "raw_response_body": "{\"status\":\"ok\",\"service\":\"rice-duck-dss-backend\",\"runtime_instance_id\":\"wr1WsCf38NgS54O1w8rX31Tzrival5jgQIWS40Upf9w\"}",
+    "raw_response_body": "{\"status\":\"ok\",\"service\":\"rice-duck-dss-backend\",\"runtime_instance_id\":\"-JyrWOgVadubpI1m009p8jNrphyKlBg-7j9IZAj41dE\"}",
     "raw_response_json": {
       "status": "ok",
       "service": "rice-duck-dss-backend",
-      "runtime_instance_id": "wr1WsCf38NgS54O1w8rX31Tzrival5jgQIWS40Upf9w"
+      "runtime_instance_id": "-JyrWOgVadubpI1m009p8jNrphyKlBg-7j9IZAj41dE"
     },
     "expected": {
       "status": "ok",
       "service": "rice-duck-dss-backend",
-      "runtime_instance_id": "wr1WsCf38NgS54O1w8rX31Tzrival5jgQIWS40Upf9w"
+      "runtime_instance_id": "-JyrWOgVadubpI1m009p8jNrphyKlBg-7j9IZAj41dE"
     },
     "pass": true
   },
   "historical": [
     {
-      "timestamp": "2026-08-24T18:01:19.581963+00:00",
+      "timestamp": "2026-08-24T18:02:49.714333+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -185,7 +185,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:19.589219+00:00",
+      "timestamp": "2026-08-24T18:02:49.720468+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -301,7 +301,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:19.611681+00:00",
+      "timestamp": "2026-08-24T18:02:49.744889+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -417,7 +417,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:19.642529+00:00",
+      "timestamp": "2026-08-24T18:02:49.775969+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -533,7 +533,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:19.673343+00:00",
+      "timestamp": "2026-08-24T18:02:49.781917+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -649,7 +649,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:19.678985+00:00",
+      "timestamp": "2026-08-24T18:02:49.787329+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -765,7 +765,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:19.684501+00:00",
+      "timestamp": "2026-08-24T18:02:49.793269+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -881,7 +881,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:19.704374+00:00",
+      "timestamp": "2026-08-24T18:02:49.799020+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -997,7 +997,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:19.718783+00:00",
+      "timestamp": "2026-08-24T18:02:49.821853+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -1113,7 +1113,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:19.735923+00:00",
+      "timestamp": "2026-08-24T18:02:49.827563+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -1229,7 +1229,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:19.745650+00:00",
+      "timestamp": "2026-08-24T18:02:49.851841+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -1345,7 +1345,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:19.753234+00:00",
+      "timestamp": "2026-08-24T18:02:49.857354+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -1461,7 +1461,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:19.760357+00:00",
+      "timestamp": "2026-08-24T18:02:49.884086+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -1576,7 +1576,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:19.769361+00:00",
+      "timestamp": "2026-08-24T18:02:49.889768+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -1692,7 +1692,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:19.780261+00:00",
+      "timestamp": "2026-08-24T18:02:49.894425+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -1808,7 +1808,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:19.796128+00:00",
+      "timestamp": "2026-08-24T18:02:49.916012+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -1923,7 +1923,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:19.806149+00:00",
+      "timestamp": "2026-08-24T18:02:49.922769+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -2039,7 +2039,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:19.817735+00:00",
+      "timestamp": "2026-08-24T18:02:49.929364+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -2156,7 +2156,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:19.824810+00:00",
+      "timestamp": "2026-08-24T18:02:49.961852+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -2273,7 +2273,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:19.843554+00:00",
+      "timestamp": "2026-08-24T18:02:49.971836+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -2390,7 +2390,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:19.854797+00:00",
+      "timestamp": "2026-08-24T18:02:49.993209+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -2507,7 +2507,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:19.862586+00:00",
+      "timestamp": "2026-08-24T18:02:50.023428+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -2624,7 +2624,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:19.890232+00:00",
+      "timestamp": "2026-08-24T18:02:50.053318+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -2741,7 +2741,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:19.921862+00:00",
+      "timestamp": "2026-08-24T18:02:50.084370+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -2858,7 +2858,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:19.952404+00:00",
+      "timestamp": "2026-08-24T18:02:50.090758+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -2974,7 +2974,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:19.984030+00:00",
+      "timestamp": "2026-08-24T18:02:50.096475+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -3091,7 +3091,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:19.990291+00:00",
+      "timestamp": "2026-08-24T18:02:50.102737+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -3208,7 +3208,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:20.015240+00:00",
+      "timestamp": "2026-08-24T18:02:50.131730+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -3324,7 +3324,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:20.021703+00:00",
+      "timestamp": "2026-08-24T18:02:50.162403+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -3440,7 +3440,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:20.046692+00:00",
+      "timestamp": "2026-08-24T18:02:50.169012+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -3556,7 +3556,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:20.053188+00:00",
+      "timestamp": "2026-08-24T18:02:50.174148+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -3673,7 +3673,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:20.078009+00:00",
+      "timestamp": "2026-08-24T18:02:50.193179+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -3790,7 +3790,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:20.084330+00:00",
+      "timestamp": "2026-08-24T18:02:50.199386+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -3907,7 +3907,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:20.109143+00:00",
+      "timestamp": "2026-08-24T18:02:50.205256+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -4023,7 +4023,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:20.139405+00:00",
+      "timestamp": "2026-08-24T18:02:50.210892+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -4139,7 +4139,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:20.144968+00:00",
+      "timestamp": "2026-08-24T18:02:50.239314+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -4257,7 +4257,7 @@
   ],
   "synthetic": [
     {
-      "timestamp": "2026-08-24T18:01:20.151060+00:00",
+      "timestamp": "2026-08-24T18:02:50.245343+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -4318,7 +4318,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:20.156215+00:00",
+      "timestamp": "2026-08-24T18:02:50.250650+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -4379,7 +4379,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:20.161102+00:00",
+      "timestamp": "2026-08-24T18:02:50.255495+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -4440,7 +4440,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:20.167274+00:00",
+      "timestamp": "2026-08-24T18:02:50.260062+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -4501,7 +4501,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:20.185013+00:00",
+      "timestamp": "2026-08-24T18:02:50.265577+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -4562,7 +4562,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:20.190343+00:00",
+      "timestamp": "2026-08-24T18:02:50.284745+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -4624,7 +4624,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:20.195027+00:00",
+      "timestamp": "2026-08-24T18:02:50.289876+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -4685,7 +4685,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:20.201811+00:00",
+      "timestamp": "2026-08-24T18:02:50.317133+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -4746,7 +4746,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:20.207830+00:00",
+      "timestamp": "2026-08-24T18:02:50.322572+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -4808,7 +4808,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:20.214679+00:00",
+      "timestamp": "2026-08-24T18:02:50.327180+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -4869,7 +4869,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:20.221174+00:00",
+      "timestamp": "2026-08-24T18:02:50.347640+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -4930,7 +4930,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:20.248515+00:00",
+      "timestamp": "2026-08-24T18:02:50.353462+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -4992,7 +4992,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:20.255356+00:00",
+      "timestamp": "2026-08-24T18:02:50.358332+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -5054,7 +5054,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:20.260729+00:00",
+      "timestamp": "2026-08-24T18:02:50.364240+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -5122,7 +5122,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:20.267729+00:00",
+      "timestamp": "2026-08-24T18:02:50.369704+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -5185,7 +5185,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:20.274108+00:00",
+      "timestamp": "2026-08-24T18:02:50.374690+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -5247,7 +5247,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:20.280010+00:00",
+      "timestamp": "2026-08-24T18:02:50.394605+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -5309,7 +5309,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:20.287023+00:00",
+      "timestamp": "2026-08-24T18:02:50.426133+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -5342,7 +5342,7 @@
       "pass": true
     },
     {
-      "timestamp": "2026-08-24T18:01:20.292313+00:00",
+      "timestamp": "2026-08-24T18:02:50.432594+00:00",
       "method": "POST",
       "path": "/api/v1/dss/simulate",
       "request_json": {
@@ -5404,7 +5404,7 @@
     }
   ],
   "calendar": {
-    "timestamp": "2026-08-24T18:01:21.667384+00:00",
+    "timestamp": "2026-08-24T18:02:51.854150+00:00",
     "method": "POST",
     "path": "/api/v1/dss/simulate",
     "request_json": {
@@ -5467,31 +5467,31 @@
       "id": "HISTORY_V4",
       "steps": [
         {
-          "timestamp": "2026-08-24T18:01:20.298448+00:00",
+          "timestamp": "2026-08-24T18:02:50.438548+00:00",
           "method": "POST",
           "path": "/api/v1/auth/register",
           "request_json": {
             "name": "Model A Runtime",
-            "email": "model-a-runtime-20260824180120298260@example.com",
+            "email": "model-a-runtime-20260824180250438347@example.com",
             "password": "[REDACTED]"
           },
           "http_status": 201,
-          "raw_response_body": "{\"message\":\"User registered successfully\",\"user\":{\"id\":\"75329c16-23fb-4894-86c5-44e830222b73\",\"name\":\"Model A Runtime\",\"email\":\"model-a-runtime-20260824180120298260@example.com\"}}",
+          "raw_response_body": "{\"message\":\"User registered successfully\",\"user\":{\"id\":\"c2267041-81f3-4422-bedd-5de77cf2e21c\",\"name\":\"Model A Runtime\",\"email\":\"model-a-runtime-20260824180250438347@example.com\"}}",
           "raw_response_json": {
             "message": "User registered successfully",
             "user": {
-              "id": "75329c16-23fb-4894-86c5-44e830222b73",
+              "id": "c2267041-81f3-4422-bedd-5de77cf2e21c",
               "name": "Model A Runtime",
-              "email": "model-a-runtime-20260824180120298260@example.com"
+              "email": "model-a-runtime-20260824180250438347@example.com"
             }
           }
         },
         {
-          "timestamp": "2026-08-24T18:01:20.976209+00:00",
+          "timestamp": "2026-08-24T18:02:51.123921+00:00",
           "method": "POST",
           "path": "/api/v1/auth/login",
           "request_json": {
-            "email": "model-a-runtime-20260824180120298260@example.com",
+            "email": "model-a-runtime-20260824180250438347@example.com",
             "password": "[REDACTED]"
           },
           "http_status": 200,
@@ -5500,16 +5500,16 @@
             "access_token": "[REDACTED]",
             "token_type": "Bearer",
             "user": {
-              "id": "75329c16-23fb-4894-86c5-44e830222b73",
+              "id": "c2267041-81f3-4422-bedd-5de77cf2e21c",
               "name": "Model A Runtime",
-              "email": "model-a-runtime-20260824180120298260@example.com"
+              "email": "model-a-runtime-20260824180250438347@example.com"
             }
           },
-          "raw_response_body_sha256": "9bedfdce3bea1f3df07d2bcbcf187a99e89939bcb8bfeb10fd45ac4bfde67b65",
+          "raw_response_body_sha256": "14b361bfae6d6d5d1b3f0f5649370331da1171e12f67739d40ef419db362fec2",
           "raw_response_body_bytes": 366
         },
         {
-          "timestamp": "2026-08-24T18:01:21.561441+00:00",
+          "timestamp": "2026-08-24T18:02:51.756969+00:00",
           "method": "POST",
           "path": "/api/v1/dss/simulate",
           "request_json": {
@@ -5564,18 +5564,18 @@
           }
         },
         {
-          "timestamp": "2026-08-24T18:01:21.594174+00:00",
+          "timestamp": "2026-08-24T18:02:51.782256+00:00",
           "method": "GET",
           "path": "/api/v1/dss/histories",
           "request_json": null,
           "http_status": 200,
-          "raw_response_body": "{\"data\":[{\"id\":\"89886a7c-f53d-4474-8f7e-8ed1c2d8e245\",\"schema_version\":4,\"created_at\":\"2026-08-24T18:01:21.577624Z\",\"summary\":{\"rice_variety\":\"sertani\",\"planting_system\":\"jajar_legowo\",\"duck_count\":40,\"land_area_are\":10.0,\"density_are\":4.0,\"yield_status\":\"VALID\"}}]}",
+          "raw_response_body": "{\"data\":[{\"id\":\"27e07220-4886-49cc-bd8e-7f426570a7d2\",\"schema_version\":4,\"created_at\":\"2026-08-24T18:02:51.764586Z\",\"summary\":{\"rice_variety\":\"sertani\",\"planting_system\":\"jajar_legowo\",\"duck_count\":40,\"land_area_are\":10.0,\"density_are\":4.0,\"yield_status\":\"VALID\"}}]}",
           "raw_response_json": {
             "data": [
               {
-                "id": "89886a7c-f53d-4474-8f7e-8ed1c2d8e245",
+                "id": "27e07220-4886-49cc-bd8e-7f426570a7d2",
                 "schema_version": 4,
-                "created_at": "2026-08-24T18:01:21.577624Z",
+                "created_at": "2026-08-24T18:02:51.764586Z",
                 "summary": {
                   "rice_variety": "sertani",
                   "planting_system": "jajar_legowo",
@@ -5589,9 +5589,9 @@
           }
         },
         {
-          "timestamp": "2026-08-24T18:01:21.608016+00:00",
+          "timestamp": "2026-08-24T18:02:51.795487+00:00",
           "method": "GET",
-          "path": "/api/v1/dss/histories/89886a7c-f53d-4474-8f7e-8ed1c2d8e245",
+          "path": "/api/v1/dss/histories/27e07220-4886-49cc-bd8e-7f426570a7d2",
           "request_json": null,
           "http_status": 200,
           "raw_response_body": "{\"model_variant\":\"A_STRICT_SEPARATION\",\"age_status\":\"LOCAL_READY\",\"density_are\":4.0,\"density_ha\":400.0,\"density_status\":\"RECOMMENDED\",\"release_hst_min\":21,\"release_hst_max\":30,\"withdraw_hst_min\":56,\"withdraw_hst_max\":60,\"release_date_min\":null,\"release_date_max\":null,\"withdraw_date_min\":null,\"withdraw_date_max\":null,\"survival_risk\":null,\"yield_status\":\"VALID\",\"yield_are_kg\":65.00445497615651,\"yield_total_kg\":650.0445497615651,\"revenue_gabah\":3900267.2985693906,\"revenue_duck_all_sold_scenario\":1800000.0,\"cost_duck_buy\":1000000.0,\"cost_feed_scenario\":null,\"cost_infra_cycle\":null,\"cash_contribution_before_optional\":4700267.298569391,\"cash_contribution_after_optional\":null,\"warnings\":[],\"provenance\":{\"prices\":{\"p_duck_buy\":\"local-estimate fallback Rp25000/ekor\",\"p_duck_sell\":\"local-estimate fallback Rp45000/ekor\",\"p_gabah\":\"local-estimate fallback Rp6000/kg\"},\"survival\":\"No numerical survival claim or correction\",\"yield\":{\"reason\":null,\"source\":\"Xiong et al. (2014)\",\"status\":\"literature-uncalibrated\"}}}",
@@ -5637,9 +5637,9 @@
           }
         },
         {
-          "timestamp": "2026-08-24T18:01:21.634380+00:00",
+          "timestamp": "2026-08-24T18:02:51.805976+00:00",
           "method": "DELETE",
-          "path": "/api/v1/dss/histories/89886a7c-f53d-4474-8f7e-8ed1c2d8e245",
+          "path": "/api/v1/dss/histories/27e07220-4886-49cc-bd8e-7f426570a7d2",
           "request_json": null,
           "http_status": 200,
           "raw_response_body": "{\"message\":\"Simulation history deleted successfully\"}",
@@ -5648,16 +5648,16 @@
           }
         },
         {
-          "timestamp": "2026-08-24T18:01:21.653861+00:00",
+          "timestamp": "2026-08-24T18:02:51.822811+00:00",
           "method": "GET",
-          "path": "/api/v1/dss/histories/89886a7c-f53d-4474-8f7e-8ed1c2d8e245",
+          "path": "/api/v1/dss/histories/27e07220-4886-49cc-bd8e-7f426570a7d2",
           "request_json": null,
           "http_status": 404,
-          "raw_response_body": "{\"error\":{\"code\":\"not_found\",\"message\":\"History '89886a7c-f53d-4474-8f7e-8ed1c2d8e245' was not found.\",\"field\":\"history_id\",\"issues\":null}}",
+          "raw_response_body": "{\"error\":{\"code\":\"not_found\",\"message\":\"History '27e07220-4886-49cc-bd8e-7f426570a7d2' was not found.\",\"field\":\"history_id\",\"issues\":null}}",
           "raw_response_json": {
             "error": {
               "code": "not_found",
-              "message": "History '89886a7c-f53d-4474-8f7e-8ed1c2d8e245' was not found.",
+              "message": "History '27e07220-4886-49cc-bd8e-7f426570a7d2' was not found.",
               "field": "history_id",
               "issues": null
             }
