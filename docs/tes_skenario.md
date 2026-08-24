@@ -1,7 +1,7 @@
-# PANDUAN PENGUJIAN SKENARIO — BACKEND DSS PADI-BEBEK VERSI C
+# PANDUAN PENGUJIAN SKENARIO — BACKEND DSS PADI-BEBEK VERSI KOMBINASI A+C
 
-> **Branch:** C — Farmer-Grouped Calibration/Validation Split  
-> **SoT:** `docs/Model Matematika Data Collection DSS Padi Bebek FINAL.md` pada branch C.  
+> **Branch:** A+C — Dual-Evidence Architecture  
+> **SoT:** `docs/Model Matematika Data Collection DSS Padi Bebek FINAL.md` pada branch kombinasi A+C.  
 > **Critical rule:** final evaluation menggunakan **11 untouched holdout cycles dari 6 farmer** yang sudah ditetapkan sebelum fitting. Jangan mengganti row setelah melihat response.
 
 ## 1. Tujuan
@@ -10,6 +10,8 @@
 2. Mereplay **untouched holdout** dengan input yang sama/sepadan dari clean recap.
 3. Menghitung ulang error yield dari **raw HTTP output**, bukan menyalin angka dokumen.
 4. Memverifikasi economics sebagai scenario cash contribution, bukan realized farmer profit.
+Selain primary C0, historical local replay harus mengembalikan `Yield_literature_reference=null` dengan `literature_reference_status=OUTSIDE_LITERATURE_DOMAIN` ketika tidak ada explicit valid `literature_duration_days`. Reference Xiong tidak boleh mengubah primary yield/economics.
+
 
 Endpoint canonical: `POST /api/v1/dss/simulate`.
 
@@ -85,6 +87,8 @@ Jangan kirim historical feed sebagai Core default. Feed hanya boleh diuji terpis
 - `cost_duck_buy=J*p_duck_buy` menggunakan source runtime input, termasuk `0` bila source memang `0`.
 - cash contribution tidak dibandingkan ke raw farmer profit sebagai accuracy metric.
 
+Selain primary C0, historical local replay harus mengembalikan `Yield_literature_reference=null` dengan `literature_reference_status=OUTSIDE_LITERATURE_DOMAIN` ketika tidak ada explicit valid `literature_duration_days`. Reference Xiong tidak boleh mengubah primary yield/economics.
+
 
 ## 6. Synthetic Contract & Boundary Tests
 
@@ -113,6 +117,18 @@ cost_duck_buy = 500,000
 cash_contribution_before_optional = 3,400,000
 ```
 
+
+### Reference-layer synthetic tests (khusus A+C)
+
+| ID | Input | Expected |
+|---|---|---|
+| AC-R01 | `A=10,J=40,t=49` | primary `50`; reference `null`; status `OUTSIDE_LITERATURE_DOMAIN` |
+| AC-R02 | `A=10,J=40,t=50` | primary `50`; reference `≈65.004455`; gap `≈15.004455` |
+| AC-R03 | `A=10,J=40,t=80` | primary `50`; reference `≈69.739600`; gap `≈19.739600` |
+| AC-R04 | `A=10,J=40,t=81` | primary `50`; reference `null` |
+| AC-R05 | `A=10,J=61,t=80` | primary `50`; reference `null` karena `d_ha>600` |
+
+Untuk AC-R02, economic primary tetap memakai `50 kg/are`; dengan harga 6000/25000/45000 dan J=40, `revenue_gabah_primary=Rp3.000.000` dan `cash_contribution_before_optional=Rp3.800.000`. Xiong reference **tidak** mengubah angka tersebut.
 
 ## 7. Calendar Tests
 
@@ -153,9 +169,11 @@ Branch dianggap sesuai SoT jika:
 
 - 11 untouched holdout menghasilkan frozen C0 dan aggregate metrics di atas;
 - tidak ada numerical survival model atau `N_survive`;
-- `yield_are=50` tidak berubah oleh density/system/variety/age;
+- `yield_primary_are=50` tidak berubah oleh density/system/variety/age;
 - d>8 hanya risk gate + disable all-sold duck revenue;
 - calendar memakai ranges terbaru, bukan 21/65/44;
 - feed/infrastructure tidak menjadi hidden Core defaults;
 - old `47.8767507`, `52500`, survival 60%, dan old `Net_Cash_Contribution_DSS` semantics tidak aktif;
+- tidak ada averaging/weighted fusion antara primary C dan reference A;
+- reference Xiong tidak pernah mengubah `revenue_gabah_primary` atau cash contribution;
 - raw farmer profit tidak dipakai sebagai numerical ground truth cash contribution.
