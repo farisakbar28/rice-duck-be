@@ -218,15 +218,16 @@ discrepancy:
 
 Raw request/response evidence for every HTTP call is stored in [runtime_evidence_model_a.json](runtime_evidence_model_a.json). It includes timestamps, request JSON, HTTP status, expected semantics, the exact raw response body, and PASS/FAIL for A01–A36, S-A01–S-A19, health, and the authenticated v4 history sequence. The credential-bearing login body is redacted before writing, while its original byte length and SHA-256 commitment are retained so the exact received body remains independently verifiable without publishing a bearer token.
 
-- Branch: `focus-model-a`; base HEAD: `c93137f79a2ef724f53348396257b76b0ffeb068`; `working_tree_dirty=true`.
-- Runtime capture timestamp (UTC): `2026-08-24T14:15:01.976387+00:00`.
+- Branch: `focus-model-a`; exact tested HEAD: `af5bbc167d0fb4eb5ad6c97db6c8d40e9c9f415b`; `working_tree_dirty=false` at server test start.
+- Runtime capture timestamp (UTC): `2026-08-24T18:01:21.674023+00:00`.
 
 <!-- RUNTIME_GENERATED_SUMMARY_START -->
-- Generated from the latest real HTTP run at `2026-08-24T14:15:01.976387+00:00`.
+- Generated from the latest real HTTP run at `2026-08-24T18:01:21.674023+00:00`.
 - Required branch `focus-model-a`; captured branch `focus-model-a`.
-- Isolated runtime database: `data\model_a_runtime_20260824141459031847.db` (launcher PID `16780`).
+- Exact tested HEAD `af5bbc167d0fb4eb5ad6c97db6c8d40e9c9f415b`; working tree at server start=`false`.
+- Isolated runtime database: `data\model_a_runtime_20260824180117371681.db` (launcher PID `19716`).
 - Isolation verification: runtime DB changed=`True`; main DB unchanged by SHA-256 content snapshot=`True`.
-- Health: HTTP `200`, instance nonce verified, payload `{"status":"ok","service":"rice-duck-dss-backend","runtime_instance_id":"_J5rra_AAO1ynXlOeXXhzndMRaB9kaP5rL0bZK1k0jg"}`, PASS=`True`.
+- Health: HTTP `200`, instance nonce verified, payload `{"status":"ok","service":"rice-duck-dss-backend","runtime_instance_id":"wr1WsCf38NgS54O1w8rX31Tzrival5jgQIWS40Upf9w"}`, PASS=`True`.
 - Historical A01-A36: `36/36` PASS.
 - Synthetic S-A01-S-A19: `19/19` PASS.
 - S-A14 actual: `yield_are_kg=65.00445497615651`, numerical difference `-4.349e-11`.
@@ -240,59 +241,48 @@ Raw request/response evidence for every HTTP call is stored in [runtime_evidence
 - Calendar contract: **PASS**. With `planting_date=2026-01-01`, actual release was `21–30` / `2026-01-22–2026-01-31`; withdraw was `56–60` / `2026-02-26–2026-03-02`.
 - Authenticated v4 history: **PASS**. Real HTTP register/login/simulate/list/detail/delete sequence returned `schema_version=4`; detail was semantically equal to the original response (only JSON object key order differed in the stored provenance object); GET after delete returned HTTP 404.
 
-### Actual HTTP results: historical replay A01–A36
+### Actual HTTP results: historical replay A01-A36
 
-**Assertion coverage of this runtime run:**
+Each request uses its documented source-compatible `p_gabah`, source `p_duck_buy` when present, source planting date when present, and scenario `p_duck_sell=45000`. `duck_age_days=21` remains imputed/estimated. No request sends `literature_duration_days`; no local `t_duck=45` or local 28-40 duration is converted into a Xiong input. Actual yield remains context only: no local yield MAE/RMSE is calculated.
 
-The runtime harness calculates expected `d_are=J/A_are`, `d_ha=100*d_are`,
-Xiong density-domain eligibility, and survival expectation from each request
-and the SoT before comparing them to the HTTP response. It does not derive
-these expected values from response fields. Synthetic accepted cases also
-assert their density arithmetic. S-A14 asserts yield, total yield, gabah
-revenue, all-sold duck revenue, duck-buy cost, and pre-optional cash
-contribution; S-A15 asserts both Xiong yield outputs.
-
-Every request below was sent to the running `POST /api/v1/dss/simulate` endpoint without `literature_duration_days`. `yield_are_kg=null` is therefore the expected and actual abstention result.
-
-| ID | HTTP | Actual d/are | Actual density status | survival risk | yield status | yield are kg | Result |
-|---|---:|---:|---|---|---|---|---|
-| A01 | 200 | 4.545454545454546 | WARNING_ABOVE_RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A02 | 200 | 2.6666666666666665 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A03 | 200 | 2.0833333333333335 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A04 | 200 | 3.5555555555555554 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A05 | 200 | 3.611111111111111 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A06 | 200 | 0.9803921568627451 | UNDER | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A07 | 200 | 3.125 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A08 | 200 | 6.5 | WARNING_ABOVE_RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A09 | 200 | 7.2727272727272725 | WARNING_ABOVE_RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A10 | 200 | 1.2396694214876034 | UNDER | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A11 | 200 | 4.545454545454546 | WARNING_ABOVE_RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A12 | 200 | 2.6666666666666665 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A13 | 200 | 1.6666666666666667 | UNDER | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A14 | 200 | 2.2222222222222223 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A15 | 200 | 1.9607843137254901 | UNDER | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A16 | 200 | 0.9375 | UNDER | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A17 | 200 | 2.081887578070784 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A18 | 200 | 9.090909090909092 | HIGH_RISK | HIGH | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A19 | 200 | 3.1496062992125986 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A20 | 200 | 3.1341821743388834 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A21 | 200 | 2.878787878787879 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A22 | 200 | 1.875 | UNDER | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A23 | 200 | 3.2 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A24 | 200 | 3.272727272727273 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A25 | 200 | 0.7874015748031497 | UNDER | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A26 | 200 | 4.166666666666667 | WARNING_ABOVE_RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A27 | 200 | 2.9 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A28 | 200 | 2 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A29 | 200 | 2 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A30 | 200 | 1.971830985915493 | UNDER | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A31 | 200 | 2.079002079002079 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A32 | 200 | 2.0833333333333335 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A33 | 200 | 2.028985507246377 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A34 | 200 | 2.027027027027027 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A35 | 200 | 2.0316027088036117 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-| A36 | 200 | 2.1220159151193636 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
-
+| ID | HTTP | Source p_gabah | Backend price provenance | Source p_duck_buy | Backend cost_duck_buy | Source planting date | Actual backend date window | Density | Density status | Survival risk | Yield status | Yield are kg | Result |
+|---|---:|---:|---|---:|---:|---|---|---:|---|---|---|---:|---|
+| A01 | 200 | 6000.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 10000.0 | 300000.0 | missing | missing | 4.545454545454546 | WARNING_ABOVE_RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A02 | 200 | 6000.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 25000.0 | 700000.0 | missing | missing | 2.6666666666666665 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A03 | 200 | 6000.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 30000.0 | 300000.0 | missing | missing | 2.0833333333333335 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A04 | 200 | 6000.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 25000.0 | 400000.0 | missing | missing | 3.5555555555555554 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A05 | 200 | 6000.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 25000.0 | 325000.0 | missing | missing | 3.611111111111111 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A06 | 200 | 6000.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 25000.0 | 125000.0 | missing | missing | 0.9803921568627451 | UNDER | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A07 | 200 | 6000.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 32000.0 | 320000.0 | missing | missing | 3.125 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A08 | 200 | 6000.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 7539.0 | 490035.0 | missing | missing | 6.5 | WARNING_ABOVE_RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A09 | 200 | 6000.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 8550.0 | 342000.0 | missing | missing | 7.2727272727272725 | WARNING_ABOVE_RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A10 | 200 | 7500.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 22222.22222 | 199999.99998 | missing | missing | 1.2396694214876034 | UNDER | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A11 | 200 | 7500.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 6666.666667 | 200000.00001 | missing | missing | 4.545454545454546 | WARNING_ABOVE_RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A12 | 200 | 7500.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 7000.0 | 196000.0 | missing | missing | 2.6666666666666665 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A13 | 200 | 7500.0 | p_gabah=runtime; p_duck_buy=local-estimate fallback Rp25000/ekor; p_duck_sell=runtime | missing | 200000.0 | missing | missing | 1.6666666666666667 | UNDER | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A14 | 200 | 7500.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 15000.0 | 150000.0 | missing | missing | 2.2222222222222223 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A15 | 200 | 7500.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 5000.0 | 50000.0 | missing | missing | 1.9607843137254901 | UNDER | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A16 | 200 | 7500.0 | p_gabah=runtime; p_duck_buy=local-estimate fallback Rp25000/ekor; p_duck_sell=runtime | missing | 75000.0 | missing | missing | 0.9375 | UNDER | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A17 | 200 | 7500.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 10000.0 | 300000.0 | missing | missing | 2.081887578070784 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A18 | 200 | 7500.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 7000.0 | 350000.0 | missing | missing | 9.090909090909092 | HIGH_RISK | HIGH | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A19 | 200 | 6000.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 15000.0 | 300000.0 | 2024-02-19 | 2024-03-11..2024-04-19 | 3.1496062992125986 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A20 | 200 | 6300.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 12000.0 | 384000.0 | 2024-04-15 | 2024-05-06..2024-06-14 | 3.1341821743388834 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A21 | 200 | 6300.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 12000.0 | 228000.0 | 2024-04-12 | 2024-05-03..2024-06-11 | 2.878787878787879 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A22 | 200 | 6300.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 0.0 | 0.0 | 2024-04-23 | 2024-05-14..2024-06-22 | 1.875 | UNDER | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A23 | 200 | 6300.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 0.0 | 0.0 | 2024-04-22 | 2024-05-13..2024-06-21 | 3.2 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A24 | 200 | 6300.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 12000.0 | 216000.0 | 2024-04-15 | 2024-05-06..2024-06-14 | 3.272727272727273 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A25 | 200 | 6200.0 | p_gabah=runtime; p_duck_buy=local-estimate fallback Rp25000/ekor; p_duck_sell=runtime | missing | 125000.0 | 2024-07-17 | 2024-08-07..2024-09-15 | 0.7874015748031497 | UNDER | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A26 | 200 | 6000.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 0.0 | 0.0 | 2024-10-01 | 2024-10-22..2024-11-30 | 4.166666666666667 | WARNING_ABOVE_RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A27 | 200 | 6000.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 0.0 | 0.0 | 2024-09-28 | 2024-10-19..2024-11-27 | 2.9 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A28 | 200 | 6000.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 25000.0 | 225000.0 | missing | missing | 2.0 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A29 | 200 | 6000.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 25000.0 | 150000.0 | missing | missing | 2.0 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A30 | 200 | 6000.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 25000.0 | 175000.0 | missing | missing | 1.971830985915493 | UNDER | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A31 | 200 | 6000.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 25000.0 | 250000.0 | 2025-04-09 | 2025-04-30..2025-06-08 | 2.079002079002079 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A32 | 200 | 6000.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 25000.0 | 250000.0 | 2025-04-09 | 2025-04-30..2025-06-08 | 2.0833333333333335 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A33 | 200 | 6000.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 25000.0 | 175000.0 | 2025-04-19 | 2025-05-10..2025-06-18 | 2.028985507246377 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A34 | 200 | 6000.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 25000.0 | 225000.0 | missing | missing | 2.027027027027027 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A35 | 200 | 6000.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 25000.0 | 225000.0 | missing | missing | 2.0316027088036117 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
+| A36 | 200 | 6000.0 | p_gabah=runtime; p_duck_buy=runtime; p_duck_sell=runtime | 25000.0 | 200000.0 | missing | missing | 2.1220159151193636 | RECOMMENDED | null | OUTSIDE_LITERATURE_DOMAIN | null | PASS |
 ### Actual HTTP results: synthetic S-A01–S-A19
 
 | ID | HTTP | Actual principal output | Result |
