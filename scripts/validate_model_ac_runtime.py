@@ -180,7 +180,7 @@ def main() -> None:
         EVIDENCE.write_text(json.dumps(evidence, ensure_ascii=False, indent=2), encoding="utf-8")
         # Windows can retain SQLite's file handle briefly after Uvicorn exits.
         # Cleanup must not turn a completed acceptance run into a false failure.
-        for _ in range(30):
+        for _ in range(120):
             if not runtime_db.exists():
                 break
             try:
