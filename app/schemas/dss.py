@@ -173,7 +173,9 @@ class ModelMeta(BaseModel):
     history_schema_version: int = 4
     parameter_registry_version: str | None = None
     model_commit_sha: str | None = None
-    frozen: bool = True
+    # Phase 3 runtime is NOT the final model freeze (docs/08 places freeze in
+    # the final phase); responses must not claim validation/freeze occurred.
+    frozen: bool = False
     generated_at: datetime | None = None
 
 
@@ -356,7 +358,12 @@ class DefaultedInputRecord(BaseModel):
 
 
 class TraceMeta(BaseModel):
-    """Formula/source trace (contract section 4, persistence doc section 5)."""
+    """Formula/source trace (contract section 4, persistence doc section 5).
+
+    ``availability_reasons`` maps response group paths to the explicit machine
+    reason codes that explain a null/unavailable numeric output. It carries
+    only codes actually emitted by engines -- never fabricated entries.
+    """
 
     active_formula_ids: list[str] = Field(default_factory=list)
     conditional_formula_ids: list[str] = Field(default_factory=list)
@@ -365,6 +372,7 @@ class TraceMeta(BaseModel):
     lookup_versions: dict[str, object] = Field(default_factory=dict)
     regulation_versions: dict[str, object] = Field(default_factory=dict)
     defaulted_inputs: list[DefaultedInputRecord] = Field(default_factory=list)
+    availability_reasons: dict[str, list[str]] = Field(default_factory=dict)
 
 
 class DSSSimulationResponse(BaseModel):
@@ -392,6 +400,62 @@ class DSSSimulationResponse(BaseModel):
     trace: TraceMeta = Field(default_factory=TraceMeta)
 
 
+# ---------------------------------------------------------------------------
+# History (persistence v4) -- list/delete contracts (docs/05 sections 3/7)
+# ---------------------------------------------------------------------------
+
+
+class R2HistorySummary(BaseModel):
+    """Indexed summary fields of a stored schema-v4 simulation snapshot.
+
+    Mirrors the ``dss_simulation_histories_r2`` index columns; the semantic
+    truth of every simulation remains its stored response snapshot.
+    Unknown scientific outputs stay null here as well.
+    """
+
+    land_area_are: float
+    duck_count: int
+    rice_variety: str
+    planting_system: str
+    duck_age_days: int
+    planting_date: date
+    p_duck_buy_effective: float
+    density_are: float
+    age_support: AgeSupportFlag
+    density_support: DensitySupportFlag
+    extrapolation_status: ExtrapolationFlag
+    yield_availability: AvailabilityStatus
+    survival_availability: AvailabilityStatus
+    cost_completeness: CostCompletenessFlag
+    yield_total_kg: float | None = None
+    margin_core_rp: float | None = None
+    profit_full_est_rp: float | None = None
+
+
+class HistoryListItem(BaseModel):
+    """One history row in the merged list.
+
+    ``model_version`` distinguishes canonical R2 rows ("R2") from immutable
+    pre-R2 records ("LEGACY", schema_version <= 3). Legacy items expose only
+    identity/version/timestamp metadata -- no scientific values are
+    synthesized or re-labeled for them (docs/05 section 7).
+    """
+
+    id: str
+    model_version: str
+    schema_version: int
+    created_at: datetime
+    r2_summary: R2HistorySummary | None = None
+
+
+class HistoryListResponse(BaseModel):
+    data: list[HistoryListItem]
+
+
+class DeleteHistoryResponse(BaseModel):
+    message: str
+
+
 __all__ = [
     "AgeSupportFlag",
     "AvailabilityStatus",
@@ -400,6 +464,7 @@ __all__ = [
     "ComponentAvailability",
     "CostCompletenessFlag",
     "CostLedger",
+    "DeleteHistoryResponse",
     "DSSOptionsResponse",
     "DSSSimulationRequest",
     "DSSSimulationResponse",
@@ -411,6 +476,8 @@ __all__ = [
     "ExtrapolationFlag",
     "FeedCost",
     "FertilizerBaseline",
+    "HistoryListItem",
+    "HistoryListResponse",
     "ModelMeta",
     "NetInfrastructureCost",
     "OperationalProfile",
@@ -420,6 +487,7 @@ __all__ = [
     "ProvenanceStatus",
     "PurchasePriceOption",
     "PurchasePriceSource",
+    "R2HistorySummary",
     "ReasonCode",
     "ReliabilitySummary",
     "RiceVarietyOption",

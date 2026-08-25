@@ -4,9 +4,13 @@ from pathlib import Path
 from app.core.config import settings
 
 
-# v3 explicit columns — SoT FINAL
-# schema_version=3 rows written by /dss/simulate (authenticated)
-# schema_version<=2 legacy rows remain readable via SimulationHistoryLegacy
+# legacy-compat-region: v3 columns (do not scan numerics) -- START
+# v3 explicit columns — pre-R2 SoT FINAL (INVALIDATED for R2; docs/07).
+# schema_version=3 rows are immutable historical records that stay readable.
+# R2 simulations NEVER write here: they go to ``dss_simulation_histories_r2``.
+# The legacy default values below (65 / 44 / 0 ...) belong to the invalidated
+# pre-R2 point-calendar model and are retained ONLY so old rows/columns keep
+# working; they are not R2 values.
 HISTORY_V3_COLUMNS = (
     # Input snapshot
     "land_area_are REAL NOT NULL DEFAULT 0",
@@ -48,6 +52,53 @@ HISTORY_V3_COLUMNS = (
     # Warnings
     "warnings_json TEXT NOT NULL DEFAULT '[]'",
 )
+# legacy-compat-region: v3 columns -- END
+
+# R2 persistence v4 (docs/05_R2_PERSISTENCE_VERSIONING.md).
+# Scientific/economic unknowns are SQL NULL -- never NOT NULL DEFAULT 0.
+HISTORY_R2_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS dss_simulation_histories_r2 (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    schema_version INTEGER NOT NULL DEFAULT 4,
+    model_version TEXT NOT NULL,
+    parameter_registry_version TEXT NOT NULL,
+    model_commit_sha TEXT,
+    created_at TEXT NOT NULL,
+
+    request_json TEXT NOT NULL,
+    response_json TEXT NOT NULL,
+    trace_json TEXT NOT NULL,
+
+    land_area_are REAL NOT NULL,
+    duck_count INTEGER NOT NULL,
+    rice_variety TEXT NOT NULL,
+    planting_system TEXT NOT NULL,
+    duck_age_days INTEGER NOT NULL,
+    planting_date TEXT NOT NULL,
+    p_duck_buy_manual REAL,
+    p_duck_buy_effective REAL NOT NULL,
+
+    density_are REAL NOT NULL,
+    age_support TEXT NOT NULL,
+    density_support TEXT NOT NULL,
+    extrapolation_status TEXT NOT NULL,
+    yield_availability TEXT NOT NULL,
+    survival_availability TEXT NOT NULL,
+    cost_completeness TEXT NOT NULL,
+
+    yield_total_kg REAL,
+    margin_core_rp REAL,
+    profit_full_est_rp REAL,
+
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+"""
+
+HISTORY_R2_INDEX_SQL = """
+CREATE INDEX IF NOT EXISTS idx_dss_r2_user_created
+ON dss_simulation_histories_r2(user_id, created_at DESC);
+"""
 
 
 def get_connection() -> sqlite3.Connection:
@@ -135,3 +186,9 @@ def initialize_database() -> None:
                 connection.execute(
                     f"ALTER TABLE dss_simulation_histories ADD COLUMN {column_def}"
                 )
+
+        # R2 persistence v4 -- independent, idempotent creation. The legacy
+        # table above is never destructively altered and old rows are never
+        # rewritten; the new table simply coexists (docs/05 section 8).
+        connection.executescript(HISTORY_R2_TABLE_SQL)
+        connection.executescript(HISTORY_R2_INDEX_SQL)

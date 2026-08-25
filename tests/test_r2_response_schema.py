@@ -217,6 +217,18 @@ class TestContractShape:
         assert revived.crop_yield.baseline_kg_per_are is None
         assert revived.trace.defaulted_inputs[0].resolved_value == 26500
 
+    def test_model_meta_frozen_defaults_false_until_phase5_freeze(self) -> None:
+        # Phase 3 runtime must not claim research freeze occurred.
+        assert ModelMeta().frozen is False
+
+    def test_trace_meta_has_availability_reasons_field(self) -> None:
+        meta = TraceMeta(
+            availability_reasons={"yield": ["Y_BASE_LOOKUP_MISSING"]}
+        )
+        dumped = meta.model_dump()
+        assert dumped["availability_reasons"] == {"yield": ["Y_BASE_LOOKUP_MISSING"]}
+        assert TraceMeta().availability_reasons == {}
+
 
 class TestConstrainedVocabularies:
     def test_invalid_provenance_label_is_rejected(self) -> None:

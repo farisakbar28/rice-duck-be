@@ -33,6 +33,13 @@ from app.domain.models import (
 MODEL_VERSION = "R2"
 EFFECTIVE_FROM = "2026-08-26"
 
+# Immutable parameter-registry identifier (docs/05 section 4 recommended
+# format "R2-YYYY-MM-DD.N"; date matches EFFECTIVE_FROM). Distinct from
+# MODEL_VERSION, APP_VERSION, the history schema version, and any Git SHA.
+# Bump the trailing ".N" whenever a regulatory price or an approved lookup
+# changes without a structural formula change; MODEL_VERSION stays "R2".
+PARAMETER_REGISTRY_VERSION = "R2-2026-08-26.1"
+
 
 # ---------------------------------------------------------------------------
 # Rice varieties (SSOT §2; provenance doc §4)
@@ -481,6 +488,7 @@ PARAMETER_REGISTRY: dict[str, ParameterMetadata] = {
 __all__ = [
     "MODEL_VERSION",
     "EFFECTIVE_FROM",
+    "PARAMETER_REGISTRY_VERSION",
     "RICE_VARIETIES",
     "PLANTING_SYSTEMS",
     "PARAMETER_REGISTRY",

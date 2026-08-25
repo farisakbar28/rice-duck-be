@@ -207,15 +207,65 @@ class ParameterMetadata:
 
 
 # ---------------------------------------------------------------------------
-# 3. NON-R2 legacy history models (read-only compatibility, v1-v3)
+# 3. R2 persistence v4 snapshot row (docs/05_R2_PERSISTENCE_VERSIONING.md)
+# ---------------------------------------------------------------------------
+# Semantic storage model for ``dss_simulation_histories_r2``. The JSON
+# snapshots (request/response/trace) are the canonical semantic record; the
+# remaining fields are indexed list/filter columns. Scientific unknowns stay
+# None -- they must never be written as numeric zero. This type is fully
+# isolated from the NON-R2 v1-v3 dataclasses below.
+
+
+@dataclass(frozen=True)
+class R2HistorySnapshot:
+    """One schema_version=4 row of the R2 history table."""
+
+    id: str
+    user_id: str
+    schema_version: int
+    model_version: str
+    parameter_registry_version: str
+    model_commit_sha: str | None
+    created_at: datetime
+
+    request_json: str
+    response_json: str
+    trace_json: str
+
+    # Indexed summary columns (list view only)
+    land_area_are: float
+    duck_count: int
+    rice_variety: str
+    planting_system: str
+    duck_age_days: int
+    planting_date: str
+    p_duck_buy_manual: float | None
+    p_duck_buy_effective: float
+
+    density_are: float
+    age_support: str
+    density_support: str
+    extrapolation_status: str
+    yield_availability: str
+    survival_availability: str
+    cost_completeness: str
+
+    # Unknown scientific outputs remain SQL NULL / Python None.
+    yield_total_kg: float | None
+    margin_core_rp: float | None
+    profit_full_est_rp: float | None
+
+
+# ---------------------------------------------------------------------------
+# 4. NON-R2 legacy history models (read-only compatibility, v1-v3)
 # ---------------------------------------------------------------------------
 # The two dataclasses below are intentionally byte-compatible with the
 # pre-R2 master definitions so existing rows in ``dss_simulation_histories``
 # remain readable. They encode invalidated pre-R2 semantics (fixed-yield
 # columns, survivor-monetized revenue, the old net-contribution aggregate,
 # point-calendar columns -- see docs/07 register) and therefore MUST NOT be
-# imported by any R2 engine/service/schema. Persistence v4 will use a
-# semantically isolated storage (docs/05_R2_PERSISTENCE_VERSIONING.md).
+# imported by any R2 engine/service/schema. Persistence v4 uses
+# ``R2HistorySnapshot`` above (docs/05_R2_PERSISTENCE_VERSIONING.md).
 
 
 @dataclass(frozen=True)
@@ -291,7 +341,7 @@ class SimulationHistory:
 
 
 # ---------------------------------------------------------------------------
-# 4. Auth/user infrastructure (unchanged)
+# 5. Auth/user infrastructure (unchanged)
 # ---------------------------------------------------------------------------
 
 

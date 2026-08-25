@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     host: str = "127.0.0.1"
     port: int = 8000
     database_path: str = "data/rice_duck.db"
+    # Git commit that produced a response (docs/05 section 4). Injected by
+    # the deployment environment; never discovered via subprocess per
+    # request. Null is valid -- the v4 column is nullable.
+    model_commit_sha: str | None = None
     cors_allowed_origins: str = "*"
     jwt_secret_key: str = "mSXdI785UBtEkxe1ejL5AqYnt5uD2jEeSDmrD60I3Jw"
     jwt_access_token_minutes: int = 120

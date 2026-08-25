@@ -1,115 +1,149 @@
+"""History persistence -- R2 schema v4 + isolated legacy read access.
+
+Layout (docs/05_R2_PERSISTENCE_VERSIONING.md):
+
+  * R2 operations write/read ONLY ``dss_simulation_histories_r2`` (v4).
+    Every authenticated simulation persists exactly one row whose JSON
+    snapshots are the canonical semantic record; the indexed columns exist
+    for list/filter efficiency only. Unknown scientific outputs stay SQL
+    NULL (never numeric zero).
+  * Legacy operations are read/delete-only over ``dss_simulation_histories``
+    (schema_version <= 3, pre-R2 semantics). They exist so historical rows
+    remain visible/auditable and user-owned deletion keeps working; they
+    NEVER convert legacy values into R2 values. There is deliberately no
+    v3 writer anymore: production code must not create new legacy rows.
+"""
+
 import json
 import sqlite3
 from datetime import datetime, timezone
 from uuid import uuid4
 
 from app.core.database import get_connection
-from app.domain.models import SimulationHistory, SimulationHistoryLegacy
+from app.domain.models import R2HistorySnapshot, SimulationHistory, SimulationHistoryLegacy
 
 
-V3_INSERT_SQL = """
-INSERT INTO dss_simulation_histories (
-    id, user_id, schema_version, created_at,
-    input_json, actual_scenario_json, recommended_scenario_json,
-    comparison_json, risk_json, trace_json, notes_json,
-    economics_json, ecology_json, environment_json, lookup_json,
-    validation_json, data_readiness_json,
+R2_INSERT_SQL = """
+INSERT INTO dss_simulation_histories_r2 (
+    id, user_id, schema_version, model_version,
+    parameter_registry_version, model_commit_sha, created_at,
+    request_json, response_json, trace_json,
     land_area_are, duck_count, rice_variety, planting_system,
-    duck_age_days, planting_date, p_duck_buy,
-    age_flag,
-    density_are, density_ha, density_status,
-    hst_in, hst_out, t_active,
-    d_in, d_out,
-    harvest_hst_min, harvest_hst_max,
-    d_panen_min, d_panen_max,
-    n_survive,
-    yield_are_pred, yield_total_pred,
-    revenue_gabah, revenue_duck_potential,
-    cost_duck_buy, cost_feed, core_cash_cost,
-    total_revenue_dss, net_cash_contribution_dss,
-    warnings_json
+    duck_age_days, planting_date,
+    p_duck_buy_manual, p_duck_buy_effective,
+    density_are, age_support, density_support, extrapolation_status,
+    yield_availability, survival_availability, cost_completeness,
+    yield_total_kg, margin_core_rp, profit_full_est_rp
 ) VALUES (
-    ?, ?, 3, ?,
-    '{}', '{}', '{}', '{}', '{}', '{}', '[]',
-    '{}', '{}', '{}', '{}', '{}', '{}',
     ?, ?, ?, ?,
     ?, ?, ?,
-    ?,
     ?, ?, ?,
+    ?, ?, ?, ?,
+    ?, ?,
+    ?, ?,
+    ?, ?, ?, ?,
     ?, ?, ?,
-    ?, ?,
-    ?, ?,
-    ?, ?,
-    ?,
-    ?, ?,
-    ?, ?,
-    ?, ?, ?,
-    ?, ?,
-    ?
+    ?, ?, ?
 )
+"""
+
+R2_SELECT_COLUMNS = """
+    id, user_id, schema_version, model_version,
+    parameter_registry_version, model_commit_sha, created_at,
+    request_json, response_json, trace_json,
+    land_area_are, duck_count, rice_variety, planting_system,
+    duck_age_days, planting_date,
+    p_duck_buy_manual, p_duck_buy_effective,
+    density_are, age_support, density_support, extrapolation_status,
+    yield_availability, survival_availability, cost_completeness,
+    yield_total_kg, margin_core_rp, profit_full_est_rp
 """
 
 
 class HistoryRepository:
     # ------------------------------------------------------------------
-    # v3 — SoT FINAL explicit columns
+    # R2 — schema v4 (canonical persistence for /dss/simulate)
     # ------------------------------------------------------------------
-    def create_v3(
-        self, *, user_id: str, history: SimulationHistory
-    ) -> SimulationHistory:
+    def create_r2(self, snapshot: R2HistorySnapshot) -> R2HistorySnapshot:
         with get_connection() as connection:
             connection.execute(
-                V3_INSERT_SQL,
+                R2_INSERT_SQL,
                 (
-                    history.id,
-                    history.user_id,
-                    history.created_at.isoformat(),
-                    # v3 explicit fields
-                    history.land_area_are,
-                    history.duck_count,
-                    history.rice_variety,
-                    history.planting_system,
-                    history.duck_age_days,
-                    history.planting_date,
-                    history.p_duck_buy,
-                    history.age_flag,
-                    history.density_are,
-                    history.density_ha,
-                    history.density_status,
-                    history.hst_in,
-                    history.hst_out,
-                    history.t_active,
-                    history.d_in,
-                    history.d_out,
-                    history.harvest_hst_min,
-                    history.harvest_hst_max,
-                    history.d_panen_min,
-                    history.d_panen_max,
-                    history.n_survive,
-                    history.yield_are_pred,
-                    history.yield_total_pred,
-                    history.revenue_gabah,
-                    history.revenue_duck_potential,
-                    history.cost_duck_buy,
-                    history.cost_feed,
-                    history.core_cash_cost,
-                    history.total_revenue_dss,
-                    history.net_cash_contribution_dss,
-                    history.warnings_json,
+                    snapshot.id,
+                    snapshot.user_id,
+                    snapshot.schema_version,
+                    snapshot.model_version,
+                    snapshot.parameter_registry_version,
+                    snapshot.model_commit_sha,
+                    snapshot.created_at.isoformat(),
+                    snapshot.request_json,
+                    snapshot.response_json,
+                    snapshot.trace_json,
+                    snapshot.land_area_are,
+                    snapshot.duck_count,
+                    snapshot.rice_variety,
+                    snapshot.planting_system,
+                    snapshot.duck_age_days,
+                    snapshot.planting_date,
+                    snapshot.p_duck_buy_manual,
+                    snapshot.p_duck_buy_effective,
+                    snapshot.density_are,
+                    snapshot.age_support,
+                    snapshot.density_support,
+                    snapshot.extrapolation_status,
+                    snapshot.yield_availability,
+                    snapshot.survival_availability,
+                    snapshot.cost_completeness,
+                    snapshot.yield_total_kg,
+                    snapshot.margin_core_rp,
+                    snapshot.profit_full_est_rp,
                 ),
             )
-        return history
+        return snapshot
 
-    def new_id(self) -> str:
-        return str(uuid4())
+    def list_r2_by_user(self, user_id: str) -> list[R2HistorySnapshot]:
+        with get_connection() as connection:
+            rows = connection.execute(
+                f"""
+                SELECT {R2_SELECT_COLUMNS}
+                FROM dss_simulation_histories_r2
+                WHERE user_id = ?
+                ORDER BY created_at DESC, id DESC
+                """,
+                (user_id,),
+            ).fetchall()
+        return [self._row_to_r2(row) for row in rows]
 
-    def now(self) -> datetime:
-        return datetime.now(timezone.utc)
+    def get_r2_by_id_and_user(
+        self, history_id: str, user_id: str
+    ) -> R2HistorySnapshot | None:
+        with get_connection() as connection:
+            row = connection.execute(
+                f"""
+                SELECT {R2_SELECT_COLUMNS}
+                FROM dss_simulation_histories_r2
+                WHERE id = ? AND user_id = ?
+                """,
+                (history_id, user_id),
+            ).fetchone()
+        return self._row_to_r2(row) if row else None
+
+    def delete_r2_by_id_and_user(self, history_id: str, user_id: str) -> bool:
+        with get_connection() as connection:
+            cursor = connection.execute(
+                """
+                DELETE FROM dss_simulation_histories_r2
+                WHERE id = ? AND user_id = ?
+                """,
+                (history_id, user_id),
+            )
+        return cursor.rowcount > 0
 
     # ------------------------------------------------------------------
-    # Reads — dispatch on schema_version
+    # Legacy — v1/v2/v3 read-only compatibility (pre-R2 semantics).
+    # Isolated on purpose: never called by the R2 simulate path.
     # ------------------------------------------------------------------
-    def list_by_user(
+    def list_legacy_by_user(
         self, user_id: str
     ) -> list[SimulationHistory | SimulationHistoryLegacy]:
         with get_connection() as connection:
@@ -123,7 +157,7 @@ class HistoryRepository:
             ).fetchall()
         return [self._to_model(row) for row in rows]
 
-    def get_by_id_and_user(
+    def get_legacy_by_id_and_user(
         self,
         history_id: str,
         user_id: str,
@@ -138,7 +172,8 @@ class HistoryRepository:
             ).fetchone()
         return self._to_model(row) if row else None
 
-    def delete_by_id_and_user(self, history_id: str, user_id: str) -> bool:
+    def delete_legacy_by_id_and_user(self, history_id: str, user_id: str) -> bool:
+        """User-owned deletion of an immutable pre-R2 record."""
         with get_connection() as connection:
             cursor = connection.execute(
                 """
@@ -148,6 +183,48 @@ class HistoryRepository:
                 (history_id, user_id),
             )
         return cursor.rowcount > 0
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+    def new_id(self) -> str:
+        return str(uuid4())
+
+    def now(self) -> datetime:
+        return datetime.now(timezone.utc)
+
+    @staticmethod
+    def _row_to_r2(row: sqlite3.Row) -> R2HistorySnapshot:
+        return R2HistorySnapshot(
+            id=row["id"],
+            user_id=row["user_id"],
+            schema_version=row["schema_version"],
+            model_version=row["model_version"],
+            parameter_registry_version=row["parameter_registry_version"],
+            model_commit_sha=row["model_commit_sha"],
+            created_at=datetime.fromisoformat(row["created_at"]),
+            request_json=row["request_json"],
+            response_json=row["response_json"],
+            trace_json=row["trace_json"],
+            land_area_are=row["land_area_are"],
+            duck_count=row["duck_count"],
+            rice_variety=row["rice_variety"],
+            planting_system=row["planting_system"],
+            duck_age_days=row["duck_age_days"],
+            planting_date=row["planting_date"],
+            p_duck_buy_manual=row["p_duck_buy_manual"],
+            p_duck_buy_effective=row["p_duck_buy_effective"],
+            density_are=row["density_are"],
+            age_support=row["age_support"],
+            density_support=row["density_support"],
+            extrapolation_status=row["extrapolation_status"],
+            yield_availability=row["yield_availability"],
+            survival_availability=row["survival_availability"],
+            cost_completeness=row["cost_completeness"],
+            yield_total_kg=row["yield_total_kg"],
+            margin_core_rp=row["margin_core_rp"],
+            profit_full_est_rp=row["profit_full_est_rp"],
+        )
 
     def _to_model(
         self, row: sqlite3.Row

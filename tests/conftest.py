@@ -16,8 +16,10 @@ def clean_database() -> None:
     initialize_database()
     with get_connection() as connection:
         connection.execute("DELETE FROM dss_simulation_histories")
+        connection.execute("DELETE FROM dss_simulation_histories_r2")
         connection.execute("DELETE FROM users")
     yield
     with get_connection() as connection:
         connection.execute("DELETE FROM dss_simulation_histories")
+        connection.execute("DELETE FROM dss_simulation_histories_r2")
         connection.execute("DELETE FROM users")

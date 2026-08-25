@@ -23,18 +23,19 @@ OPENAPI_TAGS = [
     {
         "name": "dss",
         "description": (
-            "DSS Core calculator — kalkulator SoT padi-bebek "
-            "(docs/Model Matematika Data Collection DSS Padi Bebek FINAL.md). "
-            "7 input wajib. Output canonical: Net_Cash_Contribution_DSS. "
-            "Tidak mengandung fitur optimizer/rekomendasi."
+            "DSS Core model R2 padi-bebek (dokumen kanonik: package docs/R2, "
+            "mulai dari docs/01_R2_MODEL_SSOT.md dan docs/03_R2_API_CONTRACT.md). "
+            "Enam input wajib + harga beli bebek opsional (tujuh konsep "
+            "pengguna). Output ilmiah/ekonomi bersifat parsial: komponen yang "
+            "belum tersedia muncul sebagai null dengan status/kode alasan "
+            "eksplisit pada HTTP 200. Tidak mengandung fitur optimizer/visualisasi."
         ),
     },
     {
         "name": "optimizer",
         "description": (
-            "Optimizer/rekomendasi (FITUR TERPISAH, di luar cakupan SoT). "
-            "Boleh memakai formula literatur lama; tidak boleh reuse engine "
-            "DSS core tanpa memanggil endpoint /api/v1/dss/simulate."
+            "Optimizer/rekomendasi (FITUR TERPISAH, di luar cakupan model R2). "
+            "Stub berdiri sendiri; tidak reuse engine DSS core R2."
         ),
     },
 ]
@@ -45,12 +46,19 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.app_name,
         description=(
-            "Backend Decision Support System padi-bebek.\n\n"
-            "Endpoint `/api/v1/dss/simulate` mengikuti model SoT "
-            "docs/Model Matematika Data Collection DSS Padi Bebek FINAL.md. "
-            "7 input wajib, output canonical Net_Cash_Contribution_DSS. "
-            "Endpoint `/api/v1/optimizer/recommend` adalah fitur produk terpisah di luar "
-            "cakupan SoT."
+            "Backend Decision Support System padi-bebek (model R2).\n\n"
+            "Endpoint `/api/v1/dss/simulate` menjalankan model R2 sesuai "
+            "package docs/R2 (docs/01_R2_MODEL_SSOT.md, "
+            "docs/03_R2_API_CONTRACT.md). Enam input wajib ditambah harga "
+            "beli bebek opsional. Output ilmiah/ekonomi parsial valid: nilai "
+            "yang belum tersedia (yield, pakan, biaya kandang total, profit "
+            "penuh) dikembalikan sebagai null dengan status/kode alasan, "
+            "bukan diisi konstanta. Simulasi terautentikasi disimpan sebagai "
+            "snapshot history skema v4.\n\n"
+            "Endpoint `/api/v1/dss/visualize` belum terdaftar: kontrak "
+            "visualisasi R2 kanonik menyusul di Phase 4. Endpoint "
+            "`/api/v1/optimizer/recommend` adalah fitur produk terpisah "
+            "(stub) di luar cakupan model R2."
         ),
         version=settings.app_version,
         debug=settings.app_debug,
