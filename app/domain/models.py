@@ -1,116 +1,227 @@
+"""Domain models for the R2 rice-duck DSS backend.
+
+Layout (keep sections separate; do not let R2 runtime code consume the
+NON-R2 legacy section):
+
+  1. Canonical R2 enumerations.
+     Provenance status and execution state are SEPARATE dimensions
+     (docs/04_R2_PARAMETER_EXECUTION_REGISTRY.md section 1,
+     docs/07_R2_LEGACY_INVALIDATION_REGISTER.md section 3).
+     Only the values below are canonical; the ad-hoc current-master status
+     labels banned by docs/07 section 3 must never be reintroduced here.
+
+  2. Active R2 lookup/configuration structures (frozen).
+     No fixed calendar points (21/65/44), no yield baseline, no duck-sale
+     default, no feed default, no KCl assumption. Unresolved scientific
+     quantities are represented by registry entries whose value is ``None``
+     plus an explicit execution state -- never a placeholder number.
+
+  3. NON-R2 legacy history models (schema_version <= 3).
+     Retained ONLY so historical rows stay readable. Byte-compatible with
+     the pre-R2 definitions on purpose. Never import these from R2 engines,
+     services, or schemas.
+
+  4. Auth/user infrastructure (model-independent, unchanged).
+
+References:
+  docs/01_R2_MODEL_SSOT.md          - canonical values/flags
+  docs/03_R2_API_CONTRACT.md        - response semantics
+  docs/04_R2_PARAMETER_EXECUTION_REGISTRY.md - registry contract
+  docs/10_R2_REFERENCE_PROVENANCE.md - source IDs (I1..I5, R1..R7, O1..O5)
+"""
+
 from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
 from typing import Any
+
+
+# ---------------------------------------------------------------------------
+# 1. Canonical R2 enumerations
+# ---------------------------------------------------------------------------
+
+
+class ProvenanceStatus(str, Enum):
+    """Scientific/economic provenance tag of a value or formula (R2 §15)."""
+
+    LOCAL_CALIBRATED = "local-calibrated"
+    LOCAL_ESTIMATE = "local-estimate"
+    LITERATURE_UNCALIBRATED = "literature-uncalibrated"
+    SYSTEM_DESIGN = "system-design"
+    REGULATORY_LOCKED = "regulatory-locked"
+    MIXED = "mixed"
+
+
+class ExecutionState(str, Enum):
+    """Whether/how a value or formula may execute at runtime (registry §1)."""
+
+    ACTIVE = "ACTIVE"
+    ACTIVE_RANGE = "ACTIVE_RANGE"
+    ACTIVE_BASELINE = "ACTIVE_BASELINE"
+    CONDITIONAL = "CONDITIONAL"
+    PENDING_LOOKUP = "PENDING_LOOKUP"
+    UNAVAILABLE = "UNAVAILABLE"
+    DESCRIPTIVE = "DESCRIPTIVE"
+    NON_EXECUTABLE_LEGACY = "NON_EXECUTABLE_LEGACY"
+
+
+class AgeSupportFlag(str, Enum):
+    """Age is a support/applicability classifier only (R2 §3)."""
+
+    CAUTION = "CAUTION"
+    SUPPORTED = "SUPPORTED"
+    OUTSIDE_LOCAL_RANGE = "OUTSIDE_LOCAL_RANGE"
+
+
+class DensitySupportFlag(str, Enum):
+    """Density support classification; metadata/warning only, never a penalty coefficient (R2 §4)."""
+
+    SUPPORTED = "SUPPORTED"
+    LIMITED_TEST = "LIMITED_TEST"
+    HIGH_RISK = "HIGH_RISK"
+    EXTRAPOLATION = "EXTRAPOLATION"
+
+
+class AvailabilityStatus(str, Enum):
+    """Canonical availability for scientific outputs (SSOT §14)."""
+
+    AVAILABLE = "AVAILABLE"
+    UNAVAILABLE = "UNAVAILABLE"
+
+
+class CostCompletenessFlag(str, Enum):
+    """Ledger completeness gate for full-profit emission (R2 §13)."""
+
+    COMPLETE = "COMPLETE"
+    INCOMPLETE = "INCOMPLETE"
+
+
+class PriceBenchmarkType(str, Enum):
+    """Paddy price semantics: regulatory HPP benchmark, not a forecast (R2 §12)."""
+
+    REGULATORY_HPP = "REGULATORY_HPP"
+
+
+class ExtrapolationFlag(str, Enum):
+    """In/out-of-domain marker for literature-backed lookups (SSOT §14)."""
+
+    IN_DOMAIN = "IN_DOMAIN"
+    OUT_OF_DOMAIN = "OUT_OF_DOMAIN"
+
+
+class PurchasePriceSource(str, Enum):
+    """How the effective duck purchase price was resolved (contract §3.2)."""
+
+    USER_INPUT = "USER_INPUT"
+    LOCAL_DEFAULT_MIDPOINT = "LOCAL_DEFAULT_MIDPOINT"
+
+
+class ComponentAvailability(str, Enum):
+    """Availability vocabulary for cost components that can be range-valued.
+
+    Defined by docs/03_R2_API_CONTRACT.md section 4 response shape:
+    net infrastructure is AVAILABLE_RANGE, cage PARTIAL_RANGE_ONLY,
+    weeding BASELINE_RANGE_ONLY, fully blocked components UNAVAILABLE.
+    """
+
+    AVAILABLE = "AVAILABLE"
+    AVAILABLE_RANGE = "AVAILABLE_RANGE"
+    PARTIAL_RANGE_ONLY = "PARTIAL_RANGE_ONLY"
+    BASELINE_RANGE_ONLY = "BASELINE_RANGE_ONLY"
+    UNAVAILABLE = "UNAVAILABLE"
+
+
+# ---------------------------------------------------------------------------
+# 2. Active R2 lookup/configuration structures (frozen)
+# ---------------------------------------------------------------------------
 
 
 @dataclass(frozen=True)
 class RiceVariety:
+    """R2 rice variety lookup entry.
+
+    Harvest windows are local estimates (Sertani/Seratih 100-110,
+    Inpari 90-100 HST). Yield resolution is PENDING_LOOKUP until an approved
+    exact-cultivar baseline table exists; no numeric yield baseline may be
+    attached to this type.
+    """
+
     code: str
     label: str
-    # SoT §6.1 — harvest HST range
-    # Sertani: hst_panen_min=100, hst_panen_max=110
-    # Inpari:  hst_panen_min=109, hst_panen_max=116 (local empirical window)
-    hst_panen_min: int
-    hst_panen_max: int
-    risk_note: str
-    status: str
-    # legacy alias kept for backward-compat read of old data only
-    hst_panen: int = 0          # deprecated: use hst_panen_min/max
-    hst_masuk: int = 21         # fixed HST_in=21 per SoT §6
-    hst_heading: int = 65       # fixed HST_out=65 per SoT §6
-    harvest_age_days: int = 0   # deprecated alias
-    hst_masuk_min: int = 21
-    hst_masuk_max: int = 21
-    hst_heading_min: int = 65
-    hst_heading_max: int = 65
+    harvest_hst_min: int
+    harvest_hst_max: int
+    calendar_status: ProvenanceStatus
+    yield_lookup_status: ExecutionState
+    note: str = ""
 
 
 @dataclass(frozen=True)
 class PlantingSystem:
+    """R2 planting-system lookup entry.
+
+    Supported density ranges only (Jarwo 2-4, Tegel 2-3 duck/are).
+    Deliberately carries NO F_sys / f_yield / penalty fields: density and
+    system are support metadata, never yield multipliers (R2 §4).
+    """
+
     code: str
     label: str
-    # SoT §5.1 — RECOMMENDED density ceiling per system
-    # jajar_legowo: 2 <= d <= 4  (Jajar Legowo 2:1 only)
-    # tegel:        2 <= d <= 3
-    recommended_density_max_are: float
+    supported_density_min_are: float
+    supported_density_max_are: float
+    status: ProvenanceStatus
     note: str = ""
-    # Legacy fields retained for backward-compat read only; not used in Core
-    k_safe_are: float = 0.0
-    k_max_are: float = 0.0
-    f_yield: float = 1.0
-    recommended_density_min_are: float = 2.0
-    k_safe_min_are: float = 0.0
-    k_safe_max_are: float = 0.0
-    k_max_min_are: float = 0.0
-    k_max_max_are: float = 0.0
-    limited_test_max_are: float | None = None
-    k_max_status: str = "legacy"
-    f_yield_status: str = "legacy"
-
-
-@dataclass(frozen=True)
-class DSSConstants:
-    # HET pupuk (hardware-locked)
-    HET_urea: float = 1800.0
-    HET_phonska: float = 1840.0
-    HET_kcl: float = 9500.0
-    # Misc reference values (not used in Core)
-    survival_lambda: float = 0.67               # legacy reference only
-    t_max_eff_days: int = 45
-    t_phase_1_days: int = 50
-    local_feed_warning_phase_days: int = 30
-    dung_phase_1_total_kg: float = 4.0
-    dung_phase_2_daily_kg: float = 0.2
-    minimum_density_are: float = 1.0
-    p_max: float = 0.8
-    penalty_gamma: float = 0.5
-    daily_duck_grazing_hours: float = 10.0
-    baseline_grazing_hours: float = 10.0
-    feed_requirement_kg_per_duck_day: float | None = None
-    feed_natural_saving_rate: float | None = None
-    feed_greedy_kg_per_duck_day: float | None = None
-    rice_duck_price_rp_per_kg: float | None = None
-    duck_sale_price_rp_per_duck: float = 52500.0   # SoT §9: p_duck_sell
-    duck_buy_price_rp_per_duck: float = 0.0         # placeholder; actual from request
-    duck_target_out_max_days: int = 65
-    feed_price_rp_per_kg: float | None = None
-    nitrogen_price_rp_per_kg: float = 1800.0
-    potassium_price_rp_per_kg: float = 9500.0
-    weeding_cost_rp_per_are: float = 21000.0        # SoT §10.1
-    gwp_ch4: float = 34.0
-    gwp_n2o: float = 265.0
-    seasonal_ch4_rice_duck_kg_per_ha: float | None = None
-    seasonal_ch4_conventional_kg_per_ha: float | None = None
-    seasonal_n2o_kg_per_ha: float | None = None
-    calibration_note: str = ""
-    feed_requirement_kg_per_duck_day_reference: float = 0.10
-    feed_natural_saving_rate_reference: float = 0.66
 
 
 @dataclass(frozen=True)
 class ParameterMetadata:
-    value: Any
-    unit: str
-    source: str
-    status: str
-    note: str
-    minimum: float | int | None = None
-    maximum: float | int | None = None
+    """Versioned parameter/config record (registry §5, provenance doc §5).
+
+    ``value`` is ``None`` whenever ``execution_state`` is ``PENDING_LOOKUP``
+    or ``UNAVAILABLE``; a numeric value in those states would be a fabricated
+    fallback. ``source_ids`` reference docs/10 (I*/R*/O* identifiers).
+    """
+
+    key: str
+    value: Any | None
+    unit: str | None
+    status_tag: ProvenanceStatus
+    execution_state: ExecutionState
+    source_ids: tuple[str, ...]
+    model_version: str
+    effective_from: str
+    note: str = ""
+    minimum: float | None = None
+    maximum: float | None = None
+
+    def __post_init__(self) -> None:
+        if self.execution_state in (
+            ExecutionState.PENDING_LOOKUP,
+            ExecutionState.UNAVAILABLE,
+        ) and isinstance(self.value, (int, float)):
+            raise ValueError(
+                f"Parameter '{self.key}': execution_state={self.execution_state.value} "
+                "must not carry a numeric value (fail-closed rule, registry §6)."
+            )
+        if self.source_ids and not all(isinstance(s, str) for s in self.source_ids):
+            raise ValueError(f"Parameter '{self.key}': source_ids must be strings.")
 
 
-@dataclass(frozen=True)
-class User:
-    id: str
-    name: str
-    email: str
-    password_hash: str
-    created_at: datetime
-    updated_at: datetime
+# ---------------------------------------------------------------------------
+# 3. NON-R2 legacy history models (read-only compatibility, v1-v3)
+# ---------------------------------------------------------------------------
+# The two dataclasses below are intentionally byte-compatible with the
+# pre-R2 master definitions so existing rows in ``dss_simulation_histories``
+# remain readable. They encode invalidated pre-R2 semantics (fixed-yield
+# columns, survivor-monetized revenue, the old net-contribution aggregate,
+# point-calendar columns -- see docs/07 register) and therefore MUST NOT be
+# imported by any R2 engine/service/schema. Persistence v4 will use a
+# semantically isolated storage (docs/05_R2_PERSISTENCE_VERSIONING.md).
 
 
 @dataclass(frozen=True)
 class SimulationHistoryLegacy:
-    """Legacy schema (schema_version <= 2). Read-only for audit."""
+    """NON-R2. Legacy schema (schema_version <= 2). Read-only for audit."""
+
     id: str
     user_id: str
     input_data: dict
@@ -132,7 +243,8 @@ class SimulationHistoryLegacy:
 
 @dataclass(frozen=True)
 class SimulationHistory:
-    """v3 schema — aligned with SoT FINAL (docs/Model Matematika Data Collection DSS Padi Bebek FINAL.md)."""
+    """NON-R2. v3 schema row of the invalidated pre-R2 model. Read-only."""
+
     id: str
     user_id: str
     schema_version: int
@@ -165,7 +277,7 @@ class SimulationHistory:
     # Yield Engine
     yield_are_pred: float
     yield_total_pred: float
-    # Core Economics
+    # Core Economics (pre-R2 ledger; NOT canonical R2 outputs)
     revenue_gabah: float
     revenue_duck_potential: float
     cost_duck_buy: float
@@ -176,6 +288,21 @@ class SimulationHistory:
     # Warnings (JSON string)
     warnings_json: str
     created_at: datetime
+
+
+# ---------------------------------------------------------------------------
+# 4. Auth/user infrastructure (unchanged)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class User:
+    id: str
+    name: str
+    email: str
+    password_hash: str
+    created_at: datetime
+    updated_at: datetime
 
 
 @dataclass(frozen=True)
