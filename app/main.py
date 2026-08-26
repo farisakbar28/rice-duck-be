@@ -28,7 +28,8 @@ OPENAPI_TAGS = [
             "Enam input wajib + harga beli bebek opsional (tujuh konsep "
             "pengguna). Output ilmiah/ekonomi bersifat parsial: komponen yang "
             "belum tersedia muncul sebagai null dengan status/kode alasan "
-            "eksplisit pada HTTP 200. Tidak mengandung fitur optimizer/visualisasi."
+            "eksplisit pada HTTP 200. Visualisasi R2 menampilkan zona dukungan, "
+            "rentang terhitung, dan waterfall finansial parsial tanpa mengarang data."
         ),
     },
     {
@@ -55,8 +56,8 @@ def create_app() -> FastAPI:
             "penuh) dikembalikan sebagai null dengan status/kode alasan, "
             "bukan diisi konstanta. Simulasi terautentikasi disimpan sebagai "
             "snapshot history skema v4.\n\n"
-            "Endpoint `/api/v1/dss/visualize` belum terdaftar: kontrak "
-            "visualisasi R2 kanonik menyusul di Phase 4. Endpoint "
+            "Endpoint `/api/v1/dss/visualize` menyediakan view visualisasi "
+            "R2 yang side-effect-free dari hasil simulasi kanonik. Endpoint "
             "`/api/v1/optimizer/recommend` adalah fitur produk terpisah "
             "(stub) di luar cakupan model R2."
         ),

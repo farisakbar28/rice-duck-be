@@ -271,7 +271,8 @@ Use nested semantic groups. Do not repeat old flat naming solely to satisfy lega
     "Feed cost is unavailable; full profit is not computed."
   ],
   "trace": {
-    "active_formula_ids": ["R2-A1", "R2-D1", "R2-CAL1", "R2-S1", "R2-FERT1", "R2-INF1", "R2-COST1"],
+    "active_formula_ids": ["R2-NORM-01", "R2-DEN-01", "R2-AGE-01", "R2-CAL-01", "R2-CAL-03", "R2-SURV-02", "R2-NUT-01", "R2-INF-01", "R2-COST-01"],
+    "conditional_formula_ids": ["R2-SURV-01", "R2-SURV-03", "R2-DUCKVAL-01"],
     "disabled_legacy_formula_ids": ["LEG-RAGE", "LEG-LAMBDA-078125", "LEG-Y0-478767507"]
   }
 }
@@ -308,15 +309,28 @@ Recommended status use:
 
 The endpoint may remain POST because financial/contextual series depend on the simulation request.
 
-### Allowed visualization series
+The endpoint is a presentation-only view over
+`simulate(request, user_id=None)`: it performs no separate scientific or
+economic calculation and never persists history, even when the HTTP request
+includes a bearer token.
 
-- density **support zones**; not a continuous biological yield multiplier;
-- age **support zones**; not a vulnerability probability curve;
-- calendar windows;
-- infrastructure cost range vs area, because that formula is active;
-- fertilizer baseline breakdown, because it is active;
-- financial available-components waterfall that clearly marks unavailable nodes;
-- yield curve **only after** `F_RD_lookup` is available and the plotted domain is explicitly the literature-supported domain.
+### Required visualization series
+
+- a complete positive-input density partition for the selected planting system,
+  including supported, limited-test, high-risk, and extrapolation intervals;
+- a complete age partition with caution, supported, and outside-local-range
+  intervals;
+- exactly one interval marked `selected_value_in_zone=true` in each partition;
+- the exact calendar object returned by the canonical simulation;
+- one request-area infrastructure range labeled
+  `CALCULATED_REQUEST_RANGE`;
+- NPK and urea fertilizer components labeled `BASELINE-NO-CREDIT`;
+- a yield series whose `points` stay empty while yield is unavailable and whose
+  availability/reason codes match the simulation;
+- a partial financial waterfall that keeps terminal duck value as a non-cash
+  asset node, keeps unavailable amounts null, labels the available-cost
+  subtotal as partial, and leaves full profit unavailable while the ledger is
+  incomplete.
 
 ### Forbidden visualization series
 
@@ -328,26 +342,49 @@ The endpoint may remain POST because financial/contextual series depend on the s
 - a waterfall that treats `V_duck_end` as realized revenue;
 - a waterfall that calculates full profit while feed/cage/etc. are unavailable.
 
-Suggested response:
+Canonical top-level response:
 
 ```json
 {
-  "model_version": "R2",
+  "model": {"model_version": "R2"},
+  "selected_input": {"density_are": 4.0},
   "density_zones": [...],
   "age_zones": [...],
   "calendar": {...},
-  "available_cost_series": {...},
+  "infrastructure": {
+    "availability": "AVAILABLE_RANGE",
+    "series_semantics": "CALCULATED_REQUEST_RANGE"
+  },
+  "fertilizer": {
+    "availability": "AVAILABLE",
+    "baseline_label": "BASELINE-NO-CREDIT",
+    "components": [...]
+  },
   "yield_series": {
     "availability": "UNAVAILABLE",
-    "points": []
+    "points": [],
+    "reason_codes": ["Y_BASE_LOOKUP_MISSING", "F_RD_LOOKUP_MISSING"]
   },
   "financial_waterfall": {
     "availability": "PARTIAL",
-    "nodes": [...],
-    "excluded_unavailable_components": ["feed", "cage_total", "full_profit"]
-  }
+    "cost_completeness": "INCOMPLETE",
+    "nodes": [...]
+  },
+  "warnings": [...]
 }
 ```
+
+Support interval endpoints include explicit `min_inclusive` and
+`max_inclusive` flags; an omitted bound is serialized as null. Financial nodes
+use the kinds `CASH_REVENUE`, `ASSET_VALUE`, `COST`,
+`AVAILABLE_COST_SUBTOTAL`, and `FULL_PROFIT`, each with an availability flag,
+nullable `amount_rp`, and `affects_cash_total` semantics.
+
+Trace semantics are actual-execution semantics: `active_formula_ids` contains
+rules evaluated for this request (including only the selected variety calendar
+branch), while `conditional_formula_ids` contains only conditional branches
+that produced their governed value. Pending or unavailable yield/revenue/full-
+profit branches are not advertised as executed.
 
 ## 7. History Endpoints
 
@@ -375,4 +412,3 @@ Examples that should be removed from the R2 canonical response:
 - `Yield_are_pred=47.8767507`
 
 If frontend migration needs temporary aliases, place them behind an explicitly temporary compatibility adapter and never persist them as v4 canonical semantics.
-

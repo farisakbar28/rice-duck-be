@@ -35,6 +35,7 @@ SYNTH_VARIETY = RiceVariety(
     harvest_hst_max=110,
     calendar_status=ProvenanceStatus.LOCAL_ESTIMATE,
     yield_lookup_status=ExecutionState.PENDING_LOOKUP,
+    exact_cultivar_code="synthetic_variety",
 )
 
 
@@ -47,7 +48,7 @@ class SyntheticYieldLookupStore:
             if baselines is not None
             else {
                 "synthetic_variety": YieldBaselineEntry(
-                    variety_code="synthetic_variety",
+                    exact_cultivar_code="synthetic_variety",
                     kg_per_are=SYNTH_BASELINE_KG_PER_ARE,
                     source_id="SYNTHETIC",
                     version=SYNTH_VERSION,
@@ -69,8 +70,8 @@ class SyntheticYieldLookupStore:
             ]
         )
 
-    def find_baseline(self, variety_code: str):
-        return self._baselines.get(variety_code)
+    def find_baseline(self, exact_cultivar_code: str):
+        return self._baselines.get(exact_cultivar_code)
 
     def find_response_factor(self, *, system_code, density_are, release_hst_ref):
         for entry in self._entries:
@@ -148,8 +149,9 @@ class TestPartialLookupsFailClosed:
         )
         assert result.availability is AvailabilityStatus.UNAVAILABLE
         assert result.reason_codes == (ReasonCode.Y_BASE_LOOKUP_MISSING,)
-        # Baseline absent -> cultivar not resolved; no numeric value leaks.
-        assert result.exact_cultivar_resolved is False
+        # The cultivar identity is structurally resolved even when its
+        # baseline lookup row is absent; availability still fails closed.
+        assert result.exact_cultivar_resolved is True
         assert result.yield_total_kg is None
 
     def test_missing_factor_only(self, config) -> None:
@@ -197,7 +199,7 @@ class TestSyntheticSuccessPath:
         assert result.yield_total_kg is None
 
     def test_unknown_cultivar_in_store_fails_closed(self, config) -> None:
-        """Real variety code has no synthetic baseline entry."""
+        """Generic input options never masquerade as an exact cultivar."""
         result = compute_yield(
             variety=lookup_repository.get_rice_variety("inpari"),
             system_code="jajar_legowo",
@@ -206,4 +208,5 @@ class TestSyntheticSuccessPath:
             store=SyntheticYieldLookupStore(),
         )
         assert result.availability is AvailabilityStatus.UNAVAILABLE
+        assert result.exact_cultivar_resolved is False
         assert ReasonCode.Y_BASE_LOOKUP_MISSING in result.reason_codes

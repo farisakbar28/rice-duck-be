@@ -3,12 +3,9 @@
 Seven user concepts (six required inputs + the optional purchase price).
 Scientific/economic partial output is valid: unavailable quantities are
 serialized as null with explicit availability/status metadata at HTTP 200.
-Authenticated simulations persist exactly one schema-v4 snapshot.
-
-The ``/visualize`` endpoint is intentionally NOT registered in Phase 3:
-the pre-R2 visualization semantics are invalidated and the canonical R2
-visualization contract is implemented in Phase 4. No legacy visualization
-output is exposed in the meantime.
+Authenticated simulations persist exactly one schema-v4 snapshot. The R2
+visualization endpoint is an anonymous, side-effect-free view of that same
+canonical simulation result.
 """
 
 from fastapi import APIRouter, Depends
@@ -22,8 +19,10 @@ from app.schemas.dss import (
     DSSSimulationRequest,
     DSSSimulationResponse,
     HistoryListResponse,
+    VisualizationResponse,
 )
 from app.services.simulation_service import dss_service
+from app.services.visualization_service import visualization_service
 
 router = APIRouter(prefix="/dss")
 
@@ -76,6 +75,30 @@ def simulate_dss(
         payload,
         user_id=auth.user.id if auth is not None else None,
     )
+
+
+@router.post(
+    "/visualize",
+    response_model=VisualizationResponse,
+    summary="Build an R2 visualization payload",
+    description=(
+        "Mengubah hasil simulasi R2 kanonik menjadi payload visualisasi: "
+        "zona dukungan umur/densitas, jendela kalender, rentang infrastruktur, "
+        "baseline pupuk, seri yield availability-aware, dan waterfall finansial "
+        "parsial. Endpoint selalu anonim dan tidak menyimpan history, termasuk "
+        "ketika request membawa bearer token. Nilai yang tidak tersedia tetap "
+        "null dengan status/kode alasan; tidak ada kurva atau benchmark sintetis."
+    ),
+    responses={
+        400: {"model": ErrorResponse, "description": "Input numerik/tanggal tidak valid."},
+        422: {
+            "model": ErrorResponse,
+            "description": "Referensi varietas atau sistem tanam tidak ditemukan.",
+        },
+    },
+)
+def visualize_dss(payload: DSSSimulationRequest) -> VisualizationResponse:
+    return visualization_service.generate(payload)
 
 
 @router.get(
@@ -140,10 +163,3 @@ def delete_history(
     auth: AuthContext = Depends(get_current_user),
 ) -> DeleteHistoryResponse:
     return dss_service.delete_history(history_id, auth.user.id)
-
-
-# PHASE-4 DEFERRAL: POST /dss/visualize is deliberately absent. The previous
-# endpoint served invalidated pre-R2 chart semantics (fixed-yield benchmark,
-# survival fallback curves); exposing it would violate docs/07. The canonical
-# R2 visualization contract is implemented in Phase 4 -- no placeholder or
-# fabricated chart payload is provided here (see tests/test_r2_production_path_static.py).

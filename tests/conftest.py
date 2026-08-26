@@ -5,6 +5,7 @@ import pytest
 
 TEST_DATABASE_PATH = Path(__file__).with_name("rice_duck_test.db")
 os.environ["DATABASE_PATH"] = str(TEST_DATABASE_PATH)
+os.environ["APP_ENV"] = "test"
 os.environ["JWT_SECRET_KEY"] = "test-secret-key"
 os.environ["PASSWORD_HASH_ITERATIONS"] = "1000"
 

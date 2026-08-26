@@ -153,6 +153,10 @@ class RiceVariety:
     calendar_status: ProvenanceStatus
     yield_lookup_status: ExecutionState
     note: str = ""
+    # Generic API variety choices are not automatically exact cultivars.
+    # A future sourced yield lookup must resolve this identity explicitly
+    # before an exact-cultivar baseline can be queried.
+    exact_cultivar_code: str | None = None
 
 
 @dataclass(frozen=True)

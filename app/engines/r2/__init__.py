@@ -85,8 +85,11 @@ from app.engines.r2.infrastructure import (  # noqa: E402
 )
 from app.engines.r2.normalization import NormalizedInputs, normalize_inputs  # noqa: E402
 from app.engines.r2.support import (  # noqa: E402
+    SupportInterval,
+    age_support_intervals,
     classify_age,
     classify_density,
+    density_support_intervals,
     operational_extrapolation,
 )
 from app.engines.r2.survival import SurvivalResult, compute_survival  # noqa: E402
@@ -117,12 +120,15 @@ __all__ = [
     "PestResult",
     "R2EngineConfig",
     "SurvivalResult",
+    "SupportInterval",
     "WeedingResult",
     "YieldBaselineEntry",
     "YieldLookupStore",
     "YieldResult",
+    "age_support_intervals",
     "classify_age",
     "classify_density",
+    "density_support_intervals",
     "compute_calendar_windows",
     "compute_economic_ledger",
     "compute_feed_cost",

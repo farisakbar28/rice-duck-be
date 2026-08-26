@@ -170,6 +170,11 @@ def test_supported_domain_default_price_semantics() -> None:
     trace = body["trace"]
     assert "R2-NORM-01" in trace["active_formula_ids"]
     assert "R2-SURV-01" in trace["conditional_formula_ids"]
+    assert "R2-CAL-01" in trace["active_formula_ids"]
+    assert "R2-CAL-02" not in trace["active_formula_ids"]
+    assert "R2-YLD-01" not in trace["active_formula_ids"]
+    assert "R2-YLD-01" not in trace["conditional_formula_ids"]
+    assert "R2-LEDGER-06" not in trace["conditional_formula_ids"]
     assert trace["disabled_legacy_formula_ids"][:2] == ["LEG-RAGE", "LEG-POVER"]
     assert trace["defaulted_inputs"] == [
         {"field": "p_duck_buy", "resolved_value": 26500.0, "source": "I1", "status_tag": "mixed"}

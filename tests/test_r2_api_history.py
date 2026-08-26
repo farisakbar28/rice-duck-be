@@ -89,7 +89,7 @@ def test_v4_round_trip_returns_stored_semantic_snapshot() -> None:
     assert detail.json() == original
 
 
-def test_unknown_scientific_outputs_persist_as_null(tmp_path) -> None:
+def test_unknown_scientific_outputs_persist_as_null() -> None:
     client = make_client()
     headers = register_and_login(client)
     _simulate(client, headers)

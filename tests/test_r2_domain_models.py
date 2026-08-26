@@ -105,6 +105,7 @@ class TestRiceVarietyShape:
         "calendar_status",
         "yield_lookup_status",
         "note",
+        "exact_cultivar_code",
     }
 
     def test_no_legacy_calendar_alias_fields(self) -> None:

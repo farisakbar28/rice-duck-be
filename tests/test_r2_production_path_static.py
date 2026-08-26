@@ -1,4 +1,4 @@
-"""Phase 3: static production-path anti-regression + import boundary.
+"""R2 production-path anti-regression + import boundary.
 
 Scope (docs/07 section 5-6): the reachable R2 core path must have NO
 import/call dependency on the invalidated legacy engines and must not carry
@@ -17,6 +17,7 @@ APP_DIR = Path(__file__).resolve().parents[1] / "app"
 SCANNED_FILES = [
     APP_DIR / "api" / "routes" / "dss.py",
     APP_DIR / "services" / "simulation_service.py",
+    APP_DIR / "services" / "visualization_service.py",
     APP_DIR / "repositories" / "history_repository.py",
     APP_DIR / "core" / "database.py",
     APP_DIR / "schemas" / "dss.py",
@@ -27,7 +28,6 @@ SCANNED_FILES = [
 FORBIDDEN_IMPORT_MODULES = (
     "app.engines.formula_engine",
     "app.engines.impact_engine",
-    "app.services.visualization_service",
 )
 
 # CamelCase invalidated aggregates/fields -- never legitimate anywhere in the
@@ -169,12 +169,13 @@ def test_reachability_from_route_excludes_legacy_engines() -> None:
         reachable = {m for m in visited if m.startswith(banned)}
         assert not reachable, f"legacy engine reachable from /dss routes: {reachable}"
 
-    # The service layer may import ONLY app.engines.r2 as its engine package.
-    service_imports = _app_imports(
-        ast.parse(_source(APP_DIR / "services" / "simulation_service.py"))
-    )
-    engine_imports = {m for m in service_imports if m.startswith("app.engines")}
-    assert engine_imports == {"app.engines.r2"}, engine_imports
+    # Both R2 services may import only the canonical R2 engine package.
+    for service_name in ("simulation_service.py", "visualization_service.py"):
+        service_imports = _app_imports(
+            ast.parse(_source(APP_DIR / "services" / service_name))
+        )
+        engine_imports = {m for m in service_imports if m.startswith("app.engines")}
+        assert engine_imports <= {"app.engines.r2"}, engine_imports
 
 
 def test_no_banned_identifiers_anywhere_in_production_path() -> None:
@@ -227,7 +228,7 @@ def pytest_fail(path: Path, node: ast.AST) -> None:  # pragma: no cover
 # ---------------------------------------------------------------------------
 
 
-def test_visualize_endpoint_not_registered() -> None:
+def test_visualize_endpoint_is_registered() -> None:
     from fastapi.testclient import TestClient
 
     from app.main import app
@@ -235,7 +236,7 @@ def test_visualize_endpoint_not_registered() -> None:
     client = TestClient(app)
     openapi = client.get("/openapi.json").json()
     dss_paths = [p for p in openapi["paths"] if p.startswith("/api/v1/dss")]
-    assert "/api/v1/dss/visualize" not in dss_paths
+    assert "/api/v1/dss/visualize" in dss_paths
 
 
 def test_optimizer_stays_isolated_from_r2_core() -> None:

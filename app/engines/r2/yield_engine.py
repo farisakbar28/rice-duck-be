@@ -38,7 +38,7 @@ from app.schemas.dss import ReasonCode
 class YieldBaselineEntry:
     """Exact-cultivar baseline lookup row (kg per are)."""
 
-    variety_code: str
+    exact_cultivar_code: str
     kg_per_are: Decimal
     source_id: str
     version: str
@@ -59,7 +59,7 @@ class FRDEntry:
 class YieldLookupStore(Protocol):
     """Read interface for sourced yield lookups (injected; never global)."""
 
-    def find_baseline(self, variety_code: str) -> YieldBaselineEntry | None: ...
+    def find_baseline(self, exact_cultivar_code: str) -> YieldBaselineEntry | None: ...
 
     def find_response_factor(
         self,
@@ -73,7 +73,7 @@ class YieldLookupStore(Protocol):
 class EmptyYieldLookupStore:
     """Production default store: PENDING_LOOKUP for every query."""
 
-    def find_baseline(self, variety_code: str) -> YieldBaselineEntry | None:
+    def find_baseline(self, exact_cultivar_code: str) -> YieldBaselineEntry | None:
         return None
 
     def find_response_factor(
@@ -114,7 +114,15 @@ def compute_yield(
             "evaluated without a resolved cultivar code."
         )
 
-    baseline = store.find_baseline(variety.code)
+    # Generic API options (for example ``inpari``) do not prove exact
+    # cultivar identity. Baseline presence must never flip this flag by
+    # coincidence; an explicit exact-cultivar code is required first.
+    exact_cultivar_code = variety.exact_cultivar_code
+    baseline = (
+        store.find_baseline(exact_cultivar_code)
+        if exact_cultivar_code is not None
+        else None
+    )
     factor_entry = store.find_response_factor(
         system_code=system_code,
         density_are=normalized_inputs.density_are,
@@ -131,7 +139,7 @@ def compute_yield(
         # Fail closed: no numeric output while any required piece is absent.
         return YieldResult(
             availability=AvailabilityStatus.UNAVAILABLE,
-            exact_cultivar_resolved=baseline is not None,
+            exact_cultivar_resolved=exact_cultivar_code is not None,
             baseline_kg_per_are=None,
             rice_duck_response_factor=None,
             yield_kg_per_are=None,

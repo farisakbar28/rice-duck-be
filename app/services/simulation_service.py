@@ -96,20 +96,18 @@ from app.schemas.dss import (
     YieldOutputs,
 )
 
-# Registry groups executed on every successful simulation, in stable order.
-# Survival IDs are listed under ``conditional_formula_ids`` because their
-# numeric emission is gated by the support flags (registry CONDITIONAL).
-_ACTIVE_TRACE_GROUPS = (
+# Registry groups whose rules are executed on every successful simulation.
+# Branch-specific formula IDs are appended by ``_build_trace`` only when that
+# branch actually produced a value.
+_ALWAYS_ACTIVE_TRACE_GROUPS = (
     "normalization",
     "age_support",
     "density_support",
-    "calendar",
-    "yield",
     "fertilizer",
     "infrastructure_net",
     "infrastructure_cage",
     "weeding",
-    "economics",
+    "pest",
 )
 
 # Non-executable legacy formula register (docs/04 section 2, verbatim).
@@ -292,9 +290,12 @@ class DSSService:
         )
         trace = self._build_trace(
             payload=payload,
+            variety=variety,
+            survival=survival,
             yld=yld,
             feed=feed,
             cage=infrastructure.cage,
+            ledger=ledger,
         )
 
         response = DSSSimulationResponse(
@@ -591,11 +592,48 @@ class DSSService:
             )
         return warnings
 
-    def _build_trace(self, *, payload: DSSSimulationRequest, yld, feed, cage) -> TraceMeta:
+    def _build_trace(
+        self,
+        *,
+        payload: DSSSimulationRequest,
+        variety: RiceVariety,
+        survival,
+        yld,
+        feed,
+        cage,
+        ledger,
+    ) -> TraceMeta:
         active: list[str] = []
-        for group in _ACTIVE_TRACE_GROUPS:
+        for group in _ALWAYS_ACTIVE_TRACE_GROUPS:
             active.extend(FORMULA_IDS[group])
-        conditional = list(FORMULA_IDS["survival"])
+
+        # Only the harvest rule for the selected variety executes; the other
+        # variety branch must not be advertised in provenance.
+        active.extend(
+            (
+                "R2-CAL-01" if variety.code == "sertani" else "R2-CAL-02",
+                "R2-CAL-03",
+                "R2-CAL-04",
+                "R2-CAL-05",
+                "R2-SURV-02",  # availability gate always evaluated
+                "R2-COST-01",
+                "R2-GRAIN-01",
+                "R2-LEDGER-03",
+                "R2-LEDGER-04",
+            )
+        )
+
+        conditional: list[str] = []
+        if survival.availability is AvailabilityStatus.AVAILABLE:
+            conditional.extend(("R2-SURV-01", "R2-SURV-03", "R2-DUCKVAL-01"))
+        if yld.availability is AvailabilityStatus.AVAILABLE:
+            conditional.extend(("R2-YLD-01", "R2-YLD-02"))
+        if ledger.paddy_revenue_rp is not None:
+            conditional.extend(("R2-GRAIN-02", "R2-LEDGER-01"))
+        if ledger.gross_economic_value_rp is not None:
+            conditional.extend(("R2-LEDGER-02", "R2-LEDGER-05"))
+        if ledger.profit_full_est_rp is not None:
+            conditional.append("R2-LEDGER-06")
 
         parameter_sources = {
             key: list(PARAMETER_REGISTRY[key].source_ids)

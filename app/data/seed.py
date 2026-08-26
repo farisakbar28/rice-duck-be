@@ -57,6 +57,7 @@ RICE_VARIETIES: list[RiceVariety] = [
             "Harvest window is a local estimate (source I1). Exact-cultivar "
             "yield baseline is not configured yet."
         ),
+        exact_cultivar_code=None,
     ),
     RiceVariety(
         code="inpari",
@@ -69,6 +70,7 @@ RICE_VARIETIES: list[RiceVariety] = [
             "Harvest window is a local estimate (source I1). Exact-cultivar "
             "yield baseline is not configured yet."
         ),
+        exact_cultivar_code=None,
     ),
 ]
 

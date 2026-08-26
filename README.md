@@ -1,94 +1,143 @@
-# DSS Padi-Bebek Backend
+# Rice-Duck DSS Backend
 
-Backend FastAPI untuk kalkulator deterministik DSS Padi-Bebek. Source of Truth tunggal adalah [Model Matematika Data Collection DSS Padi Bebek FINAL.md](docs/Model%20Matematika%20Data%20Collection%20DSS%20Padi%20Bebek%20FINAL.md). Jika kontrak API atau dokumentasi lain berbeda, SoT tersebut yang berlaku.
+FastAPI backend for the canonical R2 rice-duck decision-support model. The
+canonical documentation starts at
+[`docs/00_R2_BACKEND_DOCUMENTATION_INDEX.md`](docs/00_R2_BACKEND_DOCUMENTATION_INDEX.md)
+and [`docs/01_R2_MODEL_SSOT.md`](docs/01_R2_MODEL_SSOT.md); the remaining
+numbered R2 documents define its API, registry, persistence, and provenance.
 
-## Scope
+R2 is availability-aware: a valid simulation can return HTTP 200 with some
+scientific or economic values set to `null`. Missing yield, feed, cage-total,
+or full-profit evidence is reported explicitly and is never replaced with a
+legacy constant, zero, or synthetic curve.
 
-`POST /api/v1/dss/simulate` menghitung estimasi **Net_Cash_Contribution_DSS**. Nilai ini adalah kontribusi kas parsial, bukan laba akuntansi, realized farmer profit, atau profit incremental murni.
+## Run locally
 
-Optimizer adalah fitur stub terpisah dan berada di luar scope matematika DSS Core.
+1. Copy `.env.example` to `.env` and replace `JWT_SECRET_KEY` with an explicit
+   local secret.
+2. Install dependencies: `python -m pip install -r requirements.txt`.
+3. Start the API:
 
-## Menjalankan aplikasi
+   ```bash
+   python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+   ```
 
-```bash
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
-python -m pytest -q
-```
+Swagger UI is available at `http://127.0.0.1:8000/docs`.
 
-Swagger tersedia di `http://127.0.0.1:8000/docs`.
+## API
 
-## Endpoint
-
-| Method | Path | Auth | Keterangan |
+| Method | Path | Auth | Purpose |
 |---|---|---|---|
-| GET | `/health` | Tidak | Health check |
-| GET | `/api/v1/dss/options` | Tidak | Varietas dan sistem tanam valid |
-| POST | `/api/v1/dss/simulate` | Opsional | Simulasi DSS Core |
-| POST | `/api/v1/dss/visualize` | Tidak | Zona density/umur dan waterfall Core |
-| GET/DELETE | `/api/v1/dss/histories/{id}` | Bearer | Baca/hapus history v3 |
+| GET | `/health` | No | Service health |
+| POST | `/api/v1/auth/register` | No | Register a history owner |
+| POST | `/api/v1/auth/login` | No | Create a bearer token |
+| GET | `/api/v1/dss/options` | No | Canonical R2 input options |
+| POST | `/api/v1/dss/simulate` | Optional | Run R2; bearer auth persists one v4 snapshot |
+| POST | `/api/v1/dss/visualize` | No | Side-effect-free visualization view of R2 |
+| GET | `/api/v1/dss/histories` | Bearer | List the caller's R2 and labeled legacy rows |
+| GET | `/api/v1/dss/histories/{id}` | Bearer | Read a stored R2 semantic snapshot |
+| DELETE | `/api/v1/dss/histories/{id}` | Bearer | Delete an owned history row |
 
-## Input production
+The optimizer route is an isolated product stub and is not part of the R2
+scientific model.
 
-Semua tujuh field wajib dikirim. Tidak ada fallback tanggal, umur, atau harga beli bebek.
+## Simulation request
 
-| Field | Aturan |
-|---|---|
-| `land_area_are` | float `> 0` |
-| `duck_count` | integer `> 0` |
-| `rice_variety` | `sertani` atau `inpari` (generic) |
-| `planting_system` | `jajar_legowo` hanya Jajar Legowo 2:1, atau `tegel` |
-| `duck_age_days` | integer `>= 0` |
-| `planting_date` | tanggal ISO `YYYY-MM-DD` |
-| `p_duck_buy` | float `>= 0`; `0` berarti tidak ada current-cycle cash purchase |
+Six fields are required; `p_duck_buy` is optional. Omitting it or sending
+`null` selects the registry default. A supplied price must be greater than
+zero.
 
 ```json
 {
-  "land_area_are": 10,
-  "duck_count": 20,
-  "rice_variety": "sertani",
+  "land_area_are": 7,
+  "duck_count": 28,
+  "planting_date": "2026-06-01",
   "planting_system": "jajar_legowo",
-  "duck_age_days": 21,
-  "planting_date": "2026-01-01",
-  "p_duck_buy": 15000
+  "rice_variety": "sertani",
+  "duck_age_days": 30,
+  "p_duck_buy": null
 }
 ```
 
-Schema validation errors memakai HTTP `400`; varietas/sistem yang tidak terdapat pada lookup memakai `422`.
+`land_area_are`, `duck_count`, and `duck_age_days` must be positive. Supported
+reference codes are returned by `/dss/options`. Schema validation uses HTTP
+400; an unknown variety or planting-system reference uses HTTP 422.
 
-## Model runtime
+## R2 output semantics
 
-```text
-AgeFlag: <21 TOO_YOUNG; 21–30 RECOMMENDED; >30 ABOVE_RECOMMENDED_AGE
-d = duck_count / land_area_are
-d_ha = 100 * d
-N_survive = duck_count                 jika d <= 8
-          = floor(0.60 * duck_count)   jika d > 8
-Yield_are_pred = 47.8767507 kg/are
-Yield_total_pred = Yield_are_pred * land_area_are
+Current, scientifically intentional limitations are explicit: yield is
+currently `UNAVAILABLE`, feed cost is currently `UNAVAILABLE`, cage total is
+currently `UNAVAILABLE`, and `profit_full_est_rp` is currently `UNAVAILABLE`.
+Terminal duck value is not realized cash revenue. These states are not
+implementation defects; they prevent unsupported numeric claims.
+
+- Calendar values are windows, including release, pull, harvest, and active
+  duration support ranges.
+- Age and density values are applicability flags. They gate survival
+  availability; they are not yield multipliers or penalties.
+- Yield stays `UNAVAILABLE` until both an exact-cultivar baseline and a sourced
+  rice-duck response lookup exist. The current generic variety choices do not
+  claim exact-cultivar resolution.
+- Fertilizer is an available `BASELINE-NO-CREDIT` estimate. It does not claim
+  that manure contributes zero nutrients.
+- Net infrastructure is a calculated request-area range. Cage unit cost is a
+  partial range; total cage cost remains unavailable without a capacity rule.
+- Terminal duck value is a livestock asset value, not cash revenue.
+- `cost_total_available_rp` is only the subtotal of numeric components.
+  `profit_full_est_rp` stays unavailable while the configured ledger is
+  incomplete.
+- Trace metadata distinguishes formulas that ran from conditional formulas
+  whose value-producing branch actually succeeded.
+
+## Visualization contract
+
+`POST /api/v1/dss/visualize` accepts the simulation request and returns a
+presentation-only view over the same canonical result:
+
+- complete age and planting-system-specific density support zones, with
+  exactly one selected zone for valid input;
+- the same calendar window returned by `/dss/simulate`;
+- the calculated infrastructure range for the request area;
+- NPK and urea fertilizer baseline components;
+- an empty, explicitly unavailable yield series until sourced lookups exist;
+- a partial financial waterfall that separates cash revenue, livestock asset
+  value, costs, available-cost subtotal, and unavailable full profit.
+
+The endpoint always calls simulation anonymously. It never writes history,
+even if a bearer token is included.
+
+## History and versioning
+
+Authenticated simulations store schema-v4 request, response, and trace JSON as
+an immutable semantic snapshot. Detail reads the stored response instead of
+recomputing it under a newer registry. Pre-R2 rows remain isolated: list output
+labels them `LEGACY`, while detail returns the documented semantic-conflict
+error rather than translating old values into R2.
+
+The scientific model version (`R2`), parameter-registry version, history
+schema version, deployment application version, and optional
+`MODEL_COMMIT_SHA` are independent provenance dimensions. A source checkout
+uses `APP_VERSION=0.0.0-dev`; deployment automation should inject the release
+version instead of editing source.
+
+## Security configuration
+
+`JWT_SECRET_KEY` is required in every environment; the application has no
+built-in or generated fallback. In production the application also refuses to
+start with debug mode enabled, wildcard/empty CORS origins, a placeholder
+secret, or fewer than 600,000 PBKDF2 iterations. Lower iteration counts are
+permitted only when `APP_ENV=test` to keep automated tests fast.
+
+## Tests
+
+```bash
+python -m pytest -q
 ```
 
-Sertani memiliki jendela panen 100–110 HST; Inpari memakai reference window empiris lokal 109–116 HST. Window Inpari dibentuk dari tiga observasi lokal (109, 112, dan 116 HST; median deskriptif 112) dan bukan generalisasi seluruh subvarietas. Age dan density tidak mengalikan yield. Density hanya memengaruhi survival ketika `d > 8`.
+`pytest.ini` collects only active `tests/test_*.py` files and excludes
+`tests/legacy_invalid/`. That directory is retained solely as historical
+evidence for invalidated contracts and is not an active regression oracle.
 
-```text
-Revenue_gabah = Yield_total_pred * 6000
-Revenue_duck_potential = N_survive * 52500
-Cost_duck_buy = duck_count * p_duck_buy
-Cost_feed = duck_count * 20000
-Core_Cash_Cost = Cost_duck_buy + Cost_feed
-Total_Revenue_DSS = Revenue_gabah + Revenue_duck_potential
-Net_Cash_Contribution_DSS = Total_Revenue_DSS - Core_Cash_Cost
-```
-
-## Response canonical
-
-Response memuat `age_flag`, `density_are`, `density_ha`, `density_status`, kalender (`HST_in`, `HST_out`, `D_in`, `D_out`, dan window panen), `N_survive`, yield, seluruh field ekonomi Core, `warnings`, dan `sandbox`.
-
-Sandbox weeding adalah estimasi per kegiatan; pestisida adalah indikator upper bound nonmoneter; fertilizer/material adalah research reference; infrastructure hanya context/reference tanpa formula biaya. Tidak ada bagian sandbox yang memengaruhi Core.
-
-Prediction untuk area di bawah 2,5 are tetap diterima, tetapi response menampilkan warning karena berada di luar domain numerical validation lokal.
-
-## History dan validation
-
-Simulasi dengan Bearer token disimpan sebagai schema version 3. Detail history mengembalikan semantic response yang sama dengan simulasi asal. Record v1/v2 tetap berada pada persistence legacy dan tidak diinterpretasikan sebagai output SoT final.
-
-Protokol replay dan boundary test ada pada [docs/tes_skenario.md](docs/tes_skenario.md). H01–H11 hanya membandingkan field yang semantik-kompatibel; `N_sold_actual` dan raw farmer profit bukan ground truth untuk survival atau `Net_Cash_Contribution_DSS`.
+The Postman assets in [`postman/`](postman/) exercise options, anonymous and
+authenticated simulation, visualization semantics, history round-trip, and
+negative validation/reference cases.

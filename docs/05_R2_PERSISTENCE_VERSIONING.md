@@ -129,6 +129,14 @@ If regulatory prices or approved lookup tables later change without changing str
 }
 ```
 
+`active_formula_ids` records rules that were actually evaluated for the
+request, including only the selected calendar branch. `conditional_formula_ids`
+records conditional value-producing branches only when their availability gate
+succeeded. Registry membership alone is not execution: pending or unavailable
+yield, revenue, gross-value, and full-profit formulas must not appear in either
+list. `disabled_legacy_formula_ids` remains non-executable invalidation
+metadata.
+
 Example default record:
 
 ```json
@@ -217,4 +225,3 @@ Do not name the new method `create_v3` or reuse `SimulationHistory` v3 dataclass
 6. v3 row remains readable only as legacy; not interpreted as R2.
 7. ownership isolation (`user A` cannot read/delete `user B`).
 8. deletion works for v4.
-

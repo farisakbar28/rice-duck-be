@@ -7,15 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-- Aligned the Inpari harvest calendar with the latest local empirical reference window of 109–116 HST, including date derivation, options metadata, HTTP responses, persistence of new simulations, tests, and active API documentation. The prior 134-HST generic estimate is no longer used for new calculations.
-- Migrated DSS Core to the 22 August 2026 Source of Truth: seven mandatory inputs, readiness-only age status, system-neutral yield baseline, density-triggered overload survival, Core feed cost, and `Net_Cash_Contribution_DSS`.
-- Removed public `F_sys` and monetary infrastructure outputs; infrastructure is now context-only sandbox information.
-- Restored v3 history detail read-back using persisted canonical values and deterministic sandbox context.
-- Updated API tests, Postman collection, and README to the final contract.
+> **Canonical status:** this Unreleased section describes the active R2
+> contract. Releases 1.0.0 and 2.0.0 below are immutable historical records;
+> their formulas, response fields, and test claims are superseded and must not
+> be used as current implementation guidance.
 
-### Notes
-- Release 2.0.0 below remains an historical record of the previous v2 model and is superseded by this migration; its formulas and test claims are not the current production contract.
+### Added
+- Added `POST /api/v1/dss/visualize`, a side-effect-free view over the canonical
+  R2 simulation with complete support-zone partitions, calendar windows,
+  calculated infrastructure ranges, fertilizer baseline components,
+  availability-aware yield series, and a partial financial waterfall.
+- Added fail-fast security configuration validation for required JWT secrets,
+  production debug/CORS/placeholder restrictions, and the production PBKDF2
+  iteration floor.
+- Added active visualization, provenance, configuration, and startup tests plus
+  explicit pytest quarantine for `tests/legacy_invalid/`.
+
+### Changed
+- Completed the R2 migration across API descriptions, README, Postman assets,
+  environment examples, and canonical API/persistence documentation.
+- Corrected yield lookup identity: generic input options no longer claim exact
+  cultivar resolution; exact cultivar identity and baseline-row availability
+  are independent fail-closed conditions.
+- Corrected trace metadata so active and conditional formula IDs represent the
+  selected and successfully executed branches rather than registry membership.
+- Adopted `0.0.0-dev` as the source-checkout application version; deployments
+  inject their own release version independently of model version `R2`.
+- Preserved schema-v4 snapshot history and isolated pre-R2 compatibility paths
+  without recomputation or reinterpretation.
+
+### Security
+- Removed the usable in-source JWT signing-secret fallback.
+- Production startup now rejects debug mode, wildcard or empty CORS origins,
+  placeholder/trivial JWT secrets, and password hashing below 600,000
+  iterations. Reduced hashing cost is permitted only in the test environment.
 
 ## [2.0.0] - 2026-07-16
 

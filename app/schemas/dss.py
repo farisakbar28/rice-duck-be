@@ -401,6 +401,129 @@ class DSSSimulationResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# POST /dss/visualize -- R2 presentation-only contract
+# ---------------------------------------------------------------------------
+
+
+class VisualizationSelectedInput(BaseModel):
+    land_area_are: float
+    duck_count: int
+    planting_date: date
+    planting_system: str
+    rice_variety: str
+    duck_age_days: int
+    p_duck_buy_manual: float | None = None
+    p_duck_buy_effective: float
+    p_duck_buy_source: PurchasePriceSource
+    density_are: float
+
+
+class DensitySupportZone(BaseModel):
+    key: str
+    label: str
+    min: float | None = None
+    max: float | None = None
+    min_inclusive: bool
+    max_inclusive: bool
+    status: DensitySupportFlag
+    selected_value_in_zone: bool
+
+
+class AgeSupportZone(BaseModel):
+    key: str
+    label: str
+    min_days: int | None = None
+    max_days: int | None = None
+    min_inclusive: bool
+    max_inclusive: bool
+    status: AgeSupportFlag
+    selected_value_in_zone: bool
+
+
+class InfrastructureVisualization(BaseModel):
+    availability: Literal["AVAILABLE_RANGE"]
+    area_are: float
+    equivalent_perimeter_m: float
+    cost_min_rp_per_cycle: float
+    cost_ref_rp_per_cycle: float
+    cost_max_rp_per_cycle: float
+    geometry_assumption: GeometryAssumption
+    series_semantics: Literal["CALCULATED_REQUEST_RANGE"]
+
+
+class FertilizerVisualizationComponent(BaseModel):
+    key: Literal["NPK_PHONSKA", "UREA"]
+    label: str
+    quantity_kg: float
+    cost_rp: float
+
+
+class FertilizerVisualization(BaseModel):
+    availability: Literal["AVAILABLE"]
+    baseline_label: Literal["BASELINE-NO-CREDIT"]
+    nutrient_basis: NutrientBasis
+    manure_credit_applied: Literal[False]
+    components: list[FertilizerVisualizationComponent]
+    total_cost_rp: float
+
+
+class YieldVisualizationPoint(BaseModel):
+    """Reserved for a future docs-first sourced yield series.
+
+    Phase 4 production responses always return an empty point list.
+    """
+
+    density_are: float
+    release_hst: int
+    yield_kg_per_are: float
+
+
+class YieldVisualization(BaseModel):
+    availability: AvailabilityStatus
+    points: list[YieldVisualizationPoint] = Field(default_factory=list)
+    reason_codes: list[ReasonCode] = Field(default_factory=list)
+
+
+class FinancialVisualizationKind(str, Enum):
+    CASH_REVENUE = "CASH_REVENUE"
+    ASSET_VALUE = "ASSET_VALUE"
+    COST = "COST"
+    AVAILABLE_COST_SUBTOTAL = "AVAILABLE_COST_SUBTOTAL"
+    FULL_PROFIT = "FULL_PROFIT"
+
+
+class FinancialVisualizationNode(BaseModel):
+    key: str
+    label: str
+    kind: FinancialVisualizationKind
+    availability: AvailabilityStatus
+    amount_rp: float | None = None
+    affects_cash_total: bool
+    note: str | None = None
+
+
+class FinancialVisualization(BaseModel):
+    availability: Literal["PARTIAL"]
+    cost_completeness: CostCompletenessFlag
+    nodes: list[FinancialVisualizationNode]
+
+
+class VisualizationResponse(BaseModel):
+    """R2 visualization is a view over a canonical simulation, not an engine."""
+
+    model: ModelMeta
+    selected_input: VisualizationSelectedInput
+    density_zones: list[DensitySupportZone]
+    age_zones: list[AgeSupportZone]
+    calendar: CalendarWindow
+    infrastructure: InfrastructureVisualization
+    fertilizer: FertilizerVisualization
+    yield_series: YieldVisualization
+    financial_waterfall: FinancialVisualization
+    warnings: list[str] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
 # History (persistence v4) -- list/delete contracts (docs/05 sections 3/7)
 # ---------------------------------------------------------------------------
 
@@ -458,6 +581,7 @@ class DeleteHistoryResponse(BaseModel):
 
 __all__ = [
     "AgeSupportFlag",
+    "AgeSupportZone",
     "AvailabilityStatus",
     "CageCost",
     "CalendarWindow",
@@ -470,14 +594,21 @@ __all__ = [
     "DSSSimulationResponse",
     "DefaultedInputRecord",
     "DensitySupportFlag",
+    "DensitySupportZone",
     "DuckOutputs",
     "DuckPurchaseCost",
     "EconomicsOutputs",
     "ExtrapolationFlag",
     "FeedCost",
+    "FinancialVisualization",
+    "FinancialVisualizationKind",
+    "FinancialVisualizationNode",
     "FertilizerBaseline",
+    "FertilizerVisualization",
+    "FertilizerVisualizationComponent",
     "HistoryListItem",
     "HistoryListResponse",
+    "InfrastructureVisualization",
     "ModelMeta",
     "NetInfrastructureCost",
     "OperationalProfile",
@@ -493,6 +624,10 @@ __all__ = [
     "RiceVarietyOption",
     "SimulationInputEcho",
     "TraceMeta",
+    "VisualizationResponse",
+    "VisualizationSelectedInput",
     "WeedingCost",
     "YieldOutputs",
+    "YieldVisualization",
+    "YieldVisualizationPoint",
 ]

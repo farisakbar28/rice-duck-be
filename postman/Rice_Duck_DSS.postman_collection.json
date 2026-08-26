@@ -1,63 +1,155 @@
 {
   "info": {
     "_postman_id": "c575f551-a467-49dd-8380-bfc61cc820c9",
-    "name": "Rice Duck DSS Backend — SoT Final",
-    "description": "Contract collection untuk Source of Truth DSS Padi-Bebek final.",
+    "name": "Rice Duck DSS Backend — R2",
+    "description": "Canonical R2 contract: partial availability, side-effect-free visualization, v4 snapshot history, and negative cases.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "Public DSS",
+      "name": "Public R2",
       "item": [
         {
-          "name": "Health Check",
+          "name": "Health",
           "request": {"method": "GET", "url": "{{base_url}}/health"},
-          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"]}}]
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('HTTP 200', () => pm.response.to.have.status(200));"]}}]
         },
         {
-          "name": "Options — SoT domains only",
+          "name": "Options — canonical domains",
           "request": {"method": "GET", "url": "{{base_url}}/api/v1/dss/options"},
-          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));", "const json = pm.response.json();", "pm.test('Jarwo is 2:1 and no legacy coefficient', () => { pm.expect(json.planting_systems.find(x => x.code === 'jajar_legowo').label).to.eql('Jajar Legowo 2:1'); pm.expect(json.planting_systems.every(x => !Object.hasOwn(x, 'F_sys'))).to.be.true; });", "pm.test('Inpari exposes the local empirical window', () => { const inpari = json.rice_varieties.find(x => x.code === 'inpari'); pm.expect([inpari.hst_panen_min, inpari.hst_panen_max]).to.eql([109, 116]); pm.expect(inpari.status).to.eql('local-empirical-reference'); });"]}}]
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.test('R2 options', () => { pm.expect(j.model_version).to.eql('R2'); pm.expect(j.rice_varieties.map(x => x.code)).to.eql(['sertani','inpari']); pm.expect(j.planting_systems.map(x => x.code)).to.eql(['jajar_legowo','tegel']); });",
+            "pm.test('Yield lookup remains pending', () => pm.expect(j.rice_varieties.every(x => x.yield_lookup_status === 'PENDING_LOOKUP')).to.be.true);"
+          ]}}]
         },
         {
-          "name": "Simulate — canonical Core",
-          "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"land_area_are\": 10,\n  \"duck_count\": 20,\n  \"rice_variety\": \"sertani\",\n  \"planting_system\": \"jajar_legowo\",\n  \"duck_age_days\": 21,\n  \"planting_date\": \"2026-01-01\",\n  \"p_duck_buy\": 15000\n}"}, "url": "{{base_url}}/api/v1/dss/simulate"},
-          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));", "const json = pm.response.json();", "pm.test('canonical economics', () => { pm.expect(json.Cost_feed).to.eql(400000); pm.expect(json.Net_Cash_Contribution_DSS).to.eql(3222605.04); pm.expect(json).not.to.have.property('Profit_net_cash'); });"]}}]
+          "name": "Simulate — supported/default price",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"land_area_are\": 7,\n  \"duck_count\": 28,\n  \"planting_date\": \"2026-06-01\",\n  \"planting_system\": \"jajar_legowo\",\n  \"rice_variety\": \"sertani\",\n  \"duck_age_days\": 30\n}"},
+            "url": "{{base_url}}/api/v1/dss/simulate"
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.test('Canonical supported semantics', () => { pm.expect(j.model.model_version).to.eql('R2'); pm.expect(j.model.history_schema_version).to.eql(4); pm.expect(j.model.frozen).to.eql(false); pm.expect(j.operational.age_support).to.eql('SUPPORTED'); pm.expect(j.operational.density_support).to.eql('SUPPORTED'); pm.expect(j.duck.survival_availability).to.eql('AVAILABLE'); });",
+            "pm.test('Unavailable stays null', () => { pm.expect(j.yield.availability).to.eql('UNAVAILABLE'); pm.expect(j.yield.yield_total_kg).to.eql(null); pm.expect(j.costs.feed.amount_rp).to.eql(null); pm.expect(j.economics.profit_full_est_rp).to.eql(null); pm.expect(j.reliability.cost_completeness).to.eql('INCOMPLETE'); });",
+            "pm.test('Default price traced', () => { pm.expect(j.input.p_duck_buy_manual).to.eql(null); pm.expect(j.trace.defaulted_inputs[0].field).to.eql('p_duck_buy'); });"
+          ]}}]
         },
         {
-          "name": "Visualize — SoT zones",
-          "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"land_area_are\": 10,\n  \"duck_count\": 20,\n  \"rice_variety\": \"inpari\",\n  \"planting_system\": \"tegel\",\n  \"duck_age_days\": 21,\n  \"planting_date\": \"2026-01-01\",\n  \"p_duck_buy\": 0\n}"}, "url": "{{base_url}}/api/v1/dss/visualize"},
-          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));", "pm.test('series supplied', () => { const json = pm.response.json(); pm.expect(json.density_zones).to.have.length(100); pm.expect(json.financial_waterfall.at(-1).name).to.eql('Net_Cash_Contribution_DSS'); });"]}}]
+          "name": "Simulate — explicit null price",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\"land_area_are\":7,\"duck_count\":28,\"planting_date\":\"2026-06-01\",\"planting_system\":\"jajar_legowo\",\"rice_variety\":\"sertani\",\"duck_age_days\":30,\"p_duck_buy\":null}"},
+            "url": "{{base_url}}/api/v1/dss/simulate"
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.test('Explicit null uses registry default', () => { pm.expect(j.input.p_duck_buy_manual).to.eql(null); pm.expect(j.input.p_duck_buy_source).to.eql('LOCAL_DEFAULT_MIDPOINT'); pm.expect(j.trace.defaulted_inputs).to.have.length(1); });"
+          ]}}]
+        },
+        {
+          "name": "Simulate — manual price",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\"land_area_are\":7,\"duck_count\":28,\"planting_date\":\"2026-06-01\",\"planting_system\":\"jajar_legowo\",\"rice_variety\":\"sertani\",\"duck_age_days\":30,\"p_duck_buy\":27000}"},
+            "url": "{{base_url}}/api/v1/dss/simulate"
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.test('Manual price is preserved', () => { pm.expect(j.input.p_duck_buy_manual).to.eql(27000); pm.expect(j.input.p_duck_buy_effective).to.eql(27000); pm.expect(j.input.p_duck_buy_source).to.eql('USER_INPUT'); pm.expect(j.trace.defaulted_inputs).to.eql([]); });"
+          ]}}]
+        },
+        {
+          "name": "Simulate — caution age/out-of-domain",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"land_area_are\": 10,\n  \"duck_count\": 50,\n  \"planting_date\": \"2026-06-01\",\n  \"planting_system\": \"tegel\",\n  \"rice_variety\": \"inpari\",\n  \"duck_age_days\": 20,\n  \"p_duck_buy\": 27000\n}"},
+            "url": "{{base_url}}/api/v1/dss/simulate"
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('HTTP 200 partial result', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.test('Support gates survival', () => { pm.expect(j.operational.age_support).to.eql('CAUTION'); pm.expect(j.operational.density_support).to.eql('LIMITED_TEST'); pm.expect(j.duck.survival_availability).to.eql('UNAVAILABLE'); pm.expect(j.duck.surviving_ducks).to.eql(null); });"
+          ]}}]
+        },
+        {
+          "name": "Visualize — Jarwo supported",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"land_area_are\": 7,\n  \"duck_count\": 28,\n  \"planting_date\": \"2026-06-01\",\n  \"planting_system\": \"jajar_legowo\",\n  \"rice_variety\": \"sertani\",\n  \"duck_age_days\": 30\n}"},
+            "url": "{{base_url}}/api/v1/dss/visualize"
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.test('Exactly one selected support zone', () => { pm.expect(j.density_zones.filter(x => x.selected_value_in_zone)).to.have.length(1); pm.expect(j.age_zones.filter(x => x.selected_value_in_zone)).to.have.length(1); });",
+            "pm.test('Truthful visualization', () => { pm.expect(j.infrastructure.series_semantics).to.eql('CALCULATED_REQUEST_RANGE'); pm.expect(j.fertilizer.baseline_label).to.eql('BASELINE-NO-CREDIT'); pm.expect(j.yield_series.points).to.eql([]); pm.expect(j.financial_waterfall.availability).to.eql('PARTIAL'); });",
+            "pm.test('Terminal value is not cash', () => { const n = j.financial_waterfall.nodes.find(x => x.key === 'terminal_duck_value_ref'); pm.expect(n.kind).to.eql('ASSET_VALUE'); pm.expect(n.affects_cash_total).to.eql(false); });"
+          ]}}]
+        },
+        {
+          "name": "Visualize — Tegel high risk",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"land_area_are\": 10,\n  \"duck_count\": 80,\n  \"planting_date\": \"2026-06-01\",\n  \"planting_system\": \"tegel\",\n  \"rice_variety\": \"inpari\",\n  \"duck_age_days\": 31\n}"},
+            "url": "{{base_url}}/api/v1/dss/visualize"
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json(); const dz = j.density_zones.find(x => x.selected_value_in_zone); const az = j.age_zones.find(x => x.selected_value_in_zone);",
+            "pm.test('Selected unsupported zones are explicit', () => { pm.expect(dz.status).to.eql('HIGH_RISK'); pm.expect(az.status).to.eql('OUTSIDE_LOCAL_RANGE'); });",
+            "pm.test('Unavailable terminal value remains null', () => { const n = j.financial_waterfall.nodes.find(x => x.key === 'terminal_duck_value_ref'); pm.expect(n.availability).to.eql('UNAVAILABLE'); pm.expect(n.amount_rp).to.eql(null); });"
+          ]}}]
         }
       ]
     },
     {
-      "name": "Authenticated History",
+      "name": "Authenticated v4 history",
       "item": [
         {
           "name": "Register",
-          "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"name\":\"{{user_name}}\",\"email\":\"{{user_email}}\",\"password\":\"{{user_password}}\"}"}, "url": "{{base_url}}/api/v1/auth/register"},
-          "event": [{"listen": "prerequest", "script": {"type": "text/javascript", "exec": ["pm.environment.set('user_email', `dss_${Date.now()}@example.com`);"]}}, {"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('201', () => pm.response.to.have.status(201));"]}}]
+          "event": [
+            {"listen": "prerequest", "script": {"type": "text/javascript", "exec": ["pm.environment.set('user_email', `r2_${Date.now()}@example.com`);"]}},
+            {"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('HTTP 201', () => pm.response.to.have.status(201));"]}}
+          ],
+          "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"name\":\"{{user_name}}\",\"email\":\"{{user_email}}\",\"password\":\"{{user_password}}\"}"}, "url": "{{base_url}}/api/v1/auth/register"}
         },
         {
           "name": "Login",
           "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"email\":\"{{user_email}}\",\"password\":\"{{user_password}}\"}"}, "url": "{{base_url}}/api/v1/auth/login"},
-          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));", "pm.environment.set('access_token', pm.response.json().access_token);"]}}]
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('HTTP 200', () => pm.response.to.have.status(200));", "pm.environment.set('access_token', pm.response.json().access_token);"]}}]
         },
         {
-          "name": "Simulate and persist",
-          "request": {"method": "POST", "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]}, "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"land_area_are\":10,\"duck_count\":20,\"rice_variety\":\"sertani\",\"planting_system\":\"jajar_legowo\",\"duck_age_days\":21,\"planting_date\":\"2026-01-01\",\"p_duck_buy\":15000}"}, "url": "{{base_url}}/api/v1/dss/simulate"},
-          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"]}}]
+          "name": "Simulate and persist one v4 snapshot",
+          "request": {"method": "POST", "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]}, "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"land_area_are\":7,\"duck_count\":28,\"planting_date\":\"2026-06-01\",\"planting_system\":\"jajar_legowo\",\"rice_variety\":\"sertani\",\"duck_age_days\":30}"}, "url": "{{base_url}}/api/v1/dss/simulate"},
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('HTTP 200', () => pm.response.to.have.status(200));", "pm.test('v4 metadata', () => pm.expect(pm.response.json().model.history_schema_version).to.eql(4));"]}}]
         },
         {
-          "name": "List histories",
+          "name": "List histories and select latest",
           "request": {"method": "GET", "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]}, "url": "{{base_url}}/api/v1/dss/histories"},
-          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));", "const rows = pm.response.json().data; pm.expect(rows).to.not.be.empty; pm.environment.set('history_id', rows[0].id);"]}}]
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('HTTP 200', () => pm.response.to.have.status(200));", "const rows = pm.response.json().data; pm.test('Has R2 snapshot', () => { pm.expect(rows).not.to.be.empty; pm.expect(rows[0].model_version).to.eql('R2'); }); pm.environment.set('history_id', rows[0].id);"]}}]
         },
         {
-          "name": "Get history detail",
+          "name": "Get immutable history detail",
           "request": {"method": "GET", "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]}, "url": "{{base_url}}/api/v1/dss/histories/{{history_id}}"},
-          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));", "pm.test('canonical detail', () => pm.expect(pm.response.json()).to.have.property('Net_Cash_Contribution_DSS'));"]}}]
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('HTTP 200', () => pm.response.to.have.status(200));", "pm.test('Stored R2 semantic response', () => { const j = pm.response.json(); pm.expect(j.model.model_version).to.eql('R2'); pm.expect(j).to.have.property('trace'); });"]}}]
+        },
+        {
+          "name": "Delete owned history",
+          "request": {"method": "DELETE", "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]}, "url": "{{base_url}}/api/v1/dss/histories/{{history_id}}"},
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('HTTP 200', () => pm.response.to.have.status(200));", "pm.test('Deletion acknowledged', () => pm.expect(pm.response.json().message).to.eql('Simulation history deleted successfully'));"]}}]
         }
       ]
     },
@@ -65,14 +157,24 @@
       "name": "Negative contracts",
       "item": [
         {
-          "name": "Missing p_duck_buy",
-          "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"land_area_are\":10,\"duck_count\":20,\"rice_variety\":\"sertani\",\"planting_system\":\"jajar_legowo\",\"duck_age_days\":21,\"planting_date\":\"2026-01-01\"}"}, "url": "{{base_url}}/api/v1/dss/simulate"},
-          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('400', () => pm.response.to.have.status(400));"]}}]
+          "name": "Zero purchase price — 400",
+          "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"land_area_are\":7,\"duck_count\":28,\"planting_date\":\"2026-06-01\",\"planting_system\":\"jajar_legowo\",\"rice_variety\":\"sertani\",\"duck_age_days\":30,\"p_duck_buy\":0}"}, "url": "{{base_url}}/api/v1/dss/simulate"},
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('HTTP 400', () => pm.response.to.have.status(400));", "pm.test('Price validation is explicit', () => pm.expect(pm.response.json().error.issues.some(x => x.field === 'p_duck_buy')).to.be.true);"]}}]
         },
         {
-          "name": "Invalid Jarwo category",
-          "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"land_area_are\":10,\"duck_count\":20,\"rice_variety\":\"sertani\",\"planting_system\":\"jajar_legowo_4_1\",\"duck_age_days\":21,\"planting_date\":\"2026-01-01\",\"p_duck_buy\":0}"}, "url": "{{base_url}}/api/v1/dss/simulate"},
-          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('422', () => pm.response.to.have.status(422));"]}}]
+          "name": "Invalid numeric input — 400",
+          "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"land_area_are\":7,\"duck_count\":0,\"planting_date\":\"2026-06-01\",\"planting_system\":\"jajar_legowo\",\"rice_variety\":\"sertani\",\"duck_age_days\":30}"}, "url": "{{base_url}}/api/v1/dss/simulate"},
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('HTTP 400', () => pm.response.to.have.status(400));", "pm.test('Validation envelope', () => pm.expect(pm.response.json().error.code).to.eql('validation_error'));"]}}]
+        },
+        {
+          "name": "Unknown reference — 422",
+          "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\"land_area_are\":7,\"duck_count\":28,\"planting_date\":\"2026-06-01\",\"planting_system\":\"unknown\",\"rice_variety\":\"sertani\",\"duck_age_days\":30}"}, "url": "{{base_url}}/api/v1/dss/visualize"},
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('HTTP 422', () => pm.response.to.have.status(422));", "pm.test('Reference envelope', () => pm.expect(pm.response.json().error.code).to.eql('invalid_reference'));"]}}]
+        },
+        {
+          "name": "History without bearer — 401",
+          "request": {"method": "GET", "url": "{{base_url}}/api/v1/dss/histories"},
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('HTTP 401', () => pm.response.to.have.status(401));"]}}]
         }
       ]
     }
