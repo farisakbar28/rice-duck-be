@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > be used as current implementation guidance.
 
 ### Added
+- Added a Phase-6 docs-first, unactivated R2.3 candidate specification for
+  literature-uncalibrated yield reference/envelope records, pooled external
+  `F_RD_ref=1.028`, supported-domain gating, range-aware API/economic/history
+  semantics, and pre-registered comparator validation. No production code,
+  tests, runtime registry, freeze, or empirical result changed in this entry.
 - Added `POST /api/v1/dss/visualize`, a side-effect-free view over the canonical
   R2 simulation with complete support-zone partitions, calendar windows,
   calculated infrastructure ranges, fertilizer baseline components,

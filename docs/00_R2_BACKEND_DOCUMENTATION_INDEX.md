@@ -63,6 +63,16 @@ Dokumen lama berikut **tidak boleh lagi mengalahkan R2**:
 | `11_R2_FREEZE_MANIFEST.md` | Semantik freeze (frozen = immutable validation target), dimensi identitas, isi manifest, official execution gate, anti-kalibrasi. |
 | `tes_skenario_R2.md` | Template evidence runtime dan historical comparator; tidak berisi hasil palsu sebelum code dijalankan. |
 
+## Phase-6 docs-first amendment
+
+The Phase-6 candidate specification is distributed through SSOT, API,
+registry, persistence, validation, checklist, provenance, freeze, and scenario
+documents. It specifies unactivated registry `R2-2026-08-26.3` and candidate
+freeze `R2-FREEZE-2026-08-26.3`; it does not alter the Phase-5C `.2` historical
+sign-off. Where an older document says yield is permanently empty, that text
+describes R2.2 history and is superseded for the R2.3 implementation target by
+the Phase-6 sections in the canonical documents.
+
 ## 5. Baseline Interpretation
 
 ### `78f46e...` — retain only as architectural reference
@@ -102,4 +112,3 @@ Migrasi dokumentasi dianggap sinkron ketika:
 - old numerical validation diberi status historical invalid-for-R2 karena menggunakan rekap sebagai calibration/LOFO baseline.
 - `tes_skenario.md` lama tidak dipakai sebagai R2 evidence.
 - Postman, OpenAPI descriptions, tests, seed metadata, DB comments, dan changelog tidak lagi menyebut semantics yang dilarang R2.
-

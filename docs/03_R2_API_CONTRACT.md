@@ -421,3 +421,74 @@ Examples that should be removed from the R2 canonical response:
 - `Yield_are_pred=47.8767507`
 
 If frontend migration needs temporary aliases, place them behind an explicitly temporary compatibility adapter and never persist them as v4 canonical semantics.
+
+## 9. Phase-6 Candidate Yield Contract (R2.3; documentation only)
+
+The seven-input request is unchanged. This contract activates only with the
+future `R2-2026-08-26.3` registry/freeze; until then, the R2.2 runtime remains
+the historical unavailable-yield implementation.
+
+For a request that passes the full Phase-6 supported-domain gate, `yield` must
+contain the following exact semantic representation:
+
+```json
+{
+  "availability": "AVAILABLE",
+  "cultivar_group_code": "INPARI_GROUP",
+  "baseline_ref_kg_per_are": 53.5,
+  "baseline_low_kg_per_are": 20.0,
+  "baseline_high_kg_per_are": 78.4,
+  "rice_duck_response_factor": 1.028,
+  "yield_ref_kg_per_are": 54.998,
+  "yield_low_kg_per_are": 20.56,
+  "yield_high_kg_per_are": 80.5952,
+  "yield_total_ref_kg": 384.986,
+  "yield_total_low_kg": 143.92,
+  "yield_total_high_kg": 564.1664,
+  "yield_range_type": "LITERATURE_EVIDENCE_ENVELOPE",
+  "yield_evidence_status": "LITERATURE_UNCALIBRATED",
+  "yield_evidence_strength": "EXTERNAL_FIELD_DISTRIBUTION_N43",
+  "yield_evidence_warning": null,
+  "yield_kg_per_are": 54.998,
+  "yield_total_kg": 384.986,
+  "reason_codes": []
+}
+```
+
+The unsuffixed `yield_kg_per_are` and `yield_total_kg` fields are retained as
+backward-compatible aliases of `*_ref`, not standalone exact claims. New
+clients must consume the explicit reference, low/high, range-type, and evidence
+metadata together. For `SERTANI_GROUP`, set
+`yield_evidence_strength="LOW_EVIDENCE_TWO_LOCATION_EXTERNAL_RANGE"` and
+return that same value in `yield_evidence_warning`.
+
+`yield_range_type` must never be serialized or described as a confidence,
+prediction, credible, or probabilistic uncertainty interval. No client input
+is added. Availability and execution state are separate: the registry uses
+`ACTIVE_RANGE` for range-aware execution, whereas the response uses
+`availability=AVAILABLE` only after the full gate succeeds.
+
+For an unsupported request, all ref/low/high and alias numerics are `null`,
+`availability=UNAVAILABLE`, and reason codes report the first applicable
+canonical cause(s): `CULTIVAR_GROUP_UNRESOLVED`,
+`Y_BASE_GROUP_LOOKUP_MISSING`, `AGE_OUTSIDE_SUPPORTED_DOMAIN`,
+`DENSITY_OUTSIDE_SUPPORTED_DOMAIN`, `FRD_REFERENCE_MISSING`, or
+`EVIDENCE_DOMAIN_UNSUPPORTED`. `LIMITED_TEST`, `HIGH_RISK`,
+`EXTRAPOLATION`, `CAUTION`, and `OUTSIDE_LOCAL_RANGE` never receive a range.
+
+### 9.1 Economics and visualization propagation
+
+When yield is available, return `paddy_revenue_ref_rp`,
+`paddy_revenue_low_rp`, `paddy_revenue_high_rp`; the corresponding
+`cash_revenue_*`, `gross_economic_value_*`, and `margin_core_*` fields; and
+their existing unsuffixed fields as `*_ref` aliases. A low/high yield envelope
+must not collapse silently into a single economic figure. `cost_total_available`
+is active as a partial subtotal; `profit_full_est_rp` remains null with
+`UNAVAILABLE_INCOMPLETE_COST` because feed and total cage cost remain unknown.
+Terminal duck value remains an asset, not cash revenue.
+
+Visualization is a projection of the canonical simulation response. Its yield
+series must expose the selected request's reference and envelope (or an empty
+unavailable series) and preserve the same metadata/reason codes. It must not
+plot interpolated density/release curves or call the envelope an interval of
+statistical confidence.

@@ -225,3 +225,24 @@ Do not name the new method `create_v3` or reuse `SimulationHistory` v3 dataclass
 6. v3 row remains readable only as legacy; not interpreted as R2.
 7. ownership isolation (`user A` cannot read/delete `user B`).
 8. deletion works for v4.
+
+## 11. Phase-6 Candidate Persistence Amendment (R2.3)
+
+The canonical `response_json` and `trace_json` snapshot must preserve every
+Phase-6 yield semantic: reference, low, and high per-are and total yields;
+`yield_range_type=LITERATURE_EVIDENCE_ENVELOPE`; evidence status, strength and
+warning; source IDs; registry version; and freeze ID. Thus a future R2.3
+snapshot remains self-interpretable even if a later registry changes.
+
+For list/search efficiency, add nullable R2-table summary columns for
+`yield_ref_kg_per_are`, `yield_low_kg_per_are`, `yield_high_kg_per_are`,
+`yield_total_ref_kg`, `yield_total_low_kg`, `yield_total_high_kg`,
+`yield_range_type`, and `yield_evidence_status`. Keep `yield_total_kg` as a
+backward-compatible reference alias. This is an additive, idempotent schema
+migration: existing schema-v4 R2.2 rows retain their original null yield and
+R2.2 registry/freeze semantics; they are neither rewritten nor reinterpreted.
+
+Required Phase-6 tests include migration from an existing v4 database,
+reference/envelope round-trip equality and serialization precision, frozen
+snapshot immutability after later registry changes, and legacy/v4 R2.2 read
+compatibility.

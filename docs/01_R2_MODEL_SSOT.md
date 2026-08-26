@@ -149,49 +149,64 @@ The 0.90 value is a safe-context local working estimate, not a universal biologi
 - `N_survive=floor(0.60*J)` for `d>8`.
 - using historical sold/initial ratios as survival calibration.
 
-## 6. Yield Engine
+## 6. Yield Engine — Phase-6 External-Evidence Candidate
 
-R2 does **not** have a scientifically complete numeric yield runtime yet.
+This is the canonical R2.3 candidate specification. It is not a claim that
+the current R2.2 runtime or its historical sign-off has already changed.
+Activation requires implementation, tests, a new committed freeze, and then
+the pre-registered comparator run.
 
-Canonical structural formula:
-
-```text
-[mixed] Yield_are_ref = Y_base(cultivar_group_code) * F_RD_lookup(system_scope, d, release=30)
-[system-design] Yield_total = Yield_are_ref * A_are
-```
-
-Availability gate:
+The structural model generation remains R2:
 
 ```text
-[system-design] YieldAvailabilityFlag = AVAILABLE
-  only if:
-    1. an approved local cultivar_group_code is resolved;
-    2. Y_base(group) has a traceable approved record;
-    3. F_RD has a traceable approved record for the exact system/density/release node;
-    4. the exact node is inside the record's supported domain;
-    5. release timing semantics are equivalent to the R2 transplanting-based HST semantics.
-otherwise UNAVAILABLE.
+[literature-uncalibrated] Yield_are_ref  = Y_base_ref(V_group)  * F_RD_ref
+[literature-uncalibrated] Yield_are_low  = Y_base_low(V_group)  * F_RD_ref
+[literature-uncalibrated] Yield_are_high = Y_base_high(V_group) * F_RD_ref
+[system-design] Yield_total_* = Yield_are_* * A_are
 ```
 
-Until those lookups are explicitly populated and provenance-tested:
+`low` and `high` form the canonical `LITERATURE_EVIDENCE_ENVELOPE`. They are
+literature-derived sensitivity bounds, **not** a confidence interval,
+prediction interval, credible interval, or a formal probabilistic uncertainty
+interval.
 
-```text
-Y_base = null
-F_RD_lookup = null
-Yield_are = null
-Yield_total = null
-YieldAvailabilityFlag = UNAVAILABLE
-```
+### 6.1 Approved baseline records
 
-Current evidence closure is explicit: `LOCAL_CULTIVAR_GROUPING_READY` and
-`LOOKUP_STRUCTURE_READY`, but `Y_BASE_NOT_READY`, `F_RD_NOT_READY`, and
-`SYSTEM_UNRESOLVED_FAIL_CLOSED`. The verified density grid is descriptive
-evidence only and is not executable without approved numeric records.
+| Group | Ref / low / high (kg/are) | Evidence and limitation | State |
+|---|---:|---|---|
+| `INPARI_GROUP` | 53.5 / 20.0 / 78.4 | Indonesian farmer-technology field distribution, N=43; not Bali-calibrated | `ACTIVE_RANGE` |
+| `SERTANI_GROUP` | 44.5 / 22.3 / 66.7 | Two external locations only; tidal-land/management heterogeneity | `ACTIVE_RANGE`; `LOW_EVIDENCE_TWO_LOCATION_EXTERNAL_RANGE` |
 
-Future stores are discrete lookups only. Exact equality is required for
-`cultivar_group_code`, `system_scope`, `density_are`, and `release_day`.
-Interpolation, extrapolation, nearest-neighbour selection, range fallback,
-and cross-system fallback are forbidden. The production store is empty.
+Both records have provenance `LITERATURE_UNCALIBRATED`. Grouping remains a
+label-normalization/lookup convenience, never a genetic-equivalence claim.
+
+### 6.2 Rice-duck factor and supported-domain gate
+
+`F_RD_ref = 1.028` is the pooled external rice-duck reference from
+`FRD-FENG-2024` (25 studies, 38 paired yield observations, reported `P < 0.1`).
+It is a weakly significant global/external reference, not Bali calibration and
+not an exact system, density, release, or cultivar coefficient.
+
+Numeric yield is `AVAILABLE` only when every condition holds:
+
+1. cultivar group resolves and its approved `Y_base` range exists;
+2. `AgeSupportFlag == SUPPORTED` (`21 <= U_duck <= 30`);
+3. system-specific `DensitySupportFlag == SUPPORTED` (Jarwo `2 <= d <= 4`; Tegel `2 <= d <= 3` duck/are);
+4. the `F_RD_ref` record and all required inputs are valid.
+
+This is `SUPPORTED_DOMAIN_GLOBAL_F_RD`: planting system and density are local
+applicability gates only. There is no `F_RD(system,density,release)` lookup,
+no density or release interpolation, no nearest-value fallback, no
+cross-system extrapolation, and no new moderator coefficient. Every
+`CAUTION`, `LIMITED_TEST`, `HIGH_RISK`, `EXTRAPOLATION`, or
+`OUTSIDE_LOCAL_RANGE` request returns unavailable yield and null reference and
+envelope numerics.
+
+Fail-closed reasons use `CULTIVAR_GROUP_UNRESOLVED`,
+`Y_BASE_GROUP_LOOKUP_MISSING`, `AGE_OUTSIDE_SUPPORTED_DOMAIN`,
+`DENSITY_OUTSIDE_SUPPORTED_DOMAIN`, `FRD_REFERENCE_MISSING`, and
+`EVIDENCE_DOMAIN_UNSUPPORTED` (or a documented existing canonical equivalent;
+implementation must not emit duplicate synonyms for the same failure).
 
 ### Forbidden yield fallbacks
 
@@ -339,7 +354,7 @@ No universal pest-reduction scalar.
 
 ```text
 [regulatory-locked] p_gabah_ref = 6_500 Rp/kg
-[mixed] Revenue_gabah = Yield_total * p_gabah_ref
+[mixed] Revenue_gabah_ref/low/high = Yield_total_ref/low/high * p_gabah_ref
   only if YieldAvailabilityFlag == AVAILABLE
 ```
 
@@ -360,8 +375,8 @@ range = [N_survive*30_000, N_survive*60_000]
 ## 13. Economic Ledger
 
 ```text
-[system-design] CashRevenue = Revenue_gabah
-[system-design] GrossEconomicValue = Revenue_gabah + V_duck_end
+[system-design] CashRevenue_ref/low/high = Revenue_gabah_ref/low/high
+[system-design] GrossEconomicValue_ref/low/high = Revenue_gabah_ref/low/high + V_duck_end_ref
 
 [mixed] Cost_core_direct = C_duck_buy + C_net_cycle_ref
 [mixed] Cost_total_available = sum(all cost components whose execution state is AVAILABLE)
@@ -370,7 +385,7 @@ range = [N_survive*30_000, N_survive*60_000]
   only if every cost component required by the full configured ledger is AVAILABLE;
   otherwise INCOMPLETE.
 
-[mixed] Margin_core = GrossEconomicValue - Cost_core_direct
+[mixed] Margin_core_ref/low/high = GrossEconomicValue_ref/low/high - Cost_core_direct
   only if Yield and N_survive are available.
 
 [mixed] Profit_full_est = GrossEconomicValue - Cost_full_est
@@ -378,6 +393,14 @@ range = [N_survive*30_000, N_survive*60_000]
 ```
 
 Do not label `Margin_core` as net profit. Do not emit a numeric `Profit_full_est` while cost completeness is incomplete.
+
+`paddy_revenue`, `cash_revenue`, `gross_economic_value`, and `margin_core`
+without a suffix are backward-compatible aliases for their `*_ref` values only
+when all their respective gates pass; the accompanying low/high fields and
+`LITERATURE_EVIDENCE_ENVELOPE` metadata are mandatory. `cost_total_available`
+remains an available partial-cost subtotal. Feed, cage total, weeding/pesticide
+savings, manure credit, and `profit_full_est` remain unavailable. Terminal duck
+value remains an asset value, never realized duck-sale cash.
 
 ## 14. Canonical Reliability Flags
 

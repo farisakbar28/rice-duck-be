@@ -284,3 +284,30 @@ Not a mathematical requirement, but current repo contains a default JWT secret i
 - Do not recalculate R2 coefficients from historical replay error.
 - Do not equate terminal duck value with realized sale revenue.
 - Do not reactivate optimizer legacy formulas as part of DSS core migration.
+
+## 8. Phase-6 File-Level Implementation Plan (after docs-first approval)
+
+1. `app/data/seed.py`, `app/domain/models.py`, and `app/engines/r2/config.py`:
+   add immutable `.3` group baseline-range and pooled-F_RD metadata; remove the
+   empty/exact-node production yield assumption without adding an input.
+2. `app/engines/r2/yield_engine.py` and `app/engines/r2/economics.py`:
+   replace the discrete response-node interface with the supported-domain
+   pooled-factor gate; compute ref/low/high yield and range-aware downstream
+   revenue/gross-value/margin; retain unavailable full profit.
+3. `app/schemas/dss.py`, `app/services/simulation_service.py`,
+   `app/services/visualization_service.py`, and `app/api/routes/dss.py`:
+   serialize aliases, envelope/evidence metadata, reason codes, trace source
+   data, options metadata, visualization, and warnings.
+4. `app/core/database.py`, `app/repositories/history_repository.py`, and
+   `app/domain/models.py`: add an idempotent v4 summary-column migration and
+   round-trip storage for reference/envelope metadata while preserving R2.2.
+5. `tests/test_r2_yield_engine.py`, `test_r2_economics.py`,
+   `test_r2_api_simulate.py`, `test_r2_api_visualize.py`,
+   `test_r2_history_repository.py`, `test_r2_response_schema.py`,
+   `test_r2_seed_registry.py`, `test_r2_freeze_semantics.py`, and relevant
+   support/static tests: implement the docs/06 and scenario test matrix.
+6. `validation/runtime_runner.py`, `validation/metrics.py`, `validation/report.py`,
+   `validation/comparators.py`, `validation/cli.py`, and provenance/fixture
+   helpers: after the clean committed freeze only, add reference residuals,
+   envelope coverage, and subgroup reporting. Do not execute this work in
+   the docs-first stage and do not alter production imports.

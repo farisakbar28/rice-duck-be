@@ -182,3 +182,16 @@
 - [ ] Every active number/formula has provenance and status.
 - [ ] Every unavailable output has a reason code.
 - [ ] Backend behavior matches documentation, not the other way around.
+
+## Phase 6C-B / 6D — Approved Phase-6 Candidate Implementation (after docs-first)
+
+- [ ] Keep exactly seven input concepts; create no density, release, or evidence user input.
+- [ ] Replace the empty/exact-node yield store with group range records and one `SUPPORTED_DOMAIN_GLOBAL_F_RD` reference record.
+- [ ] Implement ref/low/high yield and area scaling only behind resolved-group + supported-age + supported-density + F_RD gates.
+- [ ] Preserve `LITERATURE_EVIDENCE_ENVELOPE`, `LITERATURE_UNCALIBRATED`, source IDs, and Sertani low-evidence metadata in response, trace, visualization, and history snapshot.
+- [ ] Map existing yield numeric aliases to reference values; add explicit envelope fields and range-aware economic propagation.
+- [ ] Keep feed, cage total, monetary savings, manure credit, and full profit unavailable; terminal duck value stays an asset.
+- [ ] Add the additive v4-history columns/migration and preserve all R2.2 rows unchanged.
+- [ ] Implement the Phase-6 test matrix in docs/06; verify source isolation and no interpolation/extrapolation.
+- [ ] Bump registry/freeze to `.3` only with the implementation, full passing tests, and a clean committed target.
+- [ ] Only after that freeze, run the comparator and publish pre-registered reference/envelope metrics without recalibration.

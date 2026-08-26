@@ -333,6 +333,23 @@ construction: it records the backend commit, sends every request through the
 canonical FastAPI HTTP path, stores each raw response JSON verbatim, computes
 invariant pass/fail from observed responses, and captures provenance policies.
 
+## 12. Phase-6 Candidate Test Addendum (execute after `.3` implementation)
+
+Required deterministic cases: Inpari and Sertani supported-domain reference
+and low/high yields; exact arithmetic (`54.998/20.56/80.5952` for Inpari and
+`45.746/22.9244/68.5676` for Sertani per are); area scaling; Jarwo boundaries
+2 and 4; Tegel boundaries 2 and 3; age 20/21/30/31; unknown group; missing F_RD;
+no interpolation or extrapolation; source metadata; Sertani low-evidence
+metadata; reference-alias backward compatibility; reference/low/high economics;
+full-profit unavailability; v4 persistence round-trip; registry/freeze `.3`;
+serialization precision; and stress null propagation.
+
+Outside the joint supported domain, every yield reference/envelope field and
+its aliases must be null. The Phase-6 range is named
+`LITERATURE_EVIDENCE_ENVELOPE`, not a confidence or prediction interval. These
+synthetic checks are not comparator access; historical yield replay begins only
+under docs/06 section 22 after the committed freeze.
+
 Artifacts live under `validation/results/<run_id>/` (notably
 `synthetic_cases.json`). Any run executed on a dirty tree, or before the
 official clean-tree frozen-execution run, is watermarked

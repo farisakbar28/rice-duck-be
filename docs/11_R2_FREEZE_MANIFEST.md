@@ -104,3 +104,18 @@ is statically guarded by `tests/test_validation_isolation.py`. Comparator
 residuals are reported, never used to modify `app/data/seed.py`,
 `app/engines/r2/`, or any SSOT coefficient. Any future scientific change
 requires a new registry/model version and a fresh pre-freeze review.
+
+## 7. Phase-6 Candidate Freeze Reservation — not active
+
+The next verified-unused candidate identity is
+`PARAMETER_REGISTRY_VERSION=R2-2026-08-26.3` and
+`FREEZE_ID=R2-FREEZE-2026-08-26.3`; `MODEL_VERSION` remains `R2` because the
+seven input concepts and `Y_base * F_RD` model family remain intact. This
+docs-first stage neither changes seed constants nor activates a freeze.
+
+The Phase-5C `.2` freeze and docs/12 sign-off remain historical evidence and
+must not be rewritten as Phase-6 validation. `.3` may be activated only in the
+same clean committed implementation that contains the approved range-aware
+records, API/history changes, and passing tests. Immediately before activation,
+recheck that `.3` is still unused; otherwise stop with `VERSION_COLLISION` and
+select a new documented identity rather than overwrite any freeze.

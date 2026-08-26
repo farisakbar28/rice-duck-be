@@ -378,3 +378,48 @@ R2 can be considered implemented correctly even if empirical error is large, pro
 - empirical discrepancies are reported rather than tuned away.
 
 A large error is a research result, not permission to recalibrate from the comparator set.
+
+## 22. Phase-6 Pre-registered Yield Validation (execute only after R2.3 freeze)
+
+This amendment supersedes the former exact-node/release scenario-envelope
+proposal. Do not access any yield comparator outcome until the Phase-6 code,
+tests, registry `R2-2026-08-26.3`, and matching committed freeze are complete
+on a clean tree.
+
+Primary yield cohort: every eligible clean record for which the frozen runtime
+returns numeric `yield_ref_kg_per_are`. Report total clean N, prediction
+coverage N and percent, strict supported-domain N, cultivar subgroup N
+(`INPARI_GROUP` and `SERTANI_GROUP` separately), and planting-system subgroup
+N where sufficiently large. Never present one pooled headline without the
+cultivar subgroup disclosure; Sertani reports its low-evidence warning.
+
+For each compatible row, calculate reference-value `MAE`, `RMSE`, `MedAE`,
+`MBE`, and `WAPE`; `R²` is optional diagnostic and MAPE is supplementary only
+where denominators are valid. Report metric units and effective N.
+
+For every predicted row pre-register:
+
+```text
+actual_inside_envelope = yield_actual between [yield_pred_low, yield_pred_high]
+```
+
+Report `N`, covered N, coverage percent, mean envelope width, median envelope
+width, and optionally normalized width. The name is **LITERATURE
+EVIDENCE-ENVELOPE COVERAGE**, never confidence coverage or prediction-interval
+coverage. Reference residuals and coverage use the frozen, independently
+literature-derived parameters unchanged.
+
+After the freeze is committed, no `Y_base` reference/range, `F_RD`, support
+boundary, or envelope may be changed after inspecting comparator results. A
+correction requires a new registry version and a new freeze before another
+comparison. The validation harness may then add yield replay, row-level
+reference predictions, residuals, envelope coverage, and subgroup metrics; it
+must not import comparator outcomes into production modules.
+
+## 23. Phase-6 Stress Amendment
+
+Stress and boundary tests must prove age 20/31, non-supported density, unknown
+cultivar group, missing baseline/factor, and all CAUTION/LIMITED_TEST/
+HIGH_RISK/EXTRAPOLATION states return unavailable yield with null ref/low/high;
+no nearest-value fallback, interpolation, extrapolation, NaN, or Infinity;
+correct reason/warning codes; and downstream economic null propagation.

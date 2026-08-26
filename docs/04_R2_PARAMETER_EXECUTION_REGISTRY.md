@@ -149,3 +149,36 @@ F_RD rows require: `cultivar_scope`, `system_scope`, `density_are`,
 
 Schema readiness does not activate either lookup. Both production record sets
 remain empty and all numeric yield outputs remain unavailable.
+
+## 8. Phase-6 Candidate Registry — R2.3 (not yet activated)
+
+This section supersedes the empty-yield and exact-node `F_RD` design above for
+the next registry only. It is a documentation specification, not permission to
+change the active R2.2 seed, freeze, or runtime before Phase-6 implementation.
+
+| ID / parameter | Value or rule | Unit | Source / provenance | State and limitations |
+|---|---|---|---|---|
+| `R2-YLD-01` / `Y_base.INPARI_GROUP` | ref 53.5; low 20.0; high 78.4; SD 13.3; N=43 | kg/are | `YB-INPARI-SULAEMAN-2024`; `LITERATURE_UNCALIBRATED` | `ACTIVE_RANGE`; Indonesian field distribution, not Bali calibration |
+| `R2-YLD-01` / `Y_base.SERTANI_GROUP` | ref 44.5; low 22.3; high 66.7; N=2 locations | kg/are | `YB-SERTANI-SULAEMAN-2022`; `LITERATURE_UNCALIBRATED` | `ACTIVE_RANGE`; `LOW_EVIDENCE_TWO_LOCATION_EXTERNAL_RANGE`; not genetic equivalence or local calibration |
+| `R2-YLD-03` / `F_RD_ref` | 1.028 (+2.8%) | factor | `FRD-FENG-2024`; `LITERATURE_UNCALIBRATED` | `ACTIVE`; global pooled reference; 25 studies/38 observations; reported `P < 0.1`; no numerical CI/PI supplied |
+| `R2-YLD-GATE-01` | group + baseline + age `SUPPORTED` + density `SUPPORTED` + F_RD present | n/a | R2 supported-domain design | `CONDITIONAL`; `SUPPORTED_DOMAIN_GLOBAL_F_RD` |
+| `R2-YLD-02` | `Yield_total_*=Yield_are_*A_are` | kg | deterministic | `CONDITIONAL`; applies ref/low/high without rounding before serialization |
+
+Every numeric record must carry: parameter name, value or range, unit, source
+ID and citation, provenance, execution state, domain, limitation,
+`effective_registry_version=R2-2026-08-26.3`, and evidence-strength/reason
+metadata. The registry contains no comparator-derived values.
+
+The candidate response factor is deliberately not a density, planting-system,
+or release-time table. `ACTIVE_RANGE` is an execution-state property of the
+baseline/output representation; the API availability is still simply
+`AVAILABLE` when the complete gate succeeds and `UNAVAILABLE` otherwise.
+No numeric yield is allowed for non-supported age/density states, and no
+interpolation, extrapolation, nearest-node, or cross-system fallback exists.
+
+Canonical failure causes are `CULTIVAR_GROUP_UNRESOLVED`,
+`Y_BASE_GROUP_LOOKUP_MISSING`, `AGE_OUTSIDE_SUPPORTED_DOMAIN`,
+`DENSITY_OUTSIDE_SUPPORTED_DOMAIN`, `FRD_REFERENCE_MISSING`, and
+`EVIDENCE_DOMAIN_UNSUPPORTED`. Existing code-specific aliases must be
+consolidated during implementation rather than returned alongside duplicate
+meanings.
