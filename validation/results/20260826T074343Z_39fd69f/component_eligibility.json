@@ -1,0 +1,128 @@
+{
+  "source_status": "BLOCKED_SOURCE_FILES_MISSING",
+  "components": {
+    "calendar": {
+      "eligible_when_source_available": true,
+      "status": "BLOCKED_SOURCE_FILES_MISSING",
+      "metric_allowed": false,
+      "comparator": {
+        "prior_audit_coverage": "0/36",
+        "recomputed_from_source": false,
+        "source_status": "BLOCKED_SOURCE_FILES_MISSING"
+      }
+    },
+    "yield": {
+      "prediction_availability": "UNAVAILABLE",
+      "reason_codes": [
+        "Y_BASE_LOOKUP_MISSING",
+        "F_RD_LOOKUP_MISSING"
+      ],
+      "status": "NOT_EVALUABLE",
+      "reason": "R2_YIELD_UNAVAILABLE",
+      "metric_allowed": false,
+      "comparator": {
+        "prior_audit_coverage": "36/36",
+        "recomputed_from_source": false,
+        "source_status": "BLOCKED_SOURCE_FILES_MISSING"
+      }
+    },
+    "paddy_revenue_operational": {
+      "status": "NOT_EVALUABLE",
+      "reason": "R2_YIELD_UNAVAILABLE",
+      "metric_allowed": false
+    },
+    "paddy_revenue_price_neutral_diagnostic": {
+      "status": "NOT_EVALUABLE",
+      "reason": "R2_YIELD_UNAVAILABLE",
+      "metric_allowed": false,
+      "note": "historical prices may load as dataset metadata only, never runtime inputs"
+    },
+    "duck_purchase_cost_identity": {
+      "status": "VERIFIED_BY_V1_TESTS",
+      "metric_allowed": true,
+      "note": "deterministic accounting identity; observed-price rows are plausibility context only",
+      "comparator": {
+        "prior_audit_coverage": "29/36",
+        "recomputed_from_source": false,
+        "source_status": "BLOCKED_SOURCE_FILES_MISSING"
+      }
+    },
+    "survival_aggregate": {
+      "ground_truth_status": "NO_COMPATIBLE_AGGREGATE",
+      "metric_allowed": false
+    },
+    "terminal_duck_value": {
+      "comparison_against_duck_sales": "FORBIDDEN",
+      "allowed": [
+        "price plausibility",
+        "min/ref/max sensitivity",
+        "expert mapping"
+      ],
+      "metric_allowed": false
+    },
+    "feed_accuracy": {
+      "runtime_availability": "UNAVAILABLE",
+      "status": "NOT_EVALUABLE_FEED_LOOKUP_MISSING",
+      "metric_allowed": false,
+      "comparator": {
+        "prior_audit_coverage": "23/36",
+        "recomputed_from_source": false,
+        "source_status": "BLOCKED_SOURCE_FILES_MISSING"
+      },
+      "note": "positive historical feed values are future eligibility metadata only"
+    },
+    "weeding_cash": {
+      "metric_allowed": false,
+      "comparator": {
+        "prior_audit_coverage": "0/36",
+        "recomputed_from_source": false,
+        "source_status": "BLOCKED_SOURCE_FILES_MISSING"
+      }
+    },
+    "pesticide": {
+      "mode": "sparse case diagnostics only",
+      "metric_allowed": false,
+      "comparator": {
+        "prior_audit_coverage": "4/36",
+        "recomputed_from_source": false,
+        "source_status": "BLOCKED_SOURCE_FILES_MISSING"
+      }
+    },
+    "fertilizer": {
+      "mode": "descriptive only",
+      "metric_allowed": false,
+      "comparator": {
+        "prior_audit_coverage": "1/36",
+        "recomputed_from_source": false,
+        "source_status": "BLOCKED_SOURCE_FILES_MISSING"
+      }
+    },
+    "infrastructure_net_cage": {
+      "semantic_compatibility_established": false,
+      "eligibility_reason": "historical 'infra' proxies are ambiguous; square-equivalent net amortization and per-cycle cage totals cannot be assumed to match historical constructs",
+      "metric_allowed": false,
+      "comparator": {
+        "prior_audit_coverage": "17/36",
+        "recomputed_from_source": false,
+        "source_status": "BLOCKED_SOURCE_FILES_MISSING"
+      }
+    },
+    "profit_margin": {
+      "cost_completeness": "INCOMPLETE",
+      "profit_full_status": "UNAVAILABLE_INCOMPLETE_COST",
+      "legacy_farmer_profit_comparison": "FORBIDDEN",
+      "margin_core_vs_legacy_profit": "FORBIDDEN",
+      "metric_allowed": false
+    }
+  },
+  "legacy_simulation_role_guard": {
+    "workbook": "Dataset Bersih Rekap Include Hasil Simulasi Baru.xlsx",
+    "present": false,
+    "never_used_as": [
+      "R2 prediction source",
+      "R2 input default",
+      "parameter registry entry",
+      "calibration coefficient"
+    ]
+  }
+}

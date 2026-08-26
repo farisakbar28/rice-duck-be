@@ -319,3 +319,19 @@ A scenario result may be entered into this document only when:
 4. no manual formula result was substituted for backend output;
 5. provenance of historical fields is recorded.
 
+## 11. Generated Runtime Evidence — Phase-5 Harness
+
+B01–B18 synthetic runtime evidence is now produced mechanically by the
+research-only validation harness (`python -m validation`, see
+`docs/11_R2_FREEZE_MANIFEST.md`), which satisfies all five conditions above by
+construction: it records the backend commit, sends every request through the
+canonical FastAPI HTTP path, stores each raw response JSON verbatim, computes
+invariant pass/fail from observed responses, and captures provenance policies.
+
+Artifacts live under `validation/results/<run_id>/` (notably
+`synthetic_cases.json`). Any run executed on a dirty tree, or before the
+official clean-tree frozen-execution run, is watermarked
+`NON_OFFICIAL_PRE_FREEZE` in every artifact header and MUST NOT be cited as an
+official frozen validation result. Synthetic cases remain contract evidence;
+they are never field observations.
+

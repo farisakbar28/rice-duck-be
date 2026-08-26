@@ -106,6 +106,19 @@ presentation-only view over the same canonical result:
 The endpoint always calls simulation anonymously. It never writes history,
 even if a bearer token is included.
 
+## Freeze status (Phase 5)
+
+R2 is **frozen for validation**: `model.frozen = true`,
+`freeze_id = R2-FREEZE-2026-08-26.1`. Frozen means the model/registry identity
+is an immutable validation target — it does **not** mean empirically validated,
+accurate, or complete. Yield remains `UNAVAILABLE` (exact-cultivar baseline and
+rice-duck response lookups are not configured), so no yield accuracy metric can
+exist. See
+[`docs/11_R2_FREEZE_MANIFEST.md`](docs/11_R2_FREEZE_MANIFEST.md) and the
+research-only harness under [`validation/`](validation/) (dependencies:
+[`requirements-validation.txt`](requirements-validation.txt); never imported by
+production code).
+
 ## History and versioning
 
 Authenticated simulations store schema-v4 request, response, and trace JSON as

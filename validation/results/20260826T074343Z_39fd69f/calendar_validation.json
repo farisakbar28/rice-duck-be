@@ -1,0 +1,8 @@
+{
+  "status": "BLOCKED_SOURCE_FILES_MISSING",
+  "eligibility_rule": "OBSERVED planting_date AND OBSERVED harvest_date",
+  "prior_audit_expected_n": 12,
+  "recomputed_n": null,
+  "metrics": null,
+  "note": "windows are never recalibrated; see metrics.py"
+}

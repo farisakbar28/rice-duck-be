@@ -22,8 +22,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   iteration floor.
 - Added active visualization, provenance, configuration, and startup tests plus
   explicit pytest quarantine for `tests/legacy_invalid/`.
+- Added Phase-5 freeze governance metadata: `MODEL_FROZEN`, `FREEZE_ID`
+  (`R2-FREEZE-2026-08-26.1`), and `FREEZE_EFFECTIVE_FROM` in the seed layer,
+  exposed as `model.freeze_id` / `model.frozen = true` in simulation and
+  visualization responses. Frozen means *immutable validation target*; it does
+  not mean empirically validated, accurate, or complete (docs/11).
+- Added `docs/11_R2_FREEZE_MANIFEST.md` describing freeze semantics, distinct
+  provenance dimensions, manifest contents, and the official execution gate.
+- Added an isolated research-only validation harness (`validation/`,
+  `python -m validation`) with source fingerprinting (SHA-256 + sheets),
+  provenance policies, canonical-runtime synthetic evidence (B01–B18),
+  supported-age invariance checking, docs/06 §19 V1 matrix mapping, calendar
+  metric primitives with cluster bootstrap, expert-transfer matrix, and
+  deterministic artifact/report generation. Research dependencies are split
+  into `requirements-validation.txt`; production code never imports them.
+- Added freeze-semantics tests (identity dimensions, Phase-4 parameter
+  snapshot guard, availability invariance under freeze) and production/
+  research isolation guards (no `app/` import of `validation`, no fitting or
+  optimization code paths, no rebinding of canonical registry identifiers).
 
 ### Changed
+- Simulation/visualization model metadata now sources `frozen` from the freeze
+  configuration instead of a hardcoded literal; the response contract gains an
+  optional `freeze_id` field.
 - Completed the R2 migration across API descriptions, README, Postman assets,
   environment examples, and canonical API/persistence documentation.
 - Corrected yield lookup identity: generic input options no longer claim exact

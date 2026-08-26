@@ -1,0 +1,5 @@
+# Research-only validation dependencies (Phase 5).
+#
+# NOT part of the production runtime. Production app/ code must never import
+# anything listed here (guarded by tests/test_validation_isolation.py).
+openpyxl==3.1.5

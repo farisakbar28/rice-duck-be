@@ -167,14 +167,20 @@ class ModelMeta(BaseModel):
     - history_schema_version: persistence schema of new simulations (4)
     - parameter_registry_version: immutable registry identifier
     - model_commit_sha:   git commit that produced the response (if available)
+    - freeze_id:          governance freeze identifier (R2-FREEZE-YYYY-MM-DD.N)
+
+    ``frozen=true`` means "immutable validation target" (docs/11). It does NOT
+    mean empirically validated, accurate, or complete; unavailable scientific
+    outputs stay unavailable after the freeze.
     """
 
     model_version: str = "R2"
     history_schema_version: int = 4
     parameter_registry_version: str | None = None
     model_commit_sha: str | None = None
-    # Phase 3 runtime is NOT the final model freeze (docs/08 places freeze in
-    # the final phase); responses must not claim validation/freeze occurred.
+    freeze_id: str | None = None
+    # Schema-level default stays conservative (False); the production service
+    # always sources this field from app.data.seed.MODEL_FROZEN.
     frozen: bool = False
     generated_at: datetime | None = None
 

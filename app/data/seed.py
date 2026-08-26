@@ -40,6 +40,30 @@ EFFECTIVE_FROM = "2026-08-26"
 # changes without a structural formula change; MODEL_VERSION stays "R2".
 PARAMETER_REGISTRY_VERSION = "R2-2026-08-26.1"
 
+# ---------------------------------------------------------------------------
+# Freeze governance metadata (Phase 5; docs/11_R2_FREEZE_MANIFEST.md)
+# ---------------------------------------------------------------------------
+# Distinct provenance dimensions -- never merge these:
+#   * MODEL_VERSION              scientific model generation ("R2")
+#   * PARAMETER_REGISTRY_VERSION parameter/formula registry identity
+#   * settings.app_version       deployment release version
+#   * history schema_version     persistence schema of new simulations (4)
+#   * settings.model_commit_sha  build/runtime Git commit (environment-injected;
+#                                never a self-referential SHA inside its own commit)
+#   * FREEZE_* below             governance state only
+#
+# frozen=true means "immutable validation target": the model/registry identity
+# is fixed for retrospective validation. It does NOT mean empirically
+# validated, accurate, or scientifically complete. Yield/feed/cage-total/full-
+# profit remain unavailable exactly as before the freeze.
+#
+# The Phase-5 freeze candidate passed its computational gates on a clean tree
+# at Phase-4 baseline 39fd69fbfa207862ce4da5be5d4f75e06eed6bdb with zero
+# scientific-coefficient changes (guarded by tests/test_r2_freeze_semantics.py).
+MODEL_FROZEN: bool = True
+FREEZE_ID: str | None = "R2-FREEZE-2026-08-26.1"
+FREEZE_EFFECTIVE_FROM: str | None = "2026-08-26"
+
 
 # ---------------------------------------------------------------------------
 # Rice varieties (SSOT §2; provenance doc §4)
@@ -488,10 +512,13 @@ PARAMETER_REGISTRY: dict[str, ParameterMetadata] = {
 
 
 __all__ = [
-    "MODEL_VERSION",
     "EFFECTIVE_FROM",
-    "PARAMETER_REGISTRY_VERSION",
-    "RICE_VARIETIES",
-    "PLANTING_SYSTEMS",
+    "FREEZE_EFFECTIVE_FROM",
+    "FREEZE_ID",
+    "MODEL_FROZEN",
+    "MODEL_VERSION",
     "PARAMETER_REGISTRY",
+    "PARAMETER_REGISTRY_VERSION",
+    "PLANTING_SYSTEMS",
+    "RICE_VARIETIES",
 ]

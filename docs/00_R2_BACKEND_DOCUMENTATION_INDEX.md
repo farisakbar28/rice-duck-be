@@ -60,6 +60,7 @@ Dokumen lama berikut **tidak boleh lagi mengalahkan R2**:
 | `06_R2_TEST_VALIDATION_PROTOCOL.md` | Unit/contract/integration/validation methodology yang sudah dikonfirmasi. |
 | `07_R2_LEGACY_INVALIDATION_REGISTER.md` | Daftar literal formula/field/constant yang dilarang kembali ke production path. |
 | `08_R2_IMPLEMENTATION_CHECKLIST.md` | Urutan pekerjaan agent backend dan acceptance gates. |
+| `11_R2_FREEZE_MANIFEST.md` | Semantik freeze (frozen = immutable validation target), dimensi identitas, isi manifest, official execution gate, anti-kalibrasi. |
 | `tes_skenario_R2.md` | Template evidence runtime dan historical comparator; tidak berisi hasil palsu sebelum code dijalankan. |
 
 ## 5. Baseline Interpretation

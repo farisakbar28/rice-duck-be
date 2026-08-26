@@ -217,9 +217,12 @@ class TestContractShape:
         assert revived.crop_yield.baseline_kg_per_are is None
         assert revived.trace.defaulted_inputs[0].resolved_value == 26500
 
-    def test_model_meta_frozen_defaults_false_until_phase5_freeze(self) -> None:
-        # Phase 3 runtime must not claim research freeze occurred.
-        assert ModelMeta().frozen is False
+    def test_model_meta_frozen_defaults_false_and_freeze_id_optional(self) -> None:
+        # Schema defaults stay conservative; the production service sources
+        # frozen/freeze_id from app.data.seed (see tests/test_r2_freeze_semantics.py).
+        bare = ModelMeta()
+        assert bare.frozen is False
+        assert bare.freeze_id is None
 
     def test_trace_meta_has_availability_reasons_field(self) -> None:
         meta = TraceMeta(

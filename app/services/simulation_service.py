@@ -30,6 +30,8 @@ from datetime import date, datetime, timezone
 from app.core.config import settings
 from app.core.exceptions import AppError, InvalidReferenceError, ResourceNotFoundError
 from app.data.seed import (
+    FREEZE_ID,
+    MODEL_FROZEN,
     MODEL_VERSION,
     PARAMETER_REGISTRY,
     PARAMETER_REGISTRY_VERSION,
@@ -304,7 +306,8 @@ class DSSService:
                 history_schema_version=4,
                 parameter_registry_version=PARAMETER_REGISTRY_VERSION,
                 model_commit_sha=settings.model_commit_sha,
-                frozen=False,  # Phase 3 is NOT the final research freeze.
+                freeze_id=FREEZE_ID,
+                frozen=MODEL_FROZEN,  # sourced from the freeze configuration (docs/11)
                 generated_at=generated_at,
             ),
             input=SimulationInputEcho(

@@ -1,0 +1,13 @@
+{
+  "status": "BLOCKED_SOURCE_FILES_MISSING",
+  "reason": "the 8 excluded/stress cycles are identifiable only from the clean comparator workbook; they are never guessed",
+  "assertions_when_executed": [
+    "no crash",
+    "no NaN",
+    "no Infinity",
+    "support/extrapolation semantics intact",
+    "warnings emitted",
+    "no hidden fallback"
+  ],
+  "merged_into_headline_metrics": false
+}
