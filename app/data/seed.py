@@ -39,7 +39,7 @@ EFFECTIVE_FROM = "2026-08-26"
 # MODEL_VERSION, APP_VERSION, the history schema version, and any Git SHA.
 # Bump the trailing ".N" whenever a regulatory price or an approved lookup
 # changes without a structural formula change; MODEL_VERSION stays "R2".
-PARAMETER_REGISTRY_VERSION = "R2-2026-08-26.2"
+PARAMETER_REGISTRY_VERSION = "R2-2026-08-26.3"
 
 # ---------------------------------------------------------------------------
 # Freeze governance metadata (Phase 5; docs/11_R2_FREEZE_MANIFEST.md)
@@ -62,7 +62,7 @@ PARAMETER_REGISTRY_VERSION = "R2-2026-08-26.2"
 # at Phase-4 baseline 39fd69fbfa207862ce4da5be5d4f75e06eed6bdb with zero
 # scientific-coefficient changes (guarded by tests/test_r2_freeze_semantics.py).
 MODEL_FROZEN: bool = True
-FREEZE_ID: str | None = "R2-FREEZE-2026-08-26.2"
+FREEZE_ID: str | None = "R2-FREEZE-2026-08-26.3"
 FREEZE_EFFECTIVE_FROM: str | None = "2026-08-26"
 
 
@@ -77,11 +77,11 @@ RICE_VARIETIES: list[RiceVariety] = [
         harvest_hst_min=100,
         harvest_hst_max=110,
         calendar_status=ProvenanceStatus.LOCAL_ESTIMATE,
-        yield_lookup_status=ExecutionState.PENDING_LOOKUP,
+        yield_lookup_status=ExecutionState.ACTIVE_RANGE,
         note=(
             "Harvest window is a local estimate (source I1). SERTANI_GROUP is "
             "a local label grouping, not genetic identity; its numeric yield "
-            "baseline is not configured."
+            "baseline has a Phase-6 literature evidence envelope."
         ),
         cultivar_group_code=LocalCultivarGroup.SERTANI_GROUP,
     ),
@@ -91,11 +91,11 @@ RICE_VARIETIES: list[RiceVariety] = [
         harvest_hst_min=90,
         harvest_hst_max=100,
         calendar_status=ProvenanceStatus.LOCAL_ESTIMATE,
-        yield_lookup_status=ExecutionState.PENDING_LOOKUP,
+        yield_lookup_status=ExecutionState.ACTIVE_RANGE,
         note=(
             "Harvest window is a local estimate (source I1). INPARI_GROUP is "
             "a local label grouping, not genetic identity; its numeric yield "
-            "baseline is not configured."
+            "baseline has a Phase-6 literature evidence envelope."
         ),
         cultivar_group_code=LocalCultivarGroup.INPARI_GROUP,
     ),
@@ -124,6 +124,25 @@ PLANTING_SYSTEMS: list[PlantingSystem] = [
         note="Supported density 2-3 duck/are (sources I1/I2). Support metadata only.",
     ),
 ]
+
+# Phase-6 external records. These immutable literal records are the production
+# registry payload; production code never reads the private research bundle.
+YIELD_BASELINES = {
+    "INPARI_GROUP": {
+        "ref_kg_per_are": 53.5, "low_kg_per_are": 20.0, "high_kg_per_are": 78.4,
+        "source_id": "YB-INPARI-SULAEMAN-2024", "evidence_strength": "EXTERNAL_FIELD_DISTRIBUTION_N43",
+        "warning": None,
+    },
+    "SERTANI_GROUP": {
+        "ref_kg_per_are": 44.5, "low_kg_per_are": 22.3, "high_kg_per_are": 66.7,
+        "source_id": "YB-SERTANI-SULAEMAN-2022", "evidence_strength": "LOW_EVIDENCE_TWO_LOCATION_EXTERNAL_RANGE",
+        "warning": "LOW_EVIDENCE_TWO_LOCATION_EXTERNAL_RANGE",
+    },
+}
+F_RD_REFERENCE = {
+    "factor": 1.028, "source_id": "FRD-FENG-2024", "significance": "P < 0.1",
+    "domain": "SUPPORTED_DOMAIN_GLOBAL_F_RD",
+}
 
 
 def _param(
@@ -410,27 +429,24 @@ PARAMETER_REGISTRY: dict[str, ParameterMetadata] = {
     # --- Pending lookups / unavailable branches (value MUST stay None) -------
     "yield_base_by_cultivar_group": _param(
         "yield_base_by_cultivar_group",
-        value=None,
+        value="PHASE6_GROUP_RANGE_RECORDS",
         unit="kg/are",
         status_tag=ProvenanceStatus.LITERATURE_UNCALIBRATED,
-        execution_state=ExecutionState.PENDING_LOOKUP,
-        source_ids=(),
+        execution_state=ExecutionState.ACTIVE_RANGE,
+        source_ids=("YB-INPARI-SULAEMAN-2024", "YB-SERTANI-SULAEMAN-2022"),
         note=(
-            "Local cultivar-group baseline table not configured/approved yet "
-            "(registry R2-YLD-LKP-BASE). Missing lookup must yield null output, never a constant."
+            "Phase-6 group records are literature evidence envelopes; not Bali calibration."
         ),
     ),
     "f_rd_lookup": _param(
         "f_rd_lookup",
-        value=None,
+        value=1.028,
         unit="factor",
         status_tag=ProvenanceStatus.LITERATURE_UNCALIBRATED,
-        execution_state=ExecutionState.PENDING_LOOKUP,
-        source_ids=(),
+        execution_state=ExecutionState.ACTIVE,
+        source_ids=("FRD-FENG-2024",),
         note=(
-            "Rice-duck response table/model not encoded/approved yet "
-            "(registry R2-YLD-LKP-RD). Candidate literature exists but effect sizes "
-            "must not be transplanted (provenance doc section 6)."
+            "SUPPORTED_DOMAIN_GLOBAL_F_RD; pooled external reference, P < 0.1; not an exact node."
         ),
     ),
     "feed_quantity_lookup": _param(
@@ -524,4 +540,6 @@ __all__ = [
     "PARAMETER_REGISTRY_VERSION",
     "PLANTING_SYSTEMS",
     "RICE_VARIETIES",
+    "YIELD_BASELINES",
+    "F_RD_REFERENCE",
 ]

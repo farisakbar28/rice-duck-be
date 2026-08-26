@@ -16,6 +16,22 @@ from datetime import date
 YIELD_STATUS_NOT_EVALUABLE = "NOT_EVALUABLE"
 YIELD_REASON_R2_UNAVAILABLE = "R2_YIELD_EVIDENCE_INSUFFICIENT"
 
+def phase6_yield_metrics(rows: list[dict]) -> dict:
+    """Synthetic-safe Phase-6 metric primitive; callers supply no source files.
+
+    Rows without numeric reference/low/high predictions are excluded. The
+    envelope is explicitly an evidence envelope, not a statistical interval.
+    """
+    eligible = [r for r in rows if all(r.get(k) is not None for k in ("actual", "pred_ref", "pred_low", "pred_high"))]
+    if not eligible:
+        return {"N": 0, "prediction_coverage": 0.0, "MAE": None, "RMSE": None, "MedAE": None, "MBE": None, "WAPE": None, "LITERATURE_EVIDENCE_ENVELOPE_COVERAGE": None, "mean_envelope_width": None, "median_envelope_width": None}
+    errors = [float(r["pred_ref"] - r["actual"]) for r in eligible]
+    absolute = [abs(x) for x in errors]
+    widths = [float(r["pred_high"] - r["pred_low"]) for r in eligible]
+    covered = sum(r["pred_low"] <= r["actual"] <= r["pred_high"] for r in eligible)
+    actual_sum = sum(abs(float(r["actual"])) for r in eligible)
+    return {"N": len(eligible), "prediction_coverage": 1.0, "MAE": statistics.fmean(absolute), "RMSE": (statistics.fmean(x*x for x in errors)) ** .5, "MedAE": float(statistics.median(absolute)), "MBE": statistics.fmean(errors), "WAPE": sum(absolute) / actual_sum * 100 if actual_sum else None, "LITERATURE_EVIDENCE_ENVELOPE_COVERAGE": covered / len(eligible), "mean_envelope_width": statistics.fmean(widths), "median_envelope_width": float(statistics.median(widths))}
+
 
 def distance_to_window_days(actual: date, window_min: date, window_max: date) -> int:
     """0 when inside the window; otherwise days to the nearest edge."""

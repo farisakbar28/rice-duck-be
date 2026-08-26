@@ -18,7 +18,7 @@ def test_options_shape_matches_r2_registry() -> None:
     assert (varieties["inpari"]["harvest_hst_min"], varieties["inpari"]["harvest_hst_max"]) == (90, 100)
     for item in varieties.values():
         assert item["calendar_status"] == "local-estimate"
-        assert item["yield_lookup_status"] == "PENDING_LOOKUP"
+        assert item["yield_lookup_status"] == "ACTIVE_RANGE"
 
     systems = {item["code"]: item for item in body["planting_systems"]}
     assert set(systems) == {"jajar_legowo", "tegel"}

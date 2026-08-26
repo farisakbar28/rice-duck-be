@@ -97,28 +97,15 @@ from app.engines.r2.support import (  # noqa: E402
     operational_extrapolation,
 )
 from app.engines.r2.survival import SurvivalResult, compute_survival  # noqa: E402
-from app.engines.r2.yield_engine import (  # noqa: E402
-    EMPTY_YIELD_LOOKUP_STORE,
-    DiscreteYieldLookupStore,
-    EmptyYieldLookupStore,
-    FRDEntry,
-    YieldBaselineEntry,
-    YieldLookupStore,
-    YieldResult,
-    RELEASE_SEMANTICS_FIELD_TRANSPLANTING_HST,
-    compute_yield,
-)
+from app.engines.r2.yield_engine import RANGE_TYPE, YieldResult, compute_yield  # noqa: E402
 
 __all__ = [
-    "EMPTY_YIELD_LOOKUP_STORE",
+    "RANGE_TYPE",
     "FORMULA_IDS",
     "PROFIT_FULL_STATUS_INCOMPLETE",
     "CalendarWindows",
     "CageInfrastructureResult",
     "EconomicLedgerResult",
-    "EmptyYieldLookupStore",
-    "DiscreteYieldLookupStore",
-    "FRDEntry",
     "FeedResult",
     "FertilizerResult",
     "InfrastructureResult",
@@ -129,10 +116,7 @@ __all__ = [
     "SurvivalResult",
     "SupportInterval",
     "WeedingResult",
-    "YieldBaselineEntry",
-    "YieldLookupStore",
     "YieldResult",
-    "RELEASE_SEMANTICS_FIELD_TRANSPLANTING_HST",
     "age_support_intervals",
     "classify_age",
     "classify_density",

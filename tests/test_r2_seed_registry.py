@@ -35,14 +35,14 @@ class TestVarietySeed:
         v = variety("sertani")
         assert (v.harvest_hst_min, v.harvest_hst_max) == (100, 110)
         assert v.calendar_status is ProvenanceStatus.LOCAL_ESTIMATE
-        assert v.yield_lookup_status is ExecutionState.PENDING_LOOKUP
+        assert v.yield_lookup_status is ExecutionState.ACTIVE_RANGE
 
     def test_inpari_window_is_90_100_not_109_116(self) -> None:
         v = variety("inpari")
         assert (v.harvest_hst_min, v.harvest_hst_max) == (90, 100)
         assert (109, 116) != (v.harvest_hst_min, v.harvest_hst_max)
         assert v.calendar_status is ProvenanceStatus.LOCAL_ESTIMATE
-        assert v.yield_lookup_status is ExecutionState.PENDING_LOOKUP
+        assert v.yield_lookup_status is ExecutionState.ACTIVE_RANGE
 
     def test_no_numeric_yield_baseline_attached(self) -> None:
         for v in RICE_VARIETIES:
@@ -129,7 +129,7 @@ class TestRegistryApprovedValues:
         assert p.execution_state is ExecutionState.CONDITIONAL
 
 
-class TestFailClosedPendingEntries:
+class TestPhase6YieldEntries:
     @pytest.mark.parametrize(
         "key",
         [
@@ -137,10 +137,9 @@ class TestFailClosedPendingEntries:
             "f_rd_lookup",
         ],
     )
-    def test_pending_lookups_have_no_numeric_fallback(self, key: str) -> None:
+    def test_phase6_yield_records_are_active_and_sourced(self, key: str) -> None:
         p = PARAMETER_REGISTRY[key]
-        assert p.value is None
-        assert p.execution_state is ExecutionState.PENDING_LOOKUP
+        assert p.execution_state in (ExecutionState.ACTIVE, ExecutionState.ACTIVE_RANGE)
 
     @pytest.mark.parametrize(
         "key",

@@ -52,6 +52,10 @@ class EconomicLedgerResult:
 
     paddy_revenue_rp: Decimal | None
     cash_revenue_rp: Decimal | None
+    paddy_revenue_low_rp: Decimal | None
+    paddy_revenue_high_rp: Decimal | None
+    cash_revenue_low_rp: Decimal | None
+    cash_revenue_high_rp: Decimal | None
 
     terminal_value_min_rp: Decimal | None
     terminal_value_ref_rp: Decimal | None
@@ -59,12 +63,16 @@ class EconomicLedgerResult:
     terminal_value_is_cash_revenue: bool
 
     gross_economic_value_rp: Decimal | None
+    gross_economic_value_low_rp: Decimal | None
+    gross_economic_value_high_rp: Decimal | None
 
     cost_core_direct_rp: Decimal
     cost_total_available_rp: Decimal
     cost_completeness: CostCompletenessFlag
 
     margin_core_rp: Decimal | None
+    margin_core_low_rp: Decimal | None
+    margin_core_high_rp: Decimal | None
     profit_full_est_rp: Decimal | None
     profit_full_status: str | None
 
@@ -100,6 +108,10 @@ def compute_economic_ledger(
         paddy_revenue = (
             to_decimal(yield_result.yield_total_kg) * config.p_gabah_ref_rp_per_kg
         )
+    paddy_low = (to_decimal(yield_result.yield_total_low_kg) * config.p_gabah_ref_rp_per_kg
+                 if yield_available and yield_result.yield_total_low_kg is not None else None)
+    paddy_high = (to_decimal(yield_result.yield_total_high_kg) * config.p_gabah_ref_rp_per_kg
+                  if yield_available and yield_result.yield_total_high_kg is not None else None)
     cash_revenue = paddy_revenue
 
     # Terminal duck value -- asset value with sensitivity band; not cash revenue.
@@ -115,6 +127,8 @@ def compute_economic_ledger(
     gross_economic_value: Decimal | None = None
     if paddy_revenue is not None and terminal_ref is not None:
         gross_economic_value = paddy_revenue + terminal_ref
+    gross_low = paddy_low + terminal_ref if paddy_low is not None and terminal_ref is not None else None
+    gross_high = paddy_high + terminal_ref if paddy_high is not None and terminal_ref is not None else None
 
     net_ref_cost = infrastructure_result.net.cost_ref_rp_per_cycle
     fert_cost = fertilizer_result.cost_total_rp
@@ -136,6 +150,8 @@ def compute_economic_ledger(
     margin_core: Decimal | None = None
     if gross_economic_value is not None:
         margin_core = gross_economic_value - cost_core_direct
+    margin_low = gross_low - cost_core_direct if gross_low is not None else None
+    margin_high = gross_high - cost_core_direct if gross_high is not None else None
 
     profit_full_est: Decimal | None = None
     profit_full_status: str | None = None
@@ -156,15 +172,19 @@ def compute_economic_ledger(
         paddy_price_semantics=PriceBenchmarkType.REGULATORY_HPP,
         paddy_revenue_rp=paddy_revenue,
         cash_revenue_rp=cash_revenue,
+        paddy_revenue_low_rp=paddy_low, paddy_revenue_high_rp=paddy_high,
+        cash_revenue_low_rp=paddy_low, cash_revenue_high_rp=paddy_high,
         terminal_value_min_rp=terminal_min,
         terminal_value_ref_rp=terminal_ref,
         terminal_value_max_rp=terminal_max,
         terminal_value_is_cash_revenue=False,
         gross_economic_value_rp=gross_economic_value,
+        gross_economic_value_low_rp=gross_low, gross_economic_value_high_rp=gross_high,
         cost_core_direct_rp=cost_core_direct,
         cost_total_available_rp=cost_total_available,
         cost_completeness=completeness,
         margin_core_rp=margin_core,
+        margin_core_low_rp=margin_low, margin_core_high_rp=margin_high,
         profit_full_est_rp=profit_full_est,
         profit_full_status=profit_full_status,
     )

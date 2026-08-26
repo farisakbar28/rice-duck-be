@@ -40,6 +40,7 @@ from app.domain.models import (
     AvailabilityStatus,
     ExtrapolationFlag,
     PlantingSystem,
+    ProvenanceStatus,
     RiceVariety,
     R2HistorySnapshot,
 )
@@ -250,12 +251,12 @@ class DSSService:
         # 9. Survival (gated on SUPPORTED age AND density).
         survival = compute_survival(payload.duck_count, age_flag, density_flag, config)
 
-        # 10. Yield -- fail-closed empty production lookup store.
+        # 10. Phase-6 supported-domain literature envelope.
         yld = compute_yield(
             variety=variety,
-            system_code=system.code,
             normalized_inputs=normalized,
-            config=config,
+            age_support=age_flag,
+            density_support=density_flag,
         )
 
         # 11-12. Fertilizer baseline + infrastructure ranges.
@@ -337,9 +338,21 @@ class DSSService:
                 paddy_price_benchmark_rp_per_kg=_f(ledger.paddy_price_benchmark_rp_per_kg),
                 paddy_price_semantics=ledger.paddy_price_semantics,
                 paddy_revenue_rp=_f(ledger.paddy_revenue_rp),
+                paddy_revenue_ref_rp=_f(ledger.paddy_revenue_rp),
+                paddy_revenue_low_rp=_f(ledger.paddy_revenue_low_rp),
+                paddy_revenue_high_rp=_f(ledger.paddy_revenue_high_rp),
                 cash_revenue_rp=_f(ledger.cash_revenue_rp),
+                cash_revenue_ref_rp=_f(ledger.cash_revenue_rp),
+                cash_revenue_low_rp=_f(ledger.cash_revenue_low_rp),
+                cash_revenue_high_rp=_f(ledger.cash_revenue_high_rp),
                 gross_economic_value_rp=_f(ledger.gross_economic_value_rp),
+                gross_economic_value_ref_rp=_f(ledger.gross_economic_value_rp),
+                gross_economic_value_low_rp=_f(ledger.gross_economic_value_low_rp),
+                gross_economic_value_high_rp=_f(ledger.gross_economic_value_high_rp),
                 margin_core_rp=_f(ledger.margin_core_rp),
+                margin_core_ref_rp=_f(ledger.margin_core_rp),
+                margin_core_low_rp=_f(ledger.margin_core_low_rp),
+                margin_core_high_rp=_f(ledger.margin_core_high_rp),
                 profit_full_est_rp=_f(ledger.profit_full_est_rp),
                 profit_full_status=ledger.profit_full_status,
             ),
@@ -473,10 +486,24 @@ class DSSService:
                 yld.cultivar_group_code.value if yld.cultivar_group_code else None
             ),
             cultivar_group_resolved=yld.cultivar_group_resolved,
-            baseline_kg_per_are=_f(yld.baseline_kg_per_are),
+            baseline_kg_per_are=_f(yld.baseline_ref_kg_per_are),
+            baseline_ref_kg_per_are=_f(yld.baseline_ref_kg_per_are),
+            baseline_low_kg_per_are=_f(yld.baseline_low_kg_per_are),
+            baseline_high_kg_per_are=_f(yld.baseline_high_kg_per_are),
             rice_duck_response_factor=_f(yld.rice_duck_response_factor),
             yield_kg_per_are=_f(yld.yield_kg_per_are),
             yield_total_kg=_f(yld.yield_total_kg),
+            yield_ref_kg_per_are=_f(yld.yield_ref_kg_per_are),
+            yield_low_kg_per_are=_f(yld.yield_low_kg_per_are),
+            yield_high_kg_per_are=_f(yld.yield_high_kg_per_are),
+            yield_total_ref_kg=_f(yld.yield_total_ref_kg),
+            yield_total_low_kg=_f(yld.yield_total_low_kg),
+            yield_total_high_kg=_f(yld.yield_total_high_kg),
+            yield_range_type="LITERATURE_EVIDENCE_ENVELOPE" if yld.availability is AvailabilityStatus.AVAILABLE else None,
+            yield_evidence_status=ProvenanceStatus.LITERATURE_UNCALIBRATED if yld.availability is AvailabilityStatus.AVAILABLE else None,
+            yield_evidence_strength=yld.evidence_strength,
+            yield_evidence_warning=yld.evidence_warning,
+            yield_source_id=yld.source_id,
             reason_codes=list(yld.reason_codes),
         )
 

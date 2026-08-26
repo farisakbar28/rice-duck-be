@@ -63,6 +63,10 @@ class ReasonCode(str, Enum):
     RELEASE_NODE_UNSUPPORTED = "RELEASE_NODE_UNSUPPORTED"
     F_RD_SYSTEM_SCOPE_UNSUPPORTED = "F_RD_SYSTEM_SCOPE_UNSUPPORTED"
     TIMING_SEMANTICS_UNRESOLVED = "TIMING_SEMANTICS_UNRESOLVED"
+    AGE_OUTSIDE_SUPPORTED_DOMAIN = "AGE_OUTSIDE_SUPPORTED_DOMAIN"
+    DENSITY_OUTSIDE_SUPPORTED_DOMAIN = "DENSITY_OUTSIDE_SUPPORTED_DOMAIN"
+    FRD_REFERENCE_MISSING = "FRD_REFERENCE_MISSING"
+    EVIDENCE_DOMAIN_UNSUPPORTED = "EVIDENCE_DOMAIN_UNSUPPORTED"
     FEED_QUANTITY_LOOKUP_MISSING = "FEED_QUANTITY_LOOKUP_MISSING"
     FEED_PRICE_LOOKUP_MISSING = "FEED_PRICE_LOOKUP_MISSING"
     CAGE_CAPACITY_RULE_MISSING = "CAGE_CAPACITY_RULE_MISSING"
@@ -266,9 +270,23 @@ class YieldOutputs(BaseModel):
     cultivar_group_code: str | None = None
     cultivar_group_resolved: bool | None = None
     baseline_kg_per_are: float | None = None
+    baseline_ref_kg_per_are: float | None = None
+    baseline_low_kg_per_are: float | None = None
+    baseline_high_kg_per_are: float | None = None
     rice_duck_response_factor: float | None = None
     yield_kg_per_are: float | None = None
     yield_total_kg: float | None = None
+    yield_ref_kg_per_are: float | None = None
+    yield_low_kg_per_are: float | None = None
+    yield_high_kg_per_are: float | None = None
+    yield_total_ref_kg: float | None = None
+    yield_total_low_kg: float | None = None
+    yield_total_high_kg: float | None = None
+    yield_range_type: str | None = None
+    yield_evidence_status: ProvenanceStatus | None = None
+    yield_evidence_strength: str | None = None
+    yield_evidence_warning: str | None = None
+    yield_source_id: str | None = None
     reason_codes: list[ReasonCode] = Field(default_factory=list)
 
 
@@ -351,9 +369,21 @@ class EconomicsOutputs(BaseModel):
     paddy_price_benchmark_rp_per_kg: float | None = None
     paddy_price_semantics: PriceBenchmarkType | None = None
     paddy_revenue_rp: float | None = None
+    paddy_revenue_ref_rp: float | None = None
+    paddy_revenue_low_rp: float | None = None
+    paddy_revenue_high_rp: float | None = None
     cash_revenue_rp: float | None = None
+    cash_revenue_ref_rp: float | None = None
+    cash_revenue_low_rp: float | None = None
+    cash_revenue_high_rp: float | None = None
     gross_economic_value_rp: float | None = None
+    gross_economic_value_ref_rp: float | None = None
+    gross_economic_value_low_rp: float | None = None
+    gross_economic_value_high_rp: float | None = None
     margin_core_rp: float | None = None
+    margin_core_ref_rp: float | None = None
+    margin_core_low_rp: float | None = None
+    margin_core_high_rp: float | None = None
     profit_full_est_rp: float | None = None
     profit_full_status: ProfitFullStatus | None = None
 
@@ -502,6 +532,12 @@ class YieldVisualization(BaseModel):
     availability: AvailabilityStatus
     points: list[YieldVisualizationPoint] = Field(default_factory=list)
     reason_codes: list[ReasonCode] = Field(default_factory=list)
+    yield_ref_kg_per_are: float | None = None
+    yield_low_kg_per_are: float | None = None
+    yield_high_kg_per_are: float | None = None
+    yield_range_type: str | None = None
+    yield_evidence_strength: str | None = None
+    yield_evidence_warning: str | None = None
 
 
 class FinancialVisualizationKind(str, Enum):

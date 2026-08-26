@@ -43,9 +43,9 @@ def test_supported_domain_default_price_semantics() -> None:
     model = body["model"]
     assert model["model_version"] == "R2"
     assert model["history_schema_version"] == 4
-    assert model["parameter_registry_version"] == "R2-2026-08-26.2"
+    assert model["parameter_registry_version"] == "R2-2026-08-26.3"
     assert model["frozen"] is True  # sourced from app.data.seed.MODEL_FROZEN (docs/11)
-    assert model["freeze_id"] == "R2-FREEZE-2026-08-26.2"
+    assert model["freeze_id"] == "R2-FREEZE-2026-08-26.3"
     assert model["generated_at"]
 
     # Input echo: omitted price resolves to registry default.
@@ -87,18 +87,18 @@ def test_supported_domain_default_price_semantics() -> None:
     assert duck["terminal_value_max_rp"] == 25 * 60000
     assert duck["terminal_value_is_cash_revenue"] is False
 
-    # Yield fail-closed.
+    # Phase-6 literature evidence envelope.
     yld = body["yield"]
-    assert yld["availability"] == "UNAVAILABLE"
+    assert yld["availability"] == "AVAILABLE"
     assert yld["cultivar_group_code"] == "SERTANI_GROUP"
     assert yld["cultivar_group_resolved"] is True
-    assert yld["baseline_kg_per_are"] is None
-    assert yld["rice_duck_response_factor"] is None
-    assert yld["yield_kg_per_are"] is None
-    assert yld["yield_total_kg"] is None
-    assert set(yld["reason_codes"]) == {
-        "Y_BASE_GROUP_LOOKUP_MISSING", "F_RD_NODE_MISSING"
-    }
+    assert yld["baseline_kg_per_are"] == 44.5
+    assert yld["rice_duck_response_factor"] == 1.028
+    assert yld["yield_kg_per_are"] == yld["yield_ref_kg_per_are"] == 45.746
+    assert yld["yield_total_kg"] == yld["yield_total_ref_kg"] == 320.222
+    assert yld["yield_range_type"] == "LITERATURE_EVIDENCE_ENVELOPE"
+    assert yld["yield_evidence_warning"] == "LOW_EVIDENCE_TWO_LOCATION_EXTERNAL_RANGE"
+    assert yld["reason_codes"] == []
 
     # Fertilizer baseline available.
     fert = body["fertilizer_baseline"]
@@ -137,21 +137,21 @@ def test_supported_domain_default_price_semantics() -> None:
     # Totals come from the economics engine.
     assert costs["cost_completeness"] == "INCOMPLETE"
 
-    # Economics: yield unavailable => revenue chain null; terminal value NOT cash.
+    # Economics: range-aware paddy revenue; terminal value remains non-cash.
     econ = body["economics"]
     assert econ["paddy_price_benchmark_rp_per_kg"] == 6500.0
     assert econ["paddy_price_semantics"] == "REGULATORY_HPP"
-    assert econ["paddy_revenue_rp"] is None
-    assert econ["cash_revenue_rp"] is None
-    assert econ["gross_economic_value_rp"] is None
-    assert econ["margin_core_rp"] is None
+    assert econ["paddy_revenue_low_rp"] < econ["paddy_revenue_rp"] < econ["paddy_revenue_high_rp"]
+    assert econ["cash_revenue_rp"] == econ["paddy_revenue_rp"]
+    assert econ["gross_economic_value_low_rp"] < econ["gross_economic_value_rp"] < econ["gross_economic_value_high_rp"]
+    assert econ["margin_core_low_rp"] < econ["margin_core_rp"] < econ["margin_core_high_rp"]
     assert econ["profit_full_est_rp"] is None
     assert econ["profit_full_status"] == "UNAVAILABLE_INCOMPLETE_COST"
 
     # Reliability mirrors execution flags.
     rel = body["reliability"]
     assert rel == {
-        "yield_availability": "UNAVAILABLE",
+        "yield_availability": "AVAILABLE",
         "survival_availability": "AVAILABLE",
         "feed_cost_availability": "UNAVAILABLE",
         "cost_completeness": "INCOMPLETE",
@@ -161,7 +161,6 @@ def test_supported_domain_default_price_semantics() -> None:
     # Warnings communicate current unavailability states.
     warnings_text = "\n".join(body["warnings"])
     for category in (
-        "YIELD_LOOKUP_UNAVAILABLE",
         "FEED_COST_UNAVAILABLE",
         "CAGE_TOTAL_UNAVAILABLE",
         "FULL_PROFIT_UNAVAILABLE",
@@ -177,18 +176,15 @@ def test_supported_domain_default_price_semantics() -> None:
     assert "R2-CAL-01" in trace["active_formula_ids"]
     assert "R2-CAL-02" not in trace["active_formula_ids"]
     assert "R2-YLD-01" not in trace["active_formula_ids"]
-    assert "R2-YLD-01" not in trace["conditional_formula_ids"]
+    assert "R2-YLD-01" in trace["conditional_formula_ids"]
     assert "R2-LEDGER-06" not in trace["conditional_formula_ids"]
     assert trace["disabled_legacy_formula_ids"][:2] == ["LEG-RAGE", "LEG-POVER"]
     assert trace["defaulted_inputs"] == [
         {"field": "p_duck_buy", "resolved_value": 26500.0, "source": "I1", "status_tag": "mixed"}
     ]
-    assert set(trace["availability_reasons"]["yield"]) == {
-        "Y_BASE_GROUP_LOOKUP_MISSING",
-        "F_RD_NODE_MISSING",
-    }
-    assert trace["lookup_versions"]["parameter_registry"] == "R2-2026-08-26.2"
-    assert trace["lookup_versions"]["yield_base_by_cultivar_group"] == "PENDING_LOOKUP"
+    assert "yield" not in trace["availability_reasons"]
+    assert trace["lookup_versions"]["parameter_registry"] == "R2-2026-08-26.3"
+    assert trace["lookup_versions"]["yield_base_by_cultivar_group"] == "ACTIVE_RANGE"
 
 
 def test_response_top_level_yield_alias_and_no_flat_legacy_fields() -> None:

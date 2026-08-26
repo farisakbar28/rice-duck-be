@@ -54,12 +54,9 @@ def test_visualization_contract_is_canonical_and_availability_aware() -> None:
     assert fertilizer["manure_credit_applied"] is False
     assert [item["key"] for item in fertilizer["components"]] == ["NPK_PHONSKA", "UREA"]
 
-    assert body["yield_series"]["availability"] == "UNAVAILABLE"
+    assert body["yield_series"]["availability"] == "AVAILABLE"
     assert body["yield_series"]["points"] == []
-    assert set(body["yield_series"]["reason_codes"]) == {
-        "Y_BASE_GROUP_LOOKUP_MISSING",
-        "F_RD_NODE_MISSING",
-    }
+    assert body["yield_series"]["reason_codes"] == []
 
     nodes = {node["key"]: node for node in body["financial_waterfall"]["nodes"]}
     assert nodes["terminal_duck_value_ref"]["kind"] == "ASSET_VALUE"

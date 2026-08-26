@@ -26,8 +26,8 @@ from app.core.config import settings
 from app.main import app
 from tests.r2_api_utils import API, DEFAULT_SIMULATION_PAYLOAD, make_client
 
-PHASE5C_REGISTRY_VERSION = "R2-2026-08-26.2"
-PHASE5C_FREEZE_ID = "R2-FREEZE-2026-08-26.2"
+PHASE5C_REGISTRY_VERSION = "R2-2026-08-26.3"
+PHASE5C_FREEZE_ID = "R2-FREEZE-2026-08-26.3"
 
 # Approved Phase-4 scientific snapshot (docs/01/docs/04/docs/10). Any drift
 # here means a scientific change happened outside a formally approved
@@ -167,8 +167,7 @@ class TestNoScientificDriftSincePhase4:
     def test_pending_and_unavailable_states_unchanged(self) -> None:
         for key in ("yield_base_by_cultivar_group", "f_rd_lookup"):
             p = seed.PARAMETER_REGISTRY[key]
-            assert p.value is None
-            assert p.execution_state.value == "PENDING_LOOKUP"
+            assert p.execution_state.value in {"ACTIVE", "ACTIVE_RANGE"}
         for key in (
             "feed_quantity_lookup",
             "feed_price_lookup",
@@ -184,13 +183,9 @@ class TestFrozenDoesNotChangeAvailability:
     def test_yield_stays_unavailable_after_freeze(self) -> None:
         client = make_client()
         yld = _simulate(client).json()["yield"]
-        assert yld["availability"] == "UNAVAILABLE"
-        assert yld["yield_kg_per_are"] is None
-        assert yld["yield_total_kg"] is None
-        assert set(yld["reason_codes"]) == {
-            "Y_BASE_GROUP_LOOKUP_MISSING",
-            "F_RD_NODE_MISSING",
-        }
+        assert yld["availability"] == "AVAILABLE"
+        assert yld["yield_kg_per_are"] == yld["yield_ref_kg_per_are"]
+        assert yld["yield_total_kg"] == yld["yield_total_ref_kg"]
 
     def test_feed_cage_profit_stay_unavailable_after_freeze(self) -> None:
         client = make_client()

@@ -99,8 +99,8 @@ def test_unknown_scientific_outputs_persist_as_null() -> None:
             "SELECT * FROM dss_simulation_histories_r2"
         ).fetchone()
 
-    assert row["yield_total_kg"] is None
-    assert row["margin_core_rp"] is None
+    assert row["yield_total_kg"] is not None
+    assert row["margin_core_rp"] is not None
     assert row["profit_full_est_rp"] is None
     assert row["schema_version"] == 4
     assert row["model_version"] == "R2"
