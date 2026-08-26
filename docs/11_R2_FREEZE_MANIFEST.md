@@ -1,7 +1,7 @@
 # R2 Freeze Manifest — Governance, Semantics, and Reproducibility
 
 > **Status:** CANONICAL Phase-6 pre-comparator freeze documentation.
-> **Current corrected candidate:** `FREEZE_ID = R2-FREEZE-2026-08-26.4`,
+> **Current corrected candidate:** `FREEZE_ID = R2-FREEZE-2026-08-26.5`,
 > `FREEZE_EFFECTIVE_FROM = 2026-08-26`.
 
 ## 1. What "frozen" means — and what it does NOT mean
@@ -14,8 +14,8 @@ It does **NOT** mean:
 
 - empirically validated (`validated=true` does not exist in R2 metadata);
 - accurate (no accuracy claim is attached to the freeze);
-- complete (yield, feed cost, cage total, and full profit remain unavailable
-  exactly as before the freeze).
+- complete (yield is conditionally available inside its supported evidence
+  domain; feed cost, cage total, and full profit remain unavailable).
 
 ## 2. Distinct provenance dimensions (never merge)
 
@@ -58,7 +58,8 @@ mirrored to `validation/freeze_manifest.json`):
   plus supported-age (21 vs 30) numeric invariance evidence;
 - `fixture_manifest.json` — source roles/policies/cohort status;
 - `component_eligibility.json`, `calendar_validation.json`,
-  `stress_results.json`, `expert_transfer.json`;
+  `yield_validation.json`, `purchase_validation.json`,
+  `revenue_validation.json`, `stress_results.json`, `expert_transfer.json`;
 - `validation_report.md` — component-specific conclusions; never a universal
   accuracy score.
 
@@ -79,7 +80,7 @@ Official frozen-validation artifacts require ALL of:
 9. clean Git, known HEAD, passing tests, and known freeze/registry identities.
 
 Any unmet condition produces watermarked output:
-`run_mode = NON_OFFICIAL_PRE_FREEZE`. A dirty tree additionally reports
+`run_mode = NON_OFFICIAL_PRECOMPARATOR_BLOCKED`. A dirty tree additionally reports
 `OFFICIAL_VALIDATION_BLOCKED_DIRTY_TREE`.
 
 ### Phase 5C empirical source conditions
@@ -108,13 +109,13 @@ requires a new registry/model version and a fresh pre-freeze review.
 
 `.2` is the historical Phase-5C validated target; docs/12 remains unchanged.
 
-`.3` is the Phase-6 implementation candidate committed at
-`88a1ebfaff1716021017186f4ade13a50621a556`, recorded as
-`REJECTED_PRE_COMPARATOR_CANDIDATE`. Its harness/test/documentation integration
-was incomplete before comparator exposure. It was never empirically executed
-or empirically invalidated.
+`.3` is the rejected Phase-6 pre-comparator candidate. It was never exposed to
+comparator outcomes and is not called empirically invalid.
 
-`.4` is the current corrected Phase-6 pre-comparator candidate. No scientific
-coefficient changed between `.3` and `.4`, and no comparator result was
-inspected. `MODEL_VERSION=R2` and `PARAMETER_REGISTRY_VERSION=R2-2026-08-26.3`
-remain unchanged.
+`.4` is the superseded Phase-6 pre-comparator integration candidate. It was
+never exposed to comparator outcomes and is not called empirically invalid.
+
+`.5` is the final corrected Phase-6 pre-comparator candidate. No scientific
+coefficient changed between `.3`, `.4`, and `.5`; `MODEL_VERSION=R2` and
+`PARAMETER_REGISTRY_VERSION=R2-2026-08-26.3` remain unchanged. This document
+does not authorize real comparator execution.

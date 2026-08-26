@@ -55,14 +55,16 @@ PARAMETER_REGISTRY_VERSION = "R2-2026-08-26.3"
 #
 # frozen=true means "immutable validation target": the model/registry identity
 # is fixed for retrospective validation. It does NOT mean empirically
-# validated, accurate, or scientifically complete. Yield/feed/cage-total/full-
-# profit remain unavailable exactly as before the freeze.
+# validated, accurate, or scientifically complete. Yield is conditionally
+# available inside its registered evidence domain; feed, cage-total, and
+# full-profit remain unavailable.
 #
-# The Phase-5 freeze candidate passed its computational gates on a clean tree
+# The Phase-6 pre-comparator freeze candidate preserves the prior
+# computationally fixed model identity on a clean tree
 # at Phase-4 baseline 39fd69fbfa207862ce4da5be5d4f75e06eed6bdb with zero
 # scientific-coefficient changes (guarded by tests/test_r2_freeze_semantics.py).
 MODEL_FROZEN: bool = True
-FREEZE_ID: str | None = "R2-FREEZE-2026-08-26.4"
+FREEZE_ID: str | None = "R2-FREEZE-2026-08-26.5"
 FREEZE_EFFECTIVE_FROM: str | None = "2026-08-26"
 
 

@@ -189,7 +189,9 @@ def build_freeze_manifest(
 
 
 def build_component_eligibility(
-    sources: dict[str, SourceFile], probe: dict
+    sources: dict[str, SourceFile],
+    probe: dict,
+    validation: dict | None = None,
 ) -> dict:
     source_status = empirical_source_status(sources)
     source_ready = source_status == EMPIRICAL_SOURCE_STATUS_OK
@@ -216,6 +218,9 @@ def build_component_eligibility(
         }
 
     infra_compatible = False  # construct compatibility NOT established -> NO METRIC
+    revenue_diagnostics = (validation or {}).get("diagnostics", {})
+    operational = revenue_diagnostics.get("CURRENT_HPP_OPERATIONAL_VALUE_DIAGNOSTIC", {})
+    price_neutral = revenue_diagnostics.get("PRICE_NEUTRAL_HISTORICAL_PRICE_DIAGNOSTIC", {})
     components = {
         "calendar": {
             "eligible_when_source_available": True,
@@ -232,14 +237,18 @@ def build_component_eligibility(
             "comparator": comparator("yield_actual"),
         },
         "paddy_revenue_operational": {
-            "status": "PENDING_SOURCE_RECONSTRUCTION" if source_ready and probe["yield_availability"] == "AVAILABLE" else YIELD_STATUS_NOT_EVALUABLE,
-            "reason": None if probe["yield_availability"] == "AVAILABLE" else probe["yield_reason_codes"],
-            "metric_allowed": source_ready and probe["yield_availability"] == "AVAILABLE",
+            "status": operational.get("status") or ("PENDING_SOURCE_RECONSTRUCTION" if source_ready and probe["yield_availability"] == "AVAILABLE" else YIELD_STATUS_NOT_EVALUABLE),
+            "reason": operational.get("reason") or (None if probe["yield_availability"] == "AVAILABLE" else probe["yield_reason_codes"]),
+            "metric_allowed": operational.get("status") == "EVALUATED",
+            "N_actual_eligible": operational.get("metrics", {}).get("N_total_actual_eligible"),
+            "N_predicted": operational.get("metrics", {}).get("N_predicted"),
         },
         "paddy_revenue_price_neutral_diagnostic": {
-            "status": YIELD_STATUS_NOT_EVALUABLE,
-            "reason": YIELD_REASON_R2_UNAVAILABLE,
-            "metric_allowed": False,
+            "status": price_neutral.get("status") or ("PENDING_SOURCE_RECONSTRUCTION" if source_ready else YIELD_STATUS_NOT_EVALUABLE),
+            "reason": price_neutral.get("reason") or (YIELD_REASON_R2_UNAVAILABLE if not source_ready else None),
+            "metric_allowed": price_neutral.get("status") == "EVALUATED",
+            "N_actual_eligible": price_neutral.get("metrics", {}).get("N_total_actual_eligible"),
+            "N_predicted": price_neutral.get("metrics", {}).get("N_predicted"),
             "note": "historical prices may load as dataset metadata only, never runtime inputs",
         },
         "duck_purchase_cost_identity": {
@@ -309,7 +318,25 @@ def build_component_eligibility(
     }
 
 
-def build_yield_status_block(probe: dict, sources: dict[str, SourceFile]) -> dict:
+def build_yield_status_block(
+    probe: dict,
+    sources: dict[str, SourceFile],
+    yield_validation: dict | None = None,
+) -> dict:
+    if yield_validation is not None:
+        metrics = yield_validation.get("metrics")
+        return {
+            "status": yield_validation.get("status"),
+            "reason": yield_validation.get("reason"),
+            "actual_coverage": metrics.get("N_total_actual_eligible") if metrics else None,
+            "prediction_coverage": metrics.get("prediction_coverage_percent") if metrics else None,
+            "prediction_coverage_label": "percent_of_actual_eligible" if metrics else None,
+            "quantitative_metrics": metrics,
+            "metrics_not_computed": [] if metrics and metrics.get("N_predicted", 0) else list(
+                (metrics or {}).keys()
+            ),
+            "derived_from_runtime_response_field": "yield.availability",
+        }
     source_ready = empirical_source_status(sources) == EMPIRICAL_SOURCE_STATUS_OK
     available = probe["yield_availability"] == "AVAILABLE"
     return {
@@ -318,7 +345,7 @@ def build_yield_status_block(probe: dict, sources: dict[str, SourceFile]) -> dic
         "actual_coverage": "reconstructed_from_source" if source_ready else "unverified_source_gate",
         "prediction_coverage": None,
         "prediction_coverage_label": "computed_from_runtime_after_reconstruction",
-        "quantitative_metrics": "pending_source_reconstruction" if source_ready and available else None,
+        "quantitative_metrics": None,
         "metrics_not_computed": [] if source_ready and available else ["MAE", "RMSE", "MedAE", "MBE", "WAPE", "MAPE", "R2", "LITERATURE_EVIDENCE_ENVELOPE_COVERAGE"],
         "derived_from_runtime_response_field": "yield.availability",
     }
@@ -349,6 +376,11 @@ def render_validation_report_md(
     age_invariance: dict,
     v1: dict,
     stress_block: dict,
+    *,
+    calendar_validation: dict | None = None,
+    yield_validation: dict | None = None,
+    purchase_validation: dict | None = None,
+    revenue_validation: dict | None = None,
 ) -> str:
     ts = manifest["execution_timestamp_utc"]
     passed = sum(1 for r in synthetic_records if r["pass"])
@@ -362,7 +394,7 @@ def render_validation_report_md(
         f"freeze_id `{manifest['freeze_id']}`")
     add("")
     if manifest["run_mode"] != "OFFICIAL_FROZEN_EXECUTION":
-        add("**WATERMARK: NON_OFFICIAL / PRE_FREEZE — not an official frozen result.**")
+        add("**WATERMARK: NON_OFFICIAL / PRE-COMPARATOR BLOCKED — not an official frozen result.**")
         add(f"Failed official-gate conditions: {manifest['official_gate_failed_conditions']}")
         add("")
     add("## 1. Freeze identity")
@@ -398,27 +430,52 @@ def render_validation_report_md(
     add("- Synthetic cases are contract evidence, NOT field observations.")
     add("")
     add("## 6. Calendar comparator")
-    cal = eligibility["components"]["calendar"]
-    add(f"- status={cal['status']}; eligible rows require OBSERVED planting AND harvest dates")
-    add("- Prior-audit expectation N=12 must be recomputed from source before any metric.")
+    cal = calendar_validation or eligibility["components"]["calendar"]
+    add(f"- status={cal.get('status')}; eligible rows require OBSERVED planting AND harvest dates")
+    if cal.get("status") == "EVALUATED":
+        cal_metrics = cal.get("metrics", {})
+        add(f"- N={cal_metrics.get('N')}; hits={cal_metrics.get('hits')}; coverage={cal_metrics.get('coverage')}")
+        add(f"- mean_distance_to_window_days={cal_metrics.get('mean_distance_to_window_days')}; median_distance_to_window_days={cal_metrics.get('median_distance_to_window_days')}")
+        add(f"- timing_semantics={cal.get('timing_semantics')}; timing_semantics_status={cal.get('timing_semantics_status')}")
+    else:
+        add(f"- blocker={cal.get('reason') or cal.get('status')}")
     add("")
-    yb = yield_block
+    yb = yield_validation or yield_block
     add("## 7. Yield status")
-    add(f"- status={yb['status']}; reason={yb['reason']}; "
-        f"actual_coverage={yb['actual_coverage']}; prediction_coverage={yb['prediction_coverage_label']}; "
-        f"quantitative_metrics={yb['quantitative_metrics']}")
+    add(f"- status={yb.get('status')}; reason={yb.get('reason')}")
+    if yb.get("status") == "EVALUATED":
+        ym = yb.get("metrics", {})
+        add(f"- N_total_actual_eligible={ym.get('N_total_actual_eligible')}; N_predicted={ym.get('N_predicted')}; coverage_fraction={ym.get('prediction_coverage_fraction')}; coverage_percent={ym.get('prediction_coverage_percent')}")
+        add(f"- MAE kg/are={ym.get('MAE')}; RMSE kg/are={ym.get('RMSE')}; MedAE kg/are={ym.get('MedAE')}; MBE kg/are={ym.get('MBE')}; WAPE %={ym.get('WAPE')}; MAPE supplementary={ym.get('MAPE')}; R² diagnostic={ym.get('R2')}")
+        add(f"- covered_N={ym.get('covered_N')}; LITERATURE_EVIDENCE_ENVELOPE_COVERAGE={ym.get('LITERATURE_EVIDENCE_ENVELOPE_COVERAGE')}; coverage_percent={ym.get('LITERATURE_EVIDENCE_ENVELOPE_COVERAGE_PERCENT')}; mean_width kg/are={ym.get('mean_envelope_width')}; median_width kg/are={ym.get('median_envelope_width')}")
+        add(f"- age 21/30 invariance={yb.get('age_assumption_invariance')}; HTTP_EXECUTION_FAILURE_N={ym.get('http_execution_failure_n', 0)}; SCIENTIFIC_UNAVAILABLE_N={ym.get('scientific_unavailable_n', 0)}")
+        bootstrap = yb.get("cluster_bootstrap", {})
+        add(f"- cluster-bootstrap empirical intervals around aggregate validation metrics: status={bootstrap.get('status')}; cluster_unit={bootstrap.get('cluster_unit')}; resamples={bootstrap.get('resamples')}; seed={bootstrap.get('seed')}; intervals={bootstrap.get('intervals')}")
+        add("- subgroup summaries:")
+        for name, subgroup in yb.get("subgroups", {}).items():
+            add(f"  - {name}: N_actual_eligible={subgroup.get('N_actual_eligible')}; N_predicted={subgroup.get('N_predicted')}; coverage={subgroup.get('prediction_coverage')}; policy={subgroup.get('policy')}")
+    else:
+        add(f"- blocker={yb.get('reason') or yb.get('status')}")
+        if yb.get("metrics"):
+            add(f"- HTTP_EXECUTION_FAILURE_N={yb['metrics'].get('http_execution_failure_n', 0)}; SCIENTIFIC_UNAVAILABLE_N={yb['metrics'].get('scientific_unavailable_n', 0)}")
     add("")
     add("## 8. Revenue status")
-    add("- paddy revenue follows live yield availability; no unavailable row is "
-        "converted to a zero prediction or zero residual.")
+    if revenue_validation:
+        for name, diagnostic in revenue_validation.get("diagnostics", {}).items():
+            rm = diagnostic.get("metrics", {})
+            add(f"- {name}: status={diagnostic.get('status')}; reason={diagnostic.get('reason')}; N_actual_eligible={rm.get('N_total_actual_eligible')}; N_predicted={rm.get('N_predicted')}; MAE Rp/cycle={rm.get('MAE')}; RMSE Rp/cycle={rm.get('RMSE')}; MedAE Rp/cycle={rm.get('MedAE')}; MBE Rp/cycle={rm.get('MBE')}; WAPE %={rm.get('WAPE')}; envelope_coverage={rm.get('LITERATURE_EVIDENCE_ENVELOPE_COVERAGE')}")
+        add("- Current HPP is an operational value benchmark, not observed historical farm revenue; historical price is comparator metadata only.")
+    else:
+        add("- revenue diagnostics are blocked until yield/source reconstruction is eligible.")
     add("")
     add("## 9. Survival status")
     add("- ground_truth_status=NO_COMPATIBLE_AGGREGATE; no MAE/RMSE; sold ducks are "
         "never survival actuals. V1 gate + expert transfer only.")
     add("")
     add("## 10. Purchase-cost status")
-    add("- deterministic identity verified by V1 tests; observed historical prices are "
-        "plausibility/comparator context; default-price rows excluded from observed comparators.")
+    if purchase_validation:
+        add(f"- strict_N={purchase_validation.get('strict_n')}; strict_excluded_N={purchase_validation.get('strict_excluded_n')}; provenance_counts={purchase_validation.get('provenance_counts')}; derived_actual_context_N={purchase_validation.get('derived_actual_context_n')}")
+    add("- deterministic identity verified by V1 tests; observed historical prices are plausibility/comparator context; strict observed positive rows only.")
     add("")
     add("## 11. Feed status")
     add("- runtime UNAVAILABLE -> no accuracy metric; positive historical feed counts "
@@ -462,7 +519,7 @@ def render_validation_report_md(
     add("## 19. Component-specific conclusions")
     add("- Computational implementation: VERIFIED (V1 100%)" if v1["all_pass"]
         else "- Computational implementation: FAILED INVESTIGATION REQUIRED")
-    add("- Calendar: quantitatively evaluable only after source verification (blocked).")
+    add(f"- Calendar: {cal.get('status')}.")
     add(f"- Yield: {yb['status']} (live runtime/source gate).")
     add("- Survival: no aggregate ground truth; deterministic + expert evidence only.")
     add("- Feed: not evaluable. Infrastructure: limited/conditional. Full profit: not evaluable.")

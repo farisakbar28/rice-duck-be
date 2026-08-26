@@ -1,21 +1,20 @@
 {
-  "freeze_id": "R2-FREEZE-2026-08-26.4",
+  "freeze_id": "R2-FREEZE-2026-08-26.5",
   "model_version": "R2",
   "parameter_registry_version": "R2-2026-08-26.3",
-  "backend_commit_sha": "88a1ebfaff1716021017186f4ade13a50621a556",
+  "backend_commit_sha": "0ddbfbd43da78164d4091895398a2e2c14dc956f",
   "model_commit_sha_env_injected": null,
   "app_version": "0.1.0",
   "history_schema_version": 4,
-  "execution_timestamp_utc": "2026-08-26T19:36:23+00:00",
+  "execution_timestamp_utc": "2026-08-26T20:16:14+00:00",
   "python_version": "3.14.2",
   "model_frozen": true,
   "freeze_effective_from": "2026-08-26",
   "frozen_semantics": "immutable validation target; NOT empirical accuracy certification",
-  "run_mode": "NON_OFFICIAL_PRE_FREEZE",
+  "run_mode": "NON_OFFICIAL_PRECOMPARATOR_BLOCKED",
   "official_gate_failed_conditions": [
     "OFFICIAL_VALIDATION_BLOCKED_DIRTY_TREE",
-    "SOURCE_FINGERPRINTS_INVALID_OR_MISSING",
-    "COHORT_RECONSTRUCTION_NOT_VERIFIED"
+    "SOURCE_FINGERPRINTS_INVALID_OR_MISSING"
   ],
   "formula_registry": {
     "formula_ids_by_engine_group": {
@@ -631,7 +630,7 @@
   "feed_lookup_state": "UNAVAILABLE",
   "cage_capacity_state": "UNAVAILABLE",
   "canonical_artifact_sha256": {
-    "app/data/seed.py": "2ccd129cabd53e5469448df4752ff8e0d896013cca5d720687189606cc37f0a4",
+    "app/data/seed.py": "e4a7dc83824f22b454fe7665d236cf2fdf766f061239363c80def6fe587ef462",
     "app/domain/models.py": "0bbb38d7fbd701f10ae96fe374f9dad53563ff6b61812001899caa068d256174",
     "app/schemas/dss.py": "9d9bf06148dd2b2ad7ac14f92d3c32aa79464a2172d91bfc72f2c6501eaced49",
     "app/engines/r2/__init__.py": "80d2a0bae95337aa47dc88509c0ab69b703083f023bbe75a38da95e9781a347d",
@@ -652,11 +651,11 @@
     "docs/04_R2_PARAMETER_EXECUTION_REGISTRY.md": "f89bccda2f0db864e051cca0acc3897c78a5775f225f595505952d1e7cab86d6",
     "docs/07_R2_LEGACY_INVALIDATION_REGISTER.md": "60f1952029ede0db82d885207dca703daeea1b692fddb49dfd8755f086232802",
     "docs/10_R2_REFERENCE_PROVENANCE.md": "8a46fd895cec400b4f36779fc78570e39d62054b7acd250c02be8072662597d2",
-    "docs/11_R2_FREEZE_MANIFEST.md": "212a89582c9235153403e59b4f81c841668471b8382c82f942e463fe496ad733"
+    "docs/11_R2_FREEZE_MANIFEST.md": "8446152b05b3534dba159447d41067ccb4b30167699ddd0e41ce3e6562396da2"
   },
   "test_summary": {
-    "collected": 406,
-    "passed": 406,
+    "collected": 414,
+    "passed": 414,
     "failed": 0,
     "skipped": 0,
     "xfailed": 0,
@@ -666,7 +665,7 @@
     "run_exit_code": 0,
     "all_passed": true,
     "legacy_invalid_collected": false,
-    "tail": "........................................................................ [ 88%]\n..............................................                           [100%]\n406 passed in 16.13s"
+    "tail": "........................................................................ [ 86%]\n......................................................                   [100%]\n414 passed in 15.67s"
   },
   "source_fingerprints": [
     {

@@ -27,7 +27,7 @@ from app.main import app
 from tests.r2_api_utils import API, DEFAULT_SIMULATION_PAYLOAD, make_client
 
 PHASE5C_REGISTRY_VERSION = "R2-2026-08-26.3"
-PHASE6CC_FREEZE_ID = "R2-FREEZE-2026-08-26.4"
+PHASE6CC_FREEZE_ID = "R2-FREEZE-2026-08-26.5"
 
 # Approved Phase-4 scientific snapshot (docs/01/docs/04/docs/10). Any drift
 # here means a scientific change happened outside a formally approved

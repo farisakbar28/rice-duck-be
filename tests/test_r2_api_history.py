@@ -100,7 +100,7 @@ def test_phase6_snapshot_preserves_yield_envelope_and_source_trace() -> None:
                 "yield_evidence_strength", "yield_evidence_warning"):
         assert stored["yield"][key] == original["yield"][key]
     assert stored["model"]["parameter_registry_version"] == "R2-2026-08-26.3"
-    assert stored["model"]["freeze_id"] == "R2-FREEZE-2026-08-26.4"
+    assert stored["model"]["freeze_id"] == "R2-FREEZE-2026-08-26.5"
 
 
 def test_unknown_scientific_outputs_persist_as_null() -> None:

@@ -45,7 +45,7 @@ def test_supported_domain_default_price_semantics() -> None:
     assert model["history_schema_version"] == 4
     assert model["parameter_registry_version"] == "R2-2026-08-26.3"
     assert model["frozen"] is True  # sourced from app.data.seed.MODEL_FROZEN (docs/11)
-    assert model["freeze_id"] == "R2-FREEZE-2026-08-26.4"
+    assert model["freeze_id"] == "R2-FREEZE-2026-08-26.5"
     assert model["generated_at"]
 
     # Input echo: omitted price resolves to registry default.

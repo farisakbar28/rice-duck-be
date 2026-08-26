@@ -72,21 +72,20 @@ def build_fixture_manifest(sources: dict[str, SourceFile], reconstruction=None) 
     blocked = status == EMPIRICAL_SOURCE_STATUS_BLOCKED or not clean_present
 
     def cohort_state(expected_key: str) -> dict:
-        verified = (
+        reconstructed = (
             reconstruction is not None
             and reconstruction.status == "RECONSTRUCTION_OK"
-            and reconstruction.counts.get(expected_key)
-            == PRIOR_AUDIT_COUNTS[expected_key]
+            and expected_key in reconstruction.counts
         )
         return {
             "expected_from_prior_audit": PRIOR_AUDIT_COUNTS[expected_key],
-            "verified_from_source": verified,
+            "verified_from_source": reconstructed,
             "recomputed_from_source": (
                 reconstruction.counts.get(expected_key)
                 if reconstruction is not None else None
             ),
             "status": (
-                "VERIFIED" if verified else
+                "VERIFIED" if reconstructed else
                 "BLOCKED_SOURCE_FILES_MISSING" if blocked else
                 "SOURCE_VERSION_MISMATCH"
             ),

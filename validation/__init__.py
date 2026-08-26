@@ -1,4 +1,4 @@
-"""Rice-Duck R2 Phase-5 research-only validation harness.
+"""Rice-Duck R2 Phase-6 research-only validation harness.
 
 ISOLATION CONTRACT (task §7, docs/11):
   * This package is research tooling ONLY. No module under ``app/`` may import

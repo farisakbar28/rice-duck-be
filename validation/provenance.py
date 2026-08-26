@@ -17,10 +17,11 @@ from pathlib import Path
 from validation._bootstrap import REPO_ROOT
 
 EXPECTED_PARAMETER_REGISTRY_VERSION = "R2-2026-08-26.3"
+EXPECTED_FREEZE_ID = "R2-FREEZE-2026-08-26.5"
 PHASE4_BASELINE_COMMIT = "39fd69fbfa207862ce4da5be5d4f75e06eed6bdb"
 
 RUN_MODE_OFFICIAL = "OFFICIAL_FROZEN_EXECUTION"
-RUN_MODE_PRE_FREEZE = "NON_OFFICIAL_PRE_FREEZE"
+RUN_MODE_PRE_FREEZE = "NON_OFFICIAL_PRECOMPARATOR_BLOCKED"
 
 
 @dataclass(frozen=True)
@@ -104,7 +105,7 @@ def is_tree_clean(root: Path = REPO_ROOT) -> bool:
     return status == "" and status != "<git-unavailable>"
 
 
-def evaluate_official_gate(
+def evaluate_pre_empirical_gate(
     identity: FreezeIdentity,
     *,
     head: str | None,
@@ -112,10 +113,8 @@ def evaluate_official_gate(
     tests_passed: bool,
     source_discovery_executed: bool,
     source_fingerprints_valid: bool = False,
-    cohort_reconstruction_successful: bool = False,
-    source_version_mismatch: bool = False,
 ) -> GateResult:
-    """Task §36: ALL conditions must hold for OFFICIAL artifacts."""
+    """Stage A gate: no source reconstruction or comparator work may run."""
     failed: list[str] = []
     if not tree_clean:
         failed.append("OFFICIAL_VALIDATION_BLOCKED_DIRTY_TREE")
@@ -125,6 +124,10 @@ def evaluate_official_gate(
         failed.append("MODEL_FROZEN_IS_FALSE")
     if not identity.freeze_id:
         failed.append("FREEZE_ID_NOT_SET")
+    elif identity.freeze_id != EXPECTED_FREEZE_ID:
+        failed.append(
+            f"FREEZE_ID_MISMATCH expected={EXPECTED_FREEZE_ID} actual={identity.freeze_id}"
+        )
     if not tests_passed:
         failed.append("ACTIVE_TEST_SUITE_NOT_PASSING")
     if identity.parameter_registry_version != EXPECTED_PARAMETER_REGISTRY_VERSION:
@@ -137,13 +140,59 @@ def evaluate_official_gate(
         failed.append("SOURCE_DISCOVERY_NOT_EXECUTED")
     if not source_fingerprints_valid:
         failed.append("SOURCE_FINGERPRINTS_INVALID_OR_MISSING")
-    if source_version_mismatch:
-        failed.append("SOURCE_VERSION_MISMATCH")
-    if not cohort_reconstruction_successful:
-        failed.append("COHORT_RECONSTRUCTION_NOT_VERIFIED")
     official = not failed
     return GateResult(
         official=official,
         run_mode=RUN_MODE_OFFICIAL if official else RUN_MODE_PRE_FREEZE,
         failed_conditions=failed,
+    )
+
+
+def evaluate_source_reconstruction_gate(
+    stage_a: GateResult,
+    *,
+    cohort_reconstruction_successful: bool,
+    source_version_mismatch: bool = False,
+    expected_counts_valid: bool = True,
+) -> GateResult:
+    """Stage B gate: validate reconstructed source cohorts before metrics."""
+    failed = list(stage_a.failed_conditions)
+    if source_version_mismatch:
+        failed.append("SOURCE_VERSION_MISMATCH")
+    if not cohort_reconstruction_successful:
+        failed.append("COHORT_RECONSTRUCTION_NOT_VERIFIED")
+    if not expected_counts_valid:
+        failed.append("COHORT_COUNTS_NOT_RECONSTRUCTABLE")
+    official = not failed
+    return GateResult(
+        official=official,
+        run_mode=RUN_MODE_OFFICIAL if official else RUN_MODE_PRE_FREEZE,
+        failed_conditions=failed,
+    )
+
+
+def evaluate_official_gate(
+    identity: FreezeIdentity,
+    *,
+    head: str | None,
+    tree_clean: bool,
+    tests_passed: bool,
+    source_discovery_executed: bool,
+    source_fingerprints_valid: bool = False,
+    cohort_reconstruction_successful: bool = False,
+    source_version_mismatch: bool = False,
+) -> GateResult:
+    """Backward-compatible combined Stage-A/Stage-B gate."""
+    stage_a = evaluate_pre_empirical_gate(
+        identity,
+        head=head,
+        tree_clean=tree_clean,
+        tests_passed=tests_passed,
+        source_discovery_executed=source_discovery_executed,
+        source_fingerprints_valid=source_fingerprints_valid,
+    )
+    return evaluate_source_reconstruction_gate(
+        stage_a,
+        cohort_reconstruction_successful=cohort_reconstruction_successful,
+        source_version_mismatch=source_version_mismatch,
     )

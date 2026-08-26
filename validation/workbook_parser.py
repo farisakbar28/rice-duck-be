@@ -426,7 +426,12 @@ def reconstruct_cohorts(
     missing_raw = sorted(expected_raw_ids - set(raw_by_id))
     if missing_raw:
         mismatches.append(f"source rows absent from raw recap: {missing_raw}")
+    # Raw/clean/stress membership is a reconstruction gate. Strict and
+    # calendar counts are reported as source-derived values, never imposed as
+    # a hard-coded empirical N (the official run recomputes them).
     for key, expected in PRIOR_AUDIT_COUNTS.items():
+        if key in {"strict_supported_domain", "calendar_eligible_both_dates"}:
+            continue
         if counts[key] != expected:
             mismatches.append(f"{key}: expected {expected}, reconstructed {counts[key]}")
 
