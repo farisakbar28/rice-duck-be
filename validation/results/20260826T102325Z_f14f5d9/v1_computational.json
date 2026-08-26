@@ -1,0 +1,455 @@
+{
+  "protocol": "docs/06_R2_TEST_VALIDATION_PROTOCOL.md section 19",
+  "items": [
+    {
+      "id": "V1-01",
+      "requirement": "A_m2 = 100*A_are",
+      "expected": "all mapped active unit/API tests pass",
+      "observed": {
+        "suite_exit_code": 0,
+        "suite_passed": true,
+        "collected": null,
+        "passed": 258,
+        "failed": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "errors": 0
+      },
+      "pass": true,
+      "evidence_reference": [
+        "tests/test_r2_normalization.py"
+      ]
+    },
+    {
+      "id": "V1-02",
+      "requirement": "d = J/A_are",
+      "expected": "all mapped active unit/API tests pass",
+      "observed": {
+        "suite_exit_code": 0,
+        "suite_passed": true,
+        "collected": null,
+        "passed": 258,
+        "failed": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "errors": 0
+      },
+      "pass": true,
+      "evidence_reference": [
+        "tests/test_r2_normalization.py"
+      ]
+    },
+    {
+      "id": "V1-03",
+      "requirement": "missing/null purchase price -> 26500",
+      "expected": "all mapped active unit/API tests pass",
+      "observed": {
+        "suite_exit_code": 0,
+        "suite_passed": true,
+        "collected": null,
+        "passed": 258,
+        "failed": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "errors": 0
+      },
+      "pass": true,
+      "evidence_reference": [
+        "tests/test_r2_normalization.py",
+        "tests/test_r2_api_simulate.py"
+      ]
+    },
+    {
+      "id": "V1-04",
+      "requirement": "provided positive purchase price passes through",
+      "expected": "all mapped active unit/API tests pass",
+      "observed": {
+        "suite_exit_code": 0,
+        "suite_passed": true,
+        "collected": null,
+        "passed": 258,
+        "failed": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "errors": 0
+      },
+      "pass": true,
+      "evidence_reference": [
+        "tests/test_r2_normalization.py",
+        "tests/test_r2_request_schema.py"
+      ]
+    },
+    {
+      "id": "V1-05",
+      "requirement": "0/NaN/Infinity purchase price rejected",
+      "expected": "all mapped active unit/API tests pass",
+      "observed": {
+        "suite_exit_code": 0,
+        "suite_passed": true,
+        "collected": null,
+        "passed": 258,
+        "failed": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "errors": 0
+      },
+      "pass": true,
+      "evidence_reference": [
+        "tests/test_r2_request_schema.py",
+        "tests/test_r2_api_simulate.py"
+      ]
+    },
+    {
+      "id": "V1-06",
+      "requirement": "age support boundaries 20/21/30/31",
+      "expected": "all mapped active unit/API tests pass",
+      "observed": {
+        "suite_exit_code": 0,
+        "suite_passed": true,
+        "collected": null,
+        "passed": 258,
+        "failed": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "errors": 0
+      },
+      "pass": true,
+      "evidence_reference": [
+        "tests/test_r2_age_support.py"
+      ]
+    },
+    {
+      "id": "V1-07",
+      "requirement": "Jarwo density boundaries 2/4",
+      "expected": "all mapped active unit/API tests pass",
+      "observed": {
+        "suite_exit_code": 0,
+        "suite_passed": true,
+        "collected": null,
+        "passed": 258,
+        "failed": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "errors": 0
+      },
+      "pass": true,
+      "evidence_reference": [
+        "tests/test_r2_density_support.py"
+      ]
+    },
+    {
+      "id": "V1-08",
+      "requirement": "Tegel density boundaries 2/3",
+      "expected": "all mapped active unit/API tests pass",
+      "observed": {
+        "suite_exit_code": 0,
+        "suite_passed": true,
+        "collected": null,
+        "passed": 258,
+        "failed": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "errors": 0
+      },
+      "pass": true,
+      "evidence_reference": [
+        "tests/test_r2_density_support.py"
+      ]
+    },
+    {
+      "id": "V1-09",
+      "requirement": "limited/high-risk/extrapolation classification",
+      "expected": "all mapped active unit/API tests pass",
+      "observed": {
+        "suite_exit_code": 0,
+        "suite_passed": true,
+        "collected": null,
+        "passed": 258,
+        "failed": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "errors": 0
+      },
+      "pass": true,
+      "evidence_reference": [
+        "tests/test_r2_density_support.py"
+      ]
+    },
+    {
+      "id": "V1-10",
+      "requirement": "survival numeric only when both flags SUPPORTED",
+      "expected": "all mapped active unit/API tests pass",
+      "observed": {
+        "suite_exit_code": 0,
+        "suite_passed": true,
+        "collected": null,
+        "passed": 258,
+        "failed": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "errors": 0
+      },
+      "pass": true,
+      "evidence_reference": [
+        "tests/test_r2_survival.py"
+      ]
+    },
+    {
+      "id": "V1-11",
+      "requirement": "out-of-domain survival null/unavailable, not 60%",
+      "expected": "all mapped active unit/API tests pass",
+      "observed": {
+        "suite_exit_code": 0,
+        "suite_passed": true,
+        "collected": null,
+        "passed": 258,
+        "failed": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "errors": 0
+      },
+      "pass": true,
+      "evidence_reference": [
+        "tests/test_r2_survival.py",
+        "tests/test_r2_api_simulate.py"
+      ]
+    },
+    {
+      "id": "V1-12",
+      "requirement": "calendar windows exact",
+      "expected": "all mapped active unit/API tests pass",
+      "observed": {
+        "suite_exit_code": 0,
+        "suite_passed": true,
+        "collected": null,
+        "passed": 258,
+        "failed": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "errors": 0
+      },
+      "pass": true,
+      "evidence_reference": [
+        "tests/test_r2_calendar.py"
+      ]
+    },
+    {
+      "id": "V1-13",
+      "requirement": "Inpari window 90-100 (not 109-116)",
+      "expected": "all mapped active unit/API tests pass",
+      "observed": {
+        "suite_exit_code": 0,
+        "suite_passed": true,
+        "collected": null,
+        "passed": 258,
+        "failed": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "errors": 0
+      },
+      "pass": true,
+      "evidence_reference": [
+        "tests/test_r2_calendar.py",
+        "tests/test_r2_seed_registry.py"
+      ]
+    },
+    {
+      "id": "V1-14",
+      "requirement": "nutrient basis N-P2O5-K2O",
+      "expected": "all mapped active unit/API tests pass",
+      "observed": {
+        "suite_exit_code": 0,
+        "suite_passed": true,
+        "collected": null,
+        "passed": 258,
+        "failed": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "errors": 0
+      },
+      "pass": true,
+      "evidence_reference": [
+        "tests/test_r2_fertilizer.py"
+      ]
+    },
+    {
+      "id": "V1-15",
+      "requirement": "fertilizer solver constraints satisfied",
+      "expected": "all mapped active unit/API tests pass",
+      "observed": {
+        "suite_exit_code": 0,
+        "suite_passed": true,
+        "collected": null,
+        "passed": 258,
+        "failed": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "errors": 0
+      },
+      "pass": true,
+      "evidence_reference": [
+        "tests/test_r2_fertilizer.py"
+      ]
+    },
+    {
+      "id": "V1-16",
+      "requirement": "KCl branch unused",
+      "expected": "all mapped active unit/API tests pass",
+      "observed": {
+        "suite_exit_code": 0,
+        "suite_passed": true,
+        "collected": null,
+        "passed": 258,
+        "failed": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "errors": 0
+      },
+      "pass": true,
+      "evidence_reference": [
+        "tests/test_r2_fertilizer.py",
+        "tests/test_r2_seed_registry.py"
+      ]
+    },
+    {
+      "id": "V1-17",
+      "requirement": "net min/ref/max monotonic",
+      "expected": "all mapped active unit/API tests pass",
+      "observed": {
+        "suite_exit_code": 0,
+        "suite_passed": true,
+        "collected": null,
+        "passed": 258,
+        "failed": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "errors": 0
+      },
+      "pass": true,
+      "evidence_reference": [
+        "tests/test_r2_infrastructure.py"
+      ]
+    },
+    {
+      "id": "V1-18",
+      "requirement": "feed numeric null while lookup unavailable",
+      "expected": "all mapped active unit/API tests pass",
+      "observed": {
+        "suite_exit_code": 0,
+        "suite_passed": true,
+        "collected": null,
+        "passed": 258,
+        "failed": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "errors": 0
+      },
+      "pass": true,
+      "evidence_reference": [
+        "tests/test_r2_availability_components.py"
+      ]
+    },
+    {
+      "id": "V1-19",
+      "requirement": "yield numeric null while lookup unavailable",
+      "expected": "all mapped active unit/API tests pass",
+      "observed": {
+        "suite_exit_code": 0,
+        "suite_passed": true,
+        "collected": null,
+        "passed": 258,
+        "failed": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "errors": 0
+      },
+      "pass": true,
+      "evidence_reference": [
+        "tests/test_r2_yield_engine.py"
+      ]
+    },
+    {
+      "id": "V1-20",
+      "requirement": "V_duck_end never cash duck sale revenue",
+      "expected": "all mapped active unit/API tests pass",
+      "observed": {
+        "suite_exit_code": 0,
+        "suite_passed": true,
+        "collected": null,
+        "passed": 258,
+        "failed": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "errors": 0
+      },
+      "pass": true,
+      "evidence_reference": [
+        "tests/test_r2_economics.py"
+      ]
+    },
+    {
+      "id": "V1-21",
+      "requirement": "Profit_full_est null while completeness INCOMPLETE",
+      "expected": "all mapped active unit/API tests pass",
+      "observed": {
+        "suite_exit_code": 0,
+        "suite_passed": true,
+        "collected": null,
+        "passed": 258,
+        "failed": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "errors": 0
+      },
+      "pass": true,
+      "evidence_reference": [
+        "tests/test_r2_economics.py"
+      ]
+    },
+    {
+      "id": "V1-22",
+      "requirement": "disabled legacy formulas unreachable from production",
+      "expected": "all mapped active unit/API tests pass",
+      "observed": {
+        "suite_exit_code": 0,
+        "suite_passed": true,
+        "collected": null,
+        "passed": 258,
+        "failed": 0,
+        "skipped": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "errors": 0
+      },
+      "pass": true,
+      "evidence_reference": [
+        "tests/test_r2_production_path_static.py",
+        "tests/test_r2_engines_static.py",
+        "tests/test_r2_antilegacy_static.py"
+      ]
+    }
+  ],
+  "all_pass": true,
+  "failure_output_tail": ""
+}

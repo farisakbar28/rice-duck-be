@@ -1,0 +1,43 @@
+{
+  "feed": {
+    "status": "NOT_EVALUABLE",
+    "runtime_reason": "FEED_LOOKUP_UNAVAILABLE",
+    "historical_positive_coverage_n": 23,
+    "metrics": null
+  },
+  "survival": {
+    "status": "NO_COMPATIBLE_AGGREGATE_GROUND_TRUTH",
+    "n_sold_used_as_survival": false,
+    "metrics": null
+  },
+  "terminal_duck_value": {
+    "realized_sale_metric": null,
+    "reason": "ASSET_VALUE_IS_NOT_REALIZED_SALE_REVENUE"
+  },
+  "infrastructure": {
+    "semantic_eligibility": "AMBIGUOUS_HISTORICAL_CONSTRUCT",
+    "status": "NO_METRIC",
+    "net_positive_coverage_n": 17,
+    "cage_positive_coverage_n": 9
+  },
+  "weeding": {
+    "status": "NO_MONETARY_AGGREGATE",
+    "positive_coverage_n": 0,
+    "metrics": null
+  },
+  "pesticide": {
+    "status": "SPARSE_CASE_DIAGNOSTICS_ONLY",
+    "positive_coverage_n": 4,
+    "metrics": null
+  },
+  "fertilizer": {
+    "status": "DESCRIPTIVE_ONLY",
+    "positive_coverage_n": 1,
+    "metrics": null
+  },
+  "profit": {
+    "legacy_accuracy_metric": null,
+    "profit_full": "UNAVAILABLE_INCOMPLETE_COST",
+    "margin_core_is_profit": false
+  }
+}

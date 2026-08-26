@@ -1,0 +1,221 @@
+{
+  "status": "EVALUATED",
+  "timing_semantics": "HST_FROM_FIELD_TRANSPLANTING",
+  "timing_semantics_status": "VALIDATION_ASSUMPTION",
+  "eligibility_rule": "observed transplanting/planting date AND observed harvest date",
+  "metrics": {
+    "N": 12,
+    "hits": 4,
+    "coverage": 0.3333333333333333,
+    "mean_distance_to_window_days": 5.0,
+    "median_distance_to_window_days": 5.0,
+    "rows": [
+      {
+        "source_row": 28,
+        "farmer_cluster_id": "F012",
+        "predicted_min": "2024-05-29",
+        "predicted_max": "2024-06-08",
+        "actual_harvest": "2024-05-22",
+        "window_hit": false,
+        "distance_to_window_days": 7
+      },
+      {
+        "source_row": 34,
+        "farmer_cluster_id": "F009",
+        "predicted_min": "2024-07-24",
+        "predicted_max": "2024-08-03",
+        "actual_harvest": "2024-07-19",
+        "window_hit": false,
+        "distance_to_window_days": 5
+      },
+      {
+        "source_row": 36,
+        "farmer_cluster_id": "F001",
+        "predicted_min": "2024-07-11",
+        "predicted_max": "2024-07-21",
+        "actual_harvest": "2024-08-06",
+        "window_hit": false,
+        "distance_to_window_days": 16
+      },
+      {
+        "source_row": 37,
+        "farmer_cluster_id": "F003",
+        "predicted_min": "2024-08-01",
+        "predicted_max": "2024-08-11",
+        "actual_harvest": "2024-07-31",
+        "window_hit": false,
+        "distance_to_window_days": 1
+      },
+      {
+        "source_row": 38,
+        "farmer_cluster_id": "F008",
+        "predicted_min": "2024-07-31",
+        "predicted_max": "2024-08-10",
+        "actual_harvest": "2024-07-31",
+        "window_hit": true,
+        "distance_to_window_days": 0
+      },
+      {
+        "source_row": 39,
+        "farmer_cluster_id": "F009",
+        "predicted_min": "2024-07-24",
+        "predicted_max": "2024-08-03",
+        "actual_harvest": "2024-07-19",
+        "window_hit": false,
+        "distance_to_window_days": 5
+      },
+      {
+        "source_row": 41,
+        "farmer_cluster_id": "F012",
+        "predicted_min": "2024-10-15",
+        "predicted_max": "2024-10-25",
+        "actual_harvest": "2024-11-03",
+        "window_hit": false,
+        "distance_to_window_days": 9
+      },
+      {
+        "source_row": 43,
+        "farmer_cluster_id": "F005",
+        "predicted_min": "2025-01-09",
+        "predicted_max": "2025-01-19",
+        "actual_harvest": "2025-01-17",
+        "window_hit": true,
+        "distance_to_window_days": 0
+      },
+      {
+        "source_row": 44,
+        "farmer_cluster_id": "F008",
+        "predicted_min": "2024-12-27",
+        "predicted_max": "2025-01-06",
+        "actual_harvest": "2025-01-18",
+        "window_hit": false,
+        "distance_to_window_days": 12
+      },
+      {
+        "source_row": 51,
+        "farmer_cluster_id": "F003",
+        "predicted_min": "2025-07-18",
+        "predicted_max": "2025-07-28",
+        "actual_harvest": "2025-07-19",
+        "window_hit": true,
+        "distance_to_window_days": 0
+      },
+      {
+        "source_row": 53,
+        "farmer_cluster_id": "F019",
+        "predicted_min": "2025-07-18",
+        "predicted_max": "2025-07-28",
+        "actual_harvest": "2025-07-19",
+        "window_hit": true,
+        "distance_to_window_days": 0
+      },
+      {
+        "source_row": 55,
+        "farmer_cluster_id": "F020",
+        "predicted_min": "2025-07-28",
+        "predicted_max": "2025-08-07",
+        "actual_harvest": "2025-07-23",
+        "window_hit": false,
+        "distance_to_window_days": 5
+      }
+    ]
+  },
+  "excluded_rows": [
+    {
+      "source_row": 4,
+      "reason": "BOTH_OBSERVED_DATES_REQUIRED"
+    },
+    {
+      "source_row": 5,
+      "reason": "BOTH_OBSERVED_DATES_REQUIRED"
+    },
+    {
+      "source_row": 6,
+      "reason": "BOTH_OBSERVED_DATES_REQUIRED"
+    },
+    {
+      "source_row": 7,
+      "reason": "BOTH_OBSERVED_DATES_REQUIRED"
+    },
+    {
+      "source_row": 8,
+      "reason": "BOTH_OBSERVED_DATES_REQUIRED"
+    },
+    {
+      "source_row": 9,
+      "reason": "BOTH_OBSERVED_DATES_REQUIRED"
+    },
+    {
+      "source_row": 10,
+      "reason": "BOTH_OBSERVED_DATES_REQUIRED"
+    },
+    {
+      "source_row": 11,
+      "reason": "BOTH_OBSERVED_DATES_REQUIRED"
+    },
+    {
+      "source_row": 12,
+      "reason": "BOTH_OBSERVED_DATES_REQUIRED"
+    },
+    {
+      "source_row": 14,
+      "reason": "BOTH_OBSERVED_DATES_REQUIRED"
+    },
+    {
+      "source_row": 18,
+      "reason": "BOTH_OBSERVED_DATES_REQUIRED"
+    },
+    {
+      "source_row": 19,
+      "reason": "BOTH_OBSERVED_DATES_REQUIRED"
+    },
+    {
+      "source_row": 20,
+      "reason": "BOTH_OBSERVED_DATES_REQUIRED"
+    },
+    {
+      "source_row": 21,
+      "reason": "BOTH_OBSERVED_DATES_REQUIRED"
+    },
+    {
+      "source_row": 23,
+      "reason": "BOTH_OBSERVED_DATES_REQUIRED"
+    },
+    {
+      "source_row": 24,
+      "reason": "BOTH_OBSERVED_DATES_REQUIRED"
+    },
+    {
+      "source_row": 25,
+      "reason": "BOTH_OBSERVED_DATES_REQUIRED"
+    },
+    {
+      "source_row": 26,
+      "reason": "BOTH_OBSERVED_DATES_REQUIRED"
+    },
+    {
+      "source_row": 46,
+      "reason": "BOTH_OBSERVED_DATES_REQUIRED"
+    },
+    {
+      "source_row": 47,
+      "reason": "BOTH_OBSERVED_DATES_REQUIRED"
+    },
+    {
+      "source_row": 49,
+      "reason": "BOTH_OBSERVED_DATES_REQUIRED"
+    },
+    {
+      "source_row": 60,
+      "reason": "BOTH_OBSERVED_DATES_REQUIRED"
+    },
+    {
+      "source_row": 61,
+      "reason": "BOTH_OBSERVED_DATES_REQUIRED"
+    },
+    {
+      "source_row": 62,
+      "reason": "BOTH_OBSERVED_DATES_REQUIRED"
+    }
+  ]
+}

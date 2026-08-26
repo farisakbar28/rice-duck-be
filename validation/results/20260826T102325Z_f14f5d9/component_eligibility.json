@@ -1,0 +1,249 @@
+{
+  "source_status": "OK",
+  "components": {
+    "calendar": {
+      "eligible_when_source_available": true,
+      "status": "EVALUATED",
+      "metric_allowed": true,
+      "comparator": {
+        "prior_audit_coverage": "0/36",
+        "recomputed_from_source": false,
+        "source_status": "OK"
+      },
+      "metrics": {
+        "N": 12,
+        "hits": 4,
+        "coverage": 0.3333333333333333,
+        "mean_distance_to_window_days": 5.0,
+        "median_distance_to_window_days": 5.0,
+        "rows": [
+          {
+            "source_row": 28,
+            "farmer_cluster_id": "F012",
+            "predicted_min": "2024-05-29",
+            "predicted_max": "2024-06-08",
+            "actual_harvest": "2024-05-22",
+            "window_hit": false,
+            "distance_to_window_days": 7
+          },
+          {
+            "source_row": 34,
+            "farmer_cluster_id": "F009",
+            "predicted_min": "2024-07-24",
+            "predicted_max": "2024-08-03",
+            "actual_harvest": "2024-07-19",
+            "window_hit": false,
+            "distance_to_window_days": 5
+          },
+          {
+            "source_row": 36,
+            "farmer_cluster_id": "F001",
+            "predicted_min": "2024-07-11",
+            "predicted_max": "2024-07-21",
+            "actual_harvest": "2024-08-06",
+            "window_hit": false,
+            "distance_to_window_days": 16
+          },
+          {
+            "source_row": 37,
+            "farmer_cluster_id": "F003",
+            "predicted_min": "2024-08-01",
+            "predicted_max": "2024-08-11",
+            "actual_harvest": "2024-07-31",
+            "window_hit": false,
+            "distance_to_window_days": 1
+          },
+          {
+            "source_row": 38,
+            "farmer_cluster_id": "F008",
+            "predicted_min": "2024-07-31",
+            "predicted_max": "2024-08-10",
+            "actual_harvest": "2024-07-31",
+            "window_hit": true,
+            "distance_to_window_days": 0
+          },
+          {
+            "source_row": 39,
+            "farmer_cluster_id": "F009",
+            "predicted_min": "2024-07-24",
+            "predicted_max": "2024-08-03",
+            "actual_harvest": "2024-07-19",
+            "window_hit": false,
+            "distance_to_window_days": 5
+          },
+          {
+            "source_row": 41,
+            "farmer_cluster_id": "F012",
+            "predicted_min": "2024-10-15",
+            "predicted_max": "2024-10-25",
+            "actual_harvest": "2024-11-03",
+            "window_hit": false,
+            "distance_to_window_days": 9
+          },
+          {
+            "source_row": 43,
+            "farmer_cluster_id": "F005",
+            "predicted_min": "2025-01-09",
+            "predicted_max": "2025-01-19",
+            "actual_harvest": "2025-01-17",
+            "window_hit": true,
+            "distance_to_window_days": 0
+          },
+          {
+            "source_row": 44,
+            "farmer_cluster_id": "F008",
+            "predicted_min": "2024-12-27",
+            "predicted_max": "2025-01-06",
+            "actual_harvest": "2025-01-18",
+            "window_hit": false,
+            "distance_to_window_days": 12
+          },
+          {
+            "source_row": 51,
+            "farmer_cluster_id": "F003",
+            "predicted_min": "2025-07-18",
+            "predicted_max": "2025-07-28",
+            "actual_harvest": "2025-07-19",
+            "window_hit": true,
+            "distance_to_window_days": 0
+          },
+          {
+            "source_row": 53,
+            "farmer_cluster_id": "F019",
+            "predicted_min": "2025-07-18",
+            "predicted_max": "2025-07-28",
+            "actual_harvest": "2025-07-19",
+            "window_hit": true,
+            "distance_to_window_days": 0
+          },
+          {
+            "source_row": 55,
+            "farmer_cluster_id": "F020",
+            "predicted_min": "2025-07-28",
+            "predicted_max": "2025-08-07",
+            "actual_harvest": "2025-07-23",
+            "window_hit": false,
+            "distance_to_window_days": 5
+          }
+        ]
+      }
+    },
+    "yield": {
+      "prediction_availability": "UNAVAILABLE",
+      "reason_codes": [
+        "Y_BASE_GROUP_LOOKUP_MISSING",
+        "F_RD_NODE_MISSING"
+      ],
+      "status": "NOT_EVALUABLE",
+      "reason": "R2_YIELD_EVIDENCE_INSUFFICIENT",
+      "metric_allowed": false,
+      "comparator": {
+        "prior_audit_coverage": "36/36",
+        "recomputed_from_source": false,
+        "source_status": "OK"
+      }
+    },
+    "paddy_revenue_operational": {
+      "status": "NOT_EVALUABLE",
+      "reason": "R2_YIELD_EVIDENCE_INSUFFICIENT",
+      "metric_allowed": false
+    },
+    "paddy_revenue_price_neutral_diagnostic": {
+      "status": "NOT_EVALUABLE",
+      "reason": "R2_YIELD_EVIDENCE_INSUFFICIENT",
+      "metric_allowed": false,
+      "note": "historical prices may load as dataset metadata only, never runtime inputs"
+    },
+    "duck_purchase_cost_identity": {
+      "status": "VERIFIED_BY_V1_TESTS",
+      "metric_allowed": true,
+      "note": "deterministic accounting identity; observed-price rows are plausibility context only",
+      "comparator": {
+        "prior_audit_coverage": "29/36",
+        "recomputed_from_source": false,
+        "source_status": "OK"
+      },
+      "observed_positive_comparator": {
+        "status": "ELIGIBLE_OBSERVED_POSITIVE_ONLY",
+        "effective_n": 29
+      }
+    },
+    "survival_aggregate": {
+      "ground_truth_status": "NO_COMPATIBLE_AGGREGATE",
+      "metric_allowed": false
+    },
+    "terminal_duck_value": {
+      "comparison_against_duck_sales": "FORBIDDEN",
+      "allowed": [
+        "price plausibility",
+        "min/ref/max sensitivity",
+        "expert mapping"
+      ],
+      "metric_allowed": false
+    },
+    "feed_accuracy": {
+      "runtime_availability": "UNAVAILABLE",
+      "status": "NOT_EVALUABLE_FEED_LOOKUP_MISSING",
+      "metric_allowed": false,
+      "comparator": {
+        "prior_audit_coverage": "23/36",
+        "recomputed_from_source": false,
+        "source_status": "OK"
+      },
+      "note": "positive historical feed values are future eligibility metadata only"
+    },
+    "weeding_cash": {
+      "metric_allowed": false,
+      "comparator": {
+        "prior_audit_coverage": "0/36",
+        "recomputed_from_source": false,
+        "source_status": "OK"
+      }
+    },
+    "pesticide": {
+      "mode": "sparse case diagnostics only",
+      "metric_allowed": false,
+      "comparator": {
+        "prior_audit_coverage": "4/36",
+        "recomputed_from_source": false,
+        "source_status": "OK"
+      }
+    },
+    "fertilizer": {
+      "mode": "descriptive only",
+      "metric_allowed": false,
+      "comparator": {
+        "prior_audit_coverage": "1/36",
+        "recomputed_from_source": false,
+        "source_status": "OK"
+      }
+    },
+    "infrastructure_net_cage": {
+      "semantic_compatibility_established": false,
+      "eligibility_reason": "historical 'infra' proxies are ambiguous; square-equivalent net amortization and per-cycle cage totals cannot be assumed to match historical constructs",
+      "metric_allowed": false,
+      "comparator": {
+        "prior_audit_coverage": "17/36",
+        "recomputed_from_source": false,
+        "source_status": "OK"
+      }
+    },
+    "profit_margin": {
+      "cost_completeness": "INCOMPLETE",
+      "profit_full_status": "UNAVAILABLE_INCOMPLETE_COST",
+      "legacy_farmer_profit_comparison": "FORBIDDEN",
+      "margin_core_vs_legacy_profit": "FORBIDDEN",
+      "metric_allowed": false
+    }
+  },
+  "legacy_simulation_role_guard": {
+    "workbook": "Dataset Bersih Rekap Include Hasil Simulasi Baru.xlsx",
+    "present": true,
+    "never_used_as": [
+      "R2 prediction source",
+      "R2 input default",
+      "parameter registry entry",
+      "calibration coefficient"
+    ]
+  }
+}
