@@ -34,7 +34,7 @@
 | `R2-SURV-01` | Safe survival ref | `lambda_safe_ref=0.90` | `local-estimate` | `CONDITIONAL` | expert safe-context estimate |
 | `R2-SURV-02` | Survival availability | 0.90 only if age+density both supported; else unavailable | `mixed` | `ACTIVE` gate | confirmed R2 design |
 | `R2-SURV-03` | Surviving ducks | `floor(J*lambda_eff)` | `system-design` | `CONDITIONAL` | deterministic once lambda available |
-| `R2-YLD-01` | Yield structure | `Y_base(local_group)*F_RD_exact_node(system,d,release=30)` | `mixed` | `PENDING_LOOKUP` | local grouping and lookup structure ready; numeric records missing |
+| `R2-YLD-01` | Yield structure | `Y_base(cultivar_group)*F_RD_reference` | `literature-uncalibrated` | `ACTIVE_RANGE` | Phase-6 literature evidence envelope; supported domain only, no interpolation or extrapolation |
 | `R2-YLD-02` | Total yield | `Yield_are*A_are` | `system-design` | `CONDITIONAL` | requires `R2-YLD-01` available |
 | `R2-NUT-01` | N baseline | `1.1761*A_are` kg N | `literature-uncalibrated` | `ACTIVE_BASELINE` | Bali RDIS baseline reconstruction |
 | `R2-NUT-02` | P2O5 baseline | `0.2745*A_are` kg | `literature-uncalibrated` | `ACTIVE_BASELINE` | same |
@@ -64,8 +64,8 @@
 
 | ID | Component | Structural rule | Current state | Why numeric runtime is blocked |
 |---|---|---|---|---|
-| `R2-YLD-LKP-BASE` | Local cultivar-group baseline | `Y_base(cultivar_group_code)` | `PENDING_LOOKUP` | approved groups exist but no numeric baseline record is approved |
-| `R2-YLD-LKP-RD` | Rice-duck response | exact node `(system_scope,density_are,release_day)` | `PENDING_LOOKUP` | grid structure is verified but numeric response records and system scope remain unresolved |
+| `R2-YLD-LKP-BASE` | Cultivar-group baseline | `Y_base(cultivar_group_code)` | `ACTIVE_RANGE` | Phase-6 externally sourced range records for INPARI_GROUP and SERTANI_GROUP |
+| `R2-YLD-LKP-RD` | Rice-duck response | global reference factor | `ACTIVE` | `FRD-FENG-2024` global reference; supported-domain gate applies without exact-node lookup |
 | `R2-FEED-01` | Feed cost | `sum N_t*q_feed*p_feed` | `UNAVAILABLE` | valid quantity + price lookup incomplete |
 | `R2-CAGE-02` | Total cage cost | `N_units*C_cage_unit_cycle` | `UNAVAILABLE` | cage capacity/unit-count rule absent |
 | `R2-WEED-02` | Weeding savings | baseline-to-saving function | `UNAVAILABLE` | biological suppression != monetary saving |

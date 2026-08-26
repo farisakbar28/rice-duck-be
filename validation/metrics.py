@@ -17,20 +17,71 @@ YIELD_STATUS_NOT_EVALUABLE = "NOT_EVALUABLE"
 YIELD_REASON_R2_UNAVAILABLE = "R2_YIELD_EVIDENCE_INSUFFICIENT"
 
 def phase6_yield_metrics(rows: list[dict]) -> dict:
-    """Synthetic-safe Phase-6 metric primitive; callers supply no source files.
+    """Calculate metrics with all actual-eligible rows as coverage denominator.
 
-    Rows without numeric reference/low/high predictions are excluded. The
-    envelope is explicitly an evidence envelope, not a statistical interval.
+    Unavailable runtime predictions stay unavailable; they are never coerced
+    to zero. The yield range is a literature evidence envelope, not a
+    statistical interval.
     """
-    eligible = [r for r in rows if all(r.get(k) is not None for k in ("actual", "pred_ref", "pred_low", "pred_high"))]
+    actual_eligible = [r for r in rows if r.get("actual") is not None]
+    eligible = [r for r in actual_eligible if all(r.get(k) is not None for k in ("pred_ref", "pred_low", "pred_high"))]
+    coverage = len(eligible) / len(actual_eligible) if actual_eligible else None
+    base = {
+        "N_total_actual_eligible": len(actual_eligible),
+        "N_predicted": len(eligible),
+        "prediction_coverage_fraction": coverage,
+        "prediction_coverage_percent": coverage * 100 if coverage is not None else None,
+        "prediction_coverage": coverage,
+    }
     if not eligible:
-        return {"N": 0, "prediction_coverage": 0.0, "MAE": None, "RMSE": None, "MedAE": None, "MBE": None, "WAPE": None, "LITERATURE_EVIDENCE_ENVELOPE_COVERAGE": None, "mean_envelope_width": None, "median_envelope_width": None}
+        return {**base, "N": 0, "MAE": None, "RMSE": None, "MedAE": None,
+                "MBE": None, "WAPE": None, "MAPE": None, "R2": None,
+                "covered_N": 0, "LITERATURE_EVIDENCE_ENVELOPE_COVERAGE": None,
+                "LITERATURE_EVIDENCE_ENVELOPE_COVERAGE_PERCENT": None,
+                "mean_envelope_width": None, "median_envelope_width": None}
     errors = [float(r["pred_ref"] - r["actual"]) for r in eligible]
     absolute = [abs(x) for x in errors]
     widths = [float(r["pred_high"] - r["pred_low"]) for r in eligible]
     covered = sum(r["pred_low"] <= r["actual"] <= r["pred_high"] for r in eligible)
     actual_sum = sum(abs(float(r["actual"])) for r in eligible)
-    return {"N": len(eligible), "prediction_coverage": 1.0, "MAE": statistics.fmean(absolute), "RMSE": (statistics.fmean(x*x for x in errors)) ** .5, "MedAE": float(statistics.median(absolute)), "MBE": statistics.fmean(errors), "WAPE": sum(absolute) / actual_sum * 100 if actual_sum else None, "LITERATURE_EVIDENCE_ENVELOPE_COVERAGE": covered / len(eligible), "mean_envelope_width": statistics.fmean(widths), "median_envelope_width": float(statistics.median(widths))}
+    actuals = [float(r["actual"]) for r in eligible]
+    mean_actual = statistics.fmean(actuals)
+    ss_total = sum((value - mean_actual) ** 2 for value in actuals)
+    mape_values = [abs(error / actual) * 100 for error, actual in zip(errors, actuals) if actual]
+    envelope_coverage = covered / len(eligible)
+    return {**base, "N": len(eligible), "MAE": statistics.fmean(absolute),
+            "RMSE": (statistics.fmean(x*x for x in errors)) ** .5,
+            "MedAE": float(statistics.median(absolute)), "MBE": statistics.fmean(errors),
+            "WAPE": sum(absolute) / actual_sum * 100 if actual_sum else None,
+            "MAPE": statistics.fmean(mape_values) if mape_values else None,
+            "R2": 1 - sum(x*x for x in errors) / ss_total if ss_total else None,
+            "covered_N": covered,
+            "LITERATURE_EVIDENCE_ENVELOPE_COVERAGE": envelope_coverage,
+            "LITERATURE_EVIDENCE_ENVELOPE_COVERAGE_PERCENT": envelope_coverage * 100,
+            "mean_envelope_width": statistics.fmean(widths),
+            "median_envelope_width": float(statistics.median(widths))}
+
+
+def phase6_yield_subgroups(rows: list[dict], *, minimum_n: int = 3) -> dict:
+    """Pre-registered descriptive subgroups; N<3 is count-only."""
+    selectors = {
+        "overall_numeric_prediction_cohort": lambda row: True,
+        "strict_supported_domain": lambda row: row.get("age_support") == "SUPPORTED" and row.get("density_support") == "SUPPORTED",
+        "INPARI_GROUP": lambda row: row.get("cultivar_group") == "INPARI_GROUP",
+        "SERTANI_GROUP": lambda row: row.get("cultivar_group") == "SERTANI_GROUP",
+        "Jajar Legowo": lambda row: row.get("planting_system") == "jajar_legowo",
+        "Tegel": lambda row: row.get("planting_system") == "tegel",
+    }
+    result = {}
+    for name, selector in selectors.items():
+        subset = [row for row in rows if selector(row)]
+        predicted_n = sum(row.get("actual") is not None and row.get("pred_ref") is not None for row in subset)
+        result[name] = {
+            "N": predicted_n,
+            "policy": "QUANTITATIVE" if predicted_n >= minimum_n else "COUNT_ONLY_SMALL_N",
+            "metrics": phase6_yield_metrics(subset) if predicted_n >= minimum_n else None,
+        }
+    return result
 
 
 def distance_to_window_days(actual: date, window_min: date, window_max: date) -> int:

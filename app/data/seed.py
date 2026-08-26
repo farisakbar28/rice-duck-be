@@ -62,7 +62,7 @@ PARAMETER_REGISTRY_VERSION = "R2-2026-08-26.3"
 # at Phase-4 baseline 39fd69fbfa207862ce4da5be5d4f75e06eed6bdb with zero
 # scientific-coefficient changes (guarded by tests/test_r2_freeze_semantics.py).
 MODEL_FROZEN: bool = True
-FREEZE_ID: str | None = "R2-FREEZE-2026-08-26.3"
+FREEZE_ID: str | None = "R2-FREEZE-2026-08-26.4"
 FREEZE_EFFECTIVE_FROM: str | None = "2026-08-26"
 
 

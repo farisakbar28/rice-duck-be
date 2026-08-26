@@ -62,9 +62,9 @@
 ### 3E Yield
 
 - [ ] implement lookup interface.
-- [ ] default lookup store is empty/pending.
+- [x] Phase-6 range baseline and global F_RD reference are active.
 - [ ] exact approved local cultivar-group normalization only; no fuzzy aliases.
-- [ ] missing group baseline/exact-node F_RD -> null, not legacy Y0.
+- [x] missing group baseline/F_RD reference -> null, not legacy Y0.
 - [ ] no interpolation/extrapolation/nearest-neighbour/cross-system yield lookup.
 - [ ] no system/age/density fallback multipliers.
 

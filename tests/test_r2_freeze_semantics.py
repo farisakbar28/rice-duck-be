@@ -27,7 +27,7 @@ from app.main import app
 from tests.r2_api_utils import API, DEFAULT_SIMULATION_PAYLOAD, make_client
 
 PHASE5C_REGISTRY_VERSION = "R2-2026-08-26.3"
-PHASE5C_FREEZE_ID = "R2-FREEZE-2026-08-26.3"
+PHASE6CC_FREEZE_ID = "R2-FREEZE-2026-08-26.4"
 
 # Approved Phase-4 scientific snapshot (docs/01/docs/04/docs/10). Any drift
 # here means a scientific change happened outside a formally approved
@@ -81,9 +81,9 @@ class TestFreezeMetadataSource:
         assert body["model"]["frozen"] is seed.MODEL_FROZEN
         assert body["model"]["freeze_id"] == seed.FREEZE_ID
 
-    def test_frozen_flag_is_true_for_phase5_candidate(self) -> None:
+    def test_frozen_flag_is_true_for_phase6cc_candidate(self) -> None:
         assert seed.MODEL_FROZEN is True
-        assert seed.FREEZE_ID == PHASE5C_FREEZE_ID
+        assert seed.FREEZE_ID == PHASE6CC_FREEZE_ID
 
     def test_visualization_model_matches_simulation_freeze_identity(self) -> None:
         client = make_client()

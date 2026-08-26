@@ -20,7 +20,7 @@ Isi setiap execution batch:
 
 ```text
 model_version: R2
-parameter_registry_version: R2-2026-08-26.2
+parameter_registry_version: R2-2026-08-26.3
 backend_commit_sha:
 python_version:
 app_version:
@@ -60,7 +60,8 @@ N_survive = floor(27) = 27
 release HST = 21..30
 pull HST = 56..60
 harvest HST = 100..110
-yield_availability = UNAVAILABLE until approved lookup exists
+yield_availability = AVAILABLE with ref/low/high literature evidence envelope
+baseline/F_RD source IDs present; full profit remains null
 feed availability = UNAVAILABLE
 cost_completeness = INCOMPLETE
 profit_full_est = null
@@ -159,12 +160,12 @@ Supply `p_duck_buy=0`.
 
 Expected validation failure; zero is not R2 missing-value semantics.
 
-### B15 — Missing yield lookup
+### B15 — Unsupported-age yield gate
 
 Expected:
 
 ```text
-yield_availability=UNAVAILABLE
+age=20; yield_availability=UNAVAILABLE
 yield_kg_per_are=null
 yield_total_kg=null
 paddy_revenue=null
@@ -333,7 +334,7 @@ construction: it records the backend commit, sends every request through the
 canonical FastAPI HTTP path, stores each raw response JSON verbatim, computes
 invariant pass/fail from observed responses, and captures provenance policies.
 
-## 12. Phase-6 Candidate Test Addendum (execute after `.3` implementation)
+## 12. Current Phase-6 Test Addendum (freeze `.4`)
 
 Required deterministic cases: Inpari and Sertani supported-domain reference
 and low/high yields; exact arithmetic (`54.998/20.56/80.5952` for Inpari and

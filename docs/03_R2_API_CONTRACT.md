@@ -32,7 +32,7 @@ Return valid categorical choices and their **operational metadata**, not unsuppo
       "harvest_hst_min": 100,
       "harvest_hst_max": 110,
       "calendar_status": "local-estimate",
-      "yield_lookup_status": "PENDING_LOOKUP"
+      "yield_lookup_status": "ACTIVE_RANGE"
     },
     {
       "code": "inpari",
@@ -40,7 +40,7 @@ Return valid categorical choices and their **operational metadata**, not unsuppo
       "harvest_hst_min": 90,
       "harvest_hst_max": 100,
       "calendar_status": "local-estimate",
-      "yield_lookup_status": "PENDING_LOOKUP"
+      "yield_lookup_status": "ACTIVE_RANGE"
     }
   ],
   "planting_systems": [
@@ -134,9 +134,9 @@ p_duck_buy: float | None = Field(default=None, gt=0, allow_inf_nan=False)
 Use nested semantic groups. Do not repeat old flat naming solely to satisfy legacy frontend code.
 
 Yield reason codes are specific and fail-closed: `CULTIVAR_GROUP_UNRESOLVED`,
-`Y_BASE_GROUP_LOOKUP_MISSING`, `F_RD_NODE_MISSING`,
-`RELEASE_NODE_UNSUPPORTED`, `F_RD_SYSTEM_SCOPE_UNSUPPORTED`, and
-`TIMING_SEMANTICS_UNRESOLVED`. Generic availability semantics remain
+`Y_BASE_GROUP_LOOKUP_MISSING`, `FRD_REFERENCE_MISSING`,
+`AGE_OUTSIDE_SUPPORTED_DOMAIN`, `DENSITY_OUTSIDE_SUPPORTED_DOMAIN`, and
+`EVIDENCE_DOMAIN_UNSUPPORTED`. Generic availability semantics remain
 `availability=UNAVAILABLE` plus null numeric outputs. No code authorizes
 interpolation, extrapolation, nearest-neighbour selection, or a numeric fallback.
 
@@ -196,14 +196,16 @@ interpolation, extrapolation, nearest-neighbour selection, or a numeric fallback
     "terminal_value_is_cash_revenue": false
   },
   "yield": {
-    "availability": "UNAVAILABLE",
+    "availability": "AVAILABLE",
     "cultivar_group_code": "SERTANI_GROUP",
     "cultivar_group_resolved": true,
-    "baseline_kg_per_are": null,
-    "rice_duck_response_factor": null,
-    "yield_kg_per_are": null,
-    "yield_total_kg": null,
-    "reason_codes": ["Y_BASE_GROUP_LOOKUP_MISSING", "F_RD_NODE_MISSING"]
+    "baseline_kg_per_are": 44.5,
+    "rice_duck_response_factor": 1.028,
+    "yield_kg_per_are": 45.746,
+    "yield_total_kg": 320.222,
+    "yield_baseline_source_id": "YB-SERTANI-SULAEMAN-2022",
+    "yield_frd_source_id": "FRD-FENG-2024",
+    "reason_codes": []
   },
   "fertilizer_baseline": {
     "availability": "AVAILABLE",
@@ -261,22 +263,22 @@ interpolation, extrapolation, nearest-neighbour selection, or a numeric fallback
   "economics": {
     "paddy_price_benchmark_rp_per_kg": 6500.0,
     "paddy_price_semantics": "REGULATORY_HPP",
-    "paddy_revenue_rp": null,
-    "cash_revenue_rp": null,
-    "gross_economic_value_rp": null,
-    "margin_core_rp": null,
+    "paddy_revenue_rp": 2081443.0,
+    "cash_revenue_rp": 2081443.0,
+    "gross_economic_value_rp": 3206443.0,
+    "margin_core_rp": 2178701.86,
     "profit_full_est_rp": null,
     "profit_full_status": "UNAVAILABLE_INCOMPLETE_COST"
   },
   "reliability": {
-    "yield_availability": "UNAVAILABLE",
+    "yield_availability": "AVAILABLE",
     "survival_availability": "AVAILABLE",
     "feed_cost_availability": "UNAVAILABLE",
     "cost_completeness": "INCOMPLETE",
     "extrapolation": "IN_DOMAIN"
   },
   "warnings": [
-    "Yield numeric output is unavailable until approved group-baseline and exact-node F_RD records are configured.",
+    "YIELD_EVIDENCE_WARNING: LOW_EVIDENCE_TWO_LOCATION_EXTERNAL_RANGE",
     "Feed cost is unavailable; full profit is not computed."
   ],
   "trace": {
@@ -370,9 +372,13 @@ Canonical top-level response:
     "components": [...]
   },
   "yield_series": {
-    "availability": "UNAVAILABLE",
+    "availability": "AVAILABLE",
     "points": [],
-    "reason_codes": ["Y_BASE_GROUP_LOOKUP_MISSING", "F_RD_NODE_MISSING"]
+    "reason_codes": [],
+    "yield_ref_kg_per_are": 45.746,
+    "yield_low_kg_per_are": 22.9244,
+    "yield_high_kg_per_are": 68.5676,
+    "yield_range_type": "LITERATURE_EVIDENCE_ENVELOPE"
   },
   "financial_waterfall": {
     "availability": "PARTIAL",
@@ -422,11 +428,10 @@ Examples that should be removed from the R2 canonical response:
 
 If frontend migration needs temporary aliases, place them behind an explicitly temporary compatibility adapter and never persist them as v4 canonical semantics.
 
-## 9. Phase-6 Candidate Yield Contract (R2.3; documentation only)
+## 9. Current Phase-6 Yield Contract
 
-The seven-input request is unchanged. This contract activates only with the
-future `R2-2026-08-26.3` registry/freeze; until then, the R2.2 runtime remains
-the historical unavailable-yield implementation.
+The seven-input request is unchanged. The active runtime uses registry
+`R2-2026-08-26.3` and corrected pre-comparator freeze `.4`.
 
 For a request that passes the full Phase-6 supported-domain gate, `yield` must
 contain the following exact semantic representation:
@@ -449,6 +454,8 @@ contain the following exact semantic representation:
   "yield_evidence_status": "LITERATURE_UNCALIBRATED",
   "yield_evidence_strength": "EXTERNAL_FIELD_DISTRIBUTION_N43",
   "yield_evidence_warning": null,
+  "yield_baseline_source_id": "YB-INPARI-SULAEMAN-2024",
+  "yield_frd_source_id": "FRD-FENG-2024",
   "yield_kg_per_are": 54.998,
   "yield_total_kg": 384.986,
   "reason_codes": []

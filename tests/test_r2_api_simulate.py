@@ -45,7 +45,7 @@ def test_supported_domain_default_price_semantics() -> None:
     assert model["history_schema_version"] == 4
     assert model["parameter_registry_version"] == "R2-2026-08-26.3"
     assert model["frozen"] is True  # sourced from app.data.seed.MODEL_FROZEN (docs/11)
-    assert model["freeze_id"] == "R2-FREEZE-2026-08-26.3"
+    assert model["freeze_id"] == "R2-FREEZE-2026-08-26.4"
     assert model["generated_at"]
 
     # Input echo: omitted price resolves to registry default.
@@ -98,6 +98,8 @@ def test_supported_domain_default_price_semantics() -> None:
     assert yld["yield_total_kg"] == yld["yield_total_ref_kg"] == 320.222
     assert yld["yield_range_type"] == "LITERATURE_EVIDENCE_ENVELOPE"
     assert yld["yield_evidence_warning"] == "LOW_EVIDENCE_TWO_LOCATION_EXTERNAL_RANGE"
+    assert yld["yield_baseline_source_id"] == "YB-SERTANI-SULAEMAN-2022"
+    assert yld["yield_frd_source_id"] == "FRD-FENG-2024"
     assert yld["reason_codes"] == []
 
     # Fertilizer baseline available.
@@ -167,6 +169,7 @@ def test_supported_domain_default_price_semantics() -> None:
     ):
         assert category in warnings_text
     assert "60%" not in warnings_text
+    assert "YIELD_EVIDENCE_WARNING" in warnings_text
     assert "prediction still calculated" not in warnings_text.lower()
 
     # Trace: truthful formula ids + defaulted price record + reasons.
@@ -185,6 +188,9 @@ def test_supported_domain_default_price_semantics() -> None:
     assert "yield" not in trace["availability_reasons"]
     assert trace["lookup_versions"]["parameter_registry"] == "R2-2026-08-26.3"
     assert trace["lookup_versions"]["yield_base_by_cultivar_group"] == "ACTIVE_RANGE"
+    assert trace["lookup_versions"]["f_rd_lookup"] == "ACTIVE"
+    assert trace["parameter_sources"]["yield_base_by_cultivar_group"] == ["YB-INPARI-SULAEMAN-2024", "YB-SERTANI-SULAEMAN-2022"]
+    assert trace["parameter_sources"]["f_rd_lookup"] == ["FRD-FENG-2024"]
 
 
 def test_response_top_level_yield_alias_and_no_flat_legacy_fields() -> None:

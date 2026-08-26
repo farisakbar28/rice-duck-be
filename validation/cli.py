@@ -25,6 +25,7 @@ from validation.comparators import (  # noqa: E402
     build_calendar_comparator,
     build_component_comparators,
     build_purchase_comparator,
+    build_yield_comparator,
     run_stress_rows,
 )
 from validation.provenance import (  # noqa: E402
@@ -101,8 +102,6 @@ def main(argv: list[str] | None = None) -> int:
 
     print("[validation] probing canonical runtime availability state ...")
     probe = probe_production_availability()
-    yield_unavailable = probe["yield_availability"] == "UNAVAILABLE"
-
     print("[validation] executing synthetic B01-B18 via canonical HTTP path ...")
     synthetic_records = run_synthetic_cases()
     age_invariance = run_age_invariance()
@@ -120,6 +119,13 @@ def main(argv: list[str] | None = None) -> int:
         build_calendar_comparator(reconstruction)
         if reconstruction.status == RECONSTRUCTION_OK else {
             "status": reconstruction.status, "metrics": None
+        }
+    )
+    yield_validation = (
+        build_yield_comparator(reconstruction)
+        if reconstruction.status == RECONSTRUCTION_OK else {
+            "status": reconstruction.status, "metrics": None, "rows": [],
+            "age_assumption_invariance": None,
         }
     )
     purchase_block = (
@@ -150,6 +156,15 @@ def main(argv: list[str] | None = None) -> int:
         "status": purchase_block["status"],
         "effective_n": purchase_block["effective_n"],
     }
+    eligibility["components"]["yield"].update({
+        "status": yield_validation["status"],
+        "metric_allowed": yield_validation["status"] == "EVALUATED",
+        "metrics": yield_validation.get("metrics"),
+    })
+    if yield_validation["status"] == "EVALUATED":
+        eligibility["components"]["paddy_revenue_operational"].update({
+            "status": "EVALUATED", "metric_allowed": True,
+        })
 
     gate = evaluate_official_gate(
         identity,
@@ -193,6 +208,7 @@ def main(argv: list[str] | None = None) -> int:
         run_dir / "calendar_validation.json",
         calendar_block,
     )
+    report_mod.write_json(run_dir / "yield_validation.json", yield_validation)
     report_mod.write_json(run_dir / "purchase_validation.json", purchase_block)
     report_mod.write_json(run_dir / "component_comparators.json", component_block)
     report_mod.write_json(run_dir / "stress_results.json", stress_block)
@@ -225,7 +241,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"[validation] V1 matrix all_pass : {v1['all_pass']}")
     print(f"[validation] age invariance     : pass={age_invariance['pass']}")
     print(f"[validation] empirical sources  : {fixture_manifest['empirical_source_status']}")
-    print(f"[validation] yield status       : {yield_block['status']} ({yield_block['reason']})")
+    print(f"[validation] yield status       : {yield_validation['status']}")
     print(f"[validation] run_mode           : {gate.run_mode}")
     if gate.failed_conditions:
         print(f"[validation] gate failures      : {gate.failed_conditions}")
@@ -233,7 +249,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Mode A/B status line (task §42/§43).
     if not gate.official:
-        print("STATUS: PHASE5_PREPARE_RUN_COMPLETE_NON_OFFICIAL")
+        print("STATUS: PHASE6_PRECOMPARATOR_DRY_RUN_NON_OFFICIAL")
     elif not fixture_manifest["empirical_source_status"] == "OK":
         print("STATUS: PHASE 5 EMPIRICAL SOURCE BLOCKED (official identity recorded)")
     else:

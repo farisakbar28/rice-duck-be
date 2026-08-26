@@ -89,6 +89,20 @@ def test_v4_round_trip_returns_stored_semantic_snapshot() -> None:
     assert detail.json() == original
 
 
+def test_phase6_snapshot_preserves_yield_envelope_and_source_trace() -> None:
+    client = make_client()
+    headers = register_and_login(client, email="phase6-history@example.com")
+    original = _simulate(client, headers).json()
+    history_id = client.get(f"{API}/dss/histories", headers=headers).json()["data"][0]["id"]
+    stored = client.get(f"{API}/dss/histories/{history_id}", headers=headers).json()
+    for key in ("yield_ref_kg_per_are", "yield_low_kg_per_are", "yield_high_kg_per_are",
+                "yield_range_type", "yield_baseline_source_id", "yield_frd_source_id",
+                "yield_evidence_strength", "yield_evidence_warning"):
+        assert stored["yield"][key] == original["yield"][key]
+    assert stored["model"]["parameter_registry_version"] == "R2-2026-08-26.3"
+    assert stored["model"]["freeze_id"] == "R2-FREEZE-2026-08-26.4"
+
+
 def test_unknown_scientific_outputs_persist_as_null() -> None:
     client = make_client()
     headers = register_and_login(client)

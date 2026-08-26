@@ -93,13 +93,15 @@ Do not delete extreme residuals from the 36 after seeing results.
 
 ## 6. Yield Validation Gate
 
-**Current R2 state:** yield runtime is `PENDING_LOOKUP/UNAVAILABLE` until approved local-cultivar-group baseline and exact-node F_RD records are configured. Grouping and schema readiness are not numeric evidence.
+**Current Phase-6 state:** the literature evidence envelope is available only
+when cultivar group, baseline, global `F_RD` reference, age, and density all
+pass the supported-domain gate. Unsupported rows remain null/fail-closed.
 
 Therefore:
 
 ```text
-if YieldAvailabilityFlag != AVAILABLE:
-    DO NOT calculate/publish R2 yield MAE/RMSE.
+if yield prediction is unavailable:
+    exclude it from numeric metrics, retain it in the global coverage denominator.
 ```
 
 Do not use legacy fixed `47.8767507` just to make validation runnable.
@@ -336,7 +338,8 @@ At minimum:
 16. KCl branch not used.
 17. net min/ref/max range is monotonic.
 18. feed numeric value remains null while lookup unavailable.
-19. yield numeric value remains null while lookup unavailable.
+19. Phase-6 yield reference/low/high arithmetic, evidence-envelope semantics,
+    source traceability, and supported-domain fail-closed gates.
 20. `V_duck_end` never appears as cash duck sale revenue.
 21. `Profit_full_est` is null while cost completeness incomplete.
 22. disabled legacy formulas are not imported/called by production path.
@@ -386,8 +389,9 @@ proposal. Do not access any yield comparator outcome until the Phase-6 code,
 tests, registry `R2-2026-08-26.3`, and matching committed freeze are complete
 on a clean tree.
 
-Primary yield cohort: every eligible clean record for which the frozen runtime
-returns numeric `yield_ref_kg_per_are`. Report total clean N, prediction
+Primary yield cohort: all clean records with semantically compatible actual
+yield. `prediction_coverage = N_predicted / N_total_actual_eligible`; metrics
+are computed only on `N_predicted`. Report total eligible N, prediction
 coverage N and percent, strict supported-domain N, cultivar subgroup N
 (`INPARI_GROUP` and `SERTANI_GROUP` separately), and planting-system subgroup
 N where sufficiently large. Never present one pooled headline without the

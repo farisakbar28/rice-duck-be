@@ -88,25 +88,13 @@ def _supported_survival_checks(duck_count: int) -> list[tuple]:
     ]
 
 
-def _yield_unavailable_checks() -> list[tuple]:
-    def _reasons(b):
-        return set(_g(b, "yield", "reason_codes"))
-
+def _yield_available_checks() -> list[tuple]:
     return [
-        ("yield_availability == UNAVAILABLE",
-         lambda b: _g(b, "yield", "availability") == "UNAVAILABLE"),
-        ("yield_kg_per_are is null",
-         lambda b: _g(b, "yield", "yield_kg_per_are") is None),
-        ("yield_total_kg is null",
-         lambda b: _g(b, "yield", "yield_total_kg") is None),
-        ("reason codes group baseline + exact F_RD node missing",
-         lambda b: _reasons(b) == {
-             "Y_BASE_GROUP_LOOKUP_MISSING", "F_RD_NODE_MISSING"
-         }),
-        ("paddy_revenue_rp is null",
-         lambda b: _g(b, "economics", "paddy_revenue_rp") is None),
-        ("margin_core_rp is null",
-         lambda b: _g(b, "economics", "margin_core_rp") is None),
+        ("yield_availability == AVAILABLE", lambda b: _g(b, "yield", "availability") == "AVAILABLE"),
+        ("reference/low/high yield present", lambda b: all(_g(b, "yield", key) is not None for key in ("yield_ref_kg_per_are", "yield_low_kg_per_are", "yield_high_kg_per_are"))),
+        ("range type is literature evidence envelope", lambda b: _g(b, "yield", "yield_range_type") == "LITERATURE_EVIDENCE_ENVELOPE"),
+        ("both source IDs present", lambda b: _g(b, "yield", "yield_baseline_source_id") and _g(b, "yield", "yield_frd_source_id") == "FRD-FENG-2024"),
+        ("paddy revenue propagates", lambda b: _g(b, "economics", "paddy_revenue_ref_rp") is not None),
     ]
 
 
@@ -138,7 +126,7 @@ SYNTHETIC_CASES: list[SyntheticCase] = [
                lambda b: _g(b, "costs", "cost_completeness") == "INCOMPLETE"),
               ("profit_full_est_rp is null",
                lambda b: _g(b, "economics", "profit_full_est_rp") is None),
-          ] + _supported_survival_checks(30) + _yield_unavailable_checks()),
+          ] + _supported_survival_checks(30) + _yield_available_checks()),
     _case("B02", "Supported Tegel d=3",
           {"planting_system": "tegel"},
           [
@@ -236,8 +224,10 @@ SYNTHETIC_CASES: list[SyntheticCase] = [
     _case("B14", "Invalid zero purchase price rejected",
           {"p_duck_buy": 0},
           []),  # zero is not R2 missing-value semantics -> HTTP 400
-    _case("B15", "Missing yield lookup chain null", {},
-          _yield_unavailable_checks()),
+    _case("B15", "Unsupported age fail-closed yield", {"duck_age_days": 20},
+          [("yield unavailable", lambda b: _g(b, "yield", "availability") == "UNAVAILABLE"),
+           ("yield refs null", lambda b: _g(b, "yield", "yield_ref_kg_per_are") is None),
+           ("age reason emitted", lambda b: "AGE_OUTSIDE_SUPPORTED_DOMAIN" in _g(b, "yield", "reason_codes"))]),
     _case("B16", "Fertilizer baseline identities (A=10)",
           {},
           [
@@ -301,8 +291,8 @@ SYNTHETIC_CASES: list[SyntheticCase] = [
                                 math.floor(30 * 0.90) * 45000)),
               ("terminal_value_is_cash_revenue is False",
                lambda b: _g(b, "duck", "terminal_value_is_cash_revenue") is False),
-              ("cash_revenue null while yield unavailable",
-               lambda b: _g(b, "economics", "cash_revenue_rp") is None),
+              ("cash_revenue is paddy cash only",
+               lambda b: _g(b, "economics", "cash_revenue_rp") == _g(b, "economics", "paddy_revenue_rp")),
               ("sale_quantity_status UNAVAILABLE",
                lambda b: _g(b, "duck", "sale_quantity_status") == "UNAVAILABLE"),
           ]),
@@ -479,7 +469,7 @@ def parse_pytest_summary(output: str) -> dict:
                 summary["collected"] = int(stripped.split()[0])
             except (ValueError, IndexError):
                 pass
-        if ", " in stripped and ("passed" in stripped or "failed" in stripped):
+        if "passed" in stripped or "failed" in stripped:
             for token in stripped.split(","):
                 parts = token.strip().split()
                 if len(parts) >= 2 and parts[1] in (
@@ -556,7 +546,7 @@ V1_MATRIX: tuple[dict, ...] = (
      "files": ["tests/test_r2_infrastructure.py"]},
     {"id": "V1-18", "requirement": "feed numeric null while lookup unavailable",
      "files": ["tests/test_r2_availability_components.py"]},
-    {"id": "V1-19", "requirement": "yield numeric null while lookup unavailable",
+    {"id": "V1-19", "requirement": "Phase-6 yield arithmetic, envelope, and supported-domain gate",
      "files": ["tests/test_r2_yield_engine.py"]},
     {"id": "V1-20", "requirement": "V_duck_end never cash duck sale revenue",
      "files": ["tests/test_r2_economics.py"]},

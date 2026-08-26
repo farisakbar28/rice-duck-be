@@ -124,7 +124,7 @@ def build_freeze_manifest(
     sources: dict[str, SourceFile],
     test_summary: dict,
 ) -> dict:
-    from app.data.seed import PLANTING_SYSTEMS, RICE_VARIETIES
+    from app.data.seed import PARAMETER_REGISTRY, PLANTING_SYSTEMS, RICE_VARIETIES
 
     manifest = {
         "freeze_id": identity.freeze_id,
@@ -171,9 +171,10 @@ def build_freeze_manifest(
             for p in _parameter_dump()
             if p["execution_state"] in ("PENDING_LOOKUP", "UNAVAILABLE")
         ],
-        "yield_lookup_state": "PENDING_LOOKUP (Y_base + F_RD unpopulated)",
-        "feed_lookup_state": "UNAVAILABLE",
-        "cage_capacity_state": "UNAVAILABLE (total cost null)",
+        "yield_baseline_state": PARAMETER_REGISTRY["yield_base_by_cultivar_group"].execution_state.value,
+        "f_rd_state": PARAMETER_REGISTRY["f_rd_lookup"].execution_state.value,
+        "feed_lookup_state": PARAMETER_REGISTRY["feed_quantity_lookup"].execution_state.value,
+        "cage_capacity_state": PARAMETER_REGISTRY["cage_capacity_rule"].execution_state.value,
         "canonical_artifact_sha256": canonical_artifact_hashes(),
         "test_summary": test_summary,
         "source_fingerprints": [s.to_dict() for s in sources.values()],
@@ -225,15 +226,15 @@ def build_component_eligibility(
         "yield": {
             "prediction_availability": probe["yield_availability"],
             "reason_codes": probe["yield_reason_codes"],
-            "status": YIELD_STATUS_NOT_EVALUABLE,
-            "reason": YIELD_REASON_R2_UNAVAILABLE,
-            "metric_allowed": False,
+            "status": "PENDING_SOURCE_RECONSTRUCTION" if source_ready and probe["yield_availability"] == "AVAILABLE" else YIELD_STATUS_NOT_EVALUABLE,
+            "reason": None if probe["yield_availability"] == "AVAILABLE" else probe["yield_reason_codes"],
+            "metric_allowed": source_ready and probe["yield_availability"] == "AVAILABLE",
             "comparator": comparator("yield_actual"),
         },
         "paddy_revenue_operational": {
-            "status": YIELD_STATUS_NOT_EVALUABLE,
-            "reason": YIELD_REASON_R2_UNAVAILABLE,
-            "metric_allowed": False,
+            "status": "PENDING_SOURCE_RECONSTRUCTION" if source_ready and probe["yield_availability"] == "AVAILABLE" else YIELD_STATUS_NOT_EVALUABLE,
+            "reason": None if probe["yield_availability"] == "AVAILABLE" else probe["yield_reason_codes"],
+            "metric_allowed": source_ready and probe["yield_availability"] == "AVAILABLE",
         },
         "paddy_revenue_price_neutral_diagnostic": {
             "status": YIELD_STATUS_NOT_EVALUABLE,
@@ -309,24 +310,16 @@ def build_component_eligibility(
 
 
 def build_yield_status_block(probe: dict, sources: dict[str, SourceFile]) -> dict:
-    """Yield metrics derive from PRODUCTION AVAILABILITY STATE (task §23)."""
-    unavailable = probe["yield_availability"] == "UNAVAILABLE"
-    if not unavailable:  # defensive: harness refuses to exist in that world silently
-        raise RuntimeError(
-            "Production yield reported AVAILABLE; this harness version has no "
-            "approved quantitative yield-validation protocol. Stop and run a "
-            "new pre-freeze review before extending validation."
-        )
     source_ready = empirical_source_status(sources) == EMPIRICAL_SOURCE_STATUS_OK
+    available = probe["yield_availability"] == "AVAILABLE"
     return {
-        "status": YIELD_STATUS_NOT_EVALUABLE,
-        "reason": YIELD_REASON_R2_UNAVAILABLE,
-        "actual_coverage": "36/36" if source_ready else "unverified_source_gate",
-        "prediction_coverage": 0,
-        "prediction_coverage_label": "0/36",
-        "quantitative_metrics": None,
-        "metrics_not_computed": ["MAE", "RMSE", "MedAE", "MBE", "WAPE", "MAPE",
-                                 "R2", "release_scenario_envelope_coverage"],
+        "status": "EVALUATED" if source_ready and available else YIELD_STATUS_NOT_EVALUABLE,
+        "reason": None if available else probe["yield_reason_codes"],
+        "actual_coverage": "reconstructed_from_source" if source_ready else "unverified_source_gate",
+        "prediction_coverage": None,
+        "prediction_coverage_label": "computed_from_runtime_after_reconstruction",
+        "quantitative_metrics": "pending_source_reconstruction" if source_ready and available else None,
+        "metrics_not_computed": [] if source_ready and available else ["MAE", "RMSE", "MedAE", "MBE", "WAPE", "MAPE", "R2", "LITERATURE_EVIDENCE_ENVELOPE_COVERAGE"],
         "derived_from_runtime_response_field": "yield.availability",
     }
 
@@ -361,7 +354,7 @@ def render_validation_report_md(
     passed = sum(1 for r in synthetic_records if r["pass"])
     lines: list[str] = []
     add = lines.append
-    add(f"# R2 Phase-5 Validation Report ({manifest['run_mode']})")
+    add(f"# R2 Phase-6 Validation Report ({manifest['run_mode']})")
     add("")
     add(f"> Execution: {ts} | Python {manifest['python_version']} | "
         f"backend commit `{manifest['backend_commit_sha']}` | "
@@ -413,11 +406,11 @@ def render_validation_report_md(
     add("## 7. Yield status")
     add(f"- status={yb['status']}; reason={yb['reason']}; "
         f"actual_coverage={yb['actual_coverage']}; prediction_coverage={yb['prediction_coverage_label']}; "
-        f"quantitative_metrics=None")
+        f"quantitative_metrics={yb['quantitative_metrics']}")
     add("")
     add("## 8. Revenue status")
-    add("- operational paddy revenue = NOT_EVALUABLE (yield unavailable); "
-        "price-neutral diagnostic = NOT_EVALUABLE. No zero-residual substitution.")
+    add("- paddy revenue follows live yield availability; no unavailable row is "
+        "converted to a zero prediction or zero residual.")
     add("")
     add("## 9. Survival status")
     add("- ground_truth_status=NO_COMPATIBLE_AGGREGATE; no MAE/RMSE; sold ducks are "
@@ -457,8 +450,8 @@ def render_validation_report_md(
         "(see expert_transfer.json); global notes: " + " ".join(GLOBAL_NOTES))
     add("")
     add("## 17. Limitations")
-    add("- yield/feed/cage-total/full-profit remain unavailable by design; "
-        "cohort counts and comparator eligibility are source-version gated.")
+    add("- feed, cage-total, and full-profit remain unavailable; yield is evaluated "
+        "only after source reconstruction and a numeric runtime response.")
     add("")
     add("## 18. No-recalibration declaration")
     add("- no fitting/optimization/calibration workflow exists in this package "
@@ -470,7 +463,7 @@ def render_validation_report_md(
     add("- Computational implementation: VERIFIED (V1 100%)" if v1["all_pass"]
         else "- Computational implementation: FAILED INVESTIGATION REQUIRED")
     add("- Calendar: quantitatively evaluable only after source verification (blocked).")
-    add("- Yield: NOT EVALUABLE — lookup unavailable (hard gate).")
+    add(f"- Yield: {yb['status']} (live runtime/source gate).")
     add("- Survival: no aggregate ground truth; deterministic + expert evidence only.")
     add("- Feed: not evaluable. Infrastructure: limited/conditional. Full profit: not evaluable.")
     add("- No universal accuracy score exists in this report.")

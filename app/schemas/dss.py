@@ -264,7 +264,7 @@ class DuckOutputs(BaseModel):
 
 
 class YieldOutputs(BaseModel):
-    """Fail-closed yield group (SSOT section 6): null until lookups exist."""
+    """Range-aware, fail-closed Phase-6 yield group (SSOT section 6)."""
 
     availability: AvailabilityStatus | None = None
     cultivar_group_code: str | None = None
@@ -287,6 +287,8 @@ class YieldOutputs(BaseModel):
     yield_evidence_strength: str | None = None
     yield_evidence_warning: str | None = None
     yield_source_id: str | None = None
+    yield_baseline_source_id: str | None = None
+    yield_frd_source_id: str | None = None
     reason_codes: list[ReasonCode] = Field(default_factory=list)
 
 

@@ -1,9 +1,8 @@
 # R2 Freeze Manifest — Governance, Semantics, and Reproducibility
 
-> **Status:** CANONICAL Phase-5 freeze documentation.
-> **Freeze candidate:** `FREEZE_ID = R2-FREEZE-2026-08-26.2`,
-> `FREEZE_EFFECTIVE_FROM = 2026-08-26`, established on top of the Phase-4
-> scientific baseline `39fd69fbfa207862ce4da5be5d4f75e06eed6bdb`.
+> **Status:** CANONICAL Phase-6 pre-comparator freeze documentation.
+> **Current corrected candidate:** `FREEZE_ID = R2-FREEZE-2026-08-26.4`,
+> `FREEZE_EFFECTIVE_FROM = 2026-08-26`.
 
 ## 1. What "frozen" means — and what it does NOT mean
 
@@ -23,7 +22,7 @@ It does **NOT** mean:
 | Dimension | Value / source | Notes |
 |---|---|---|
 | `MODEL_VERSION` | `"R2"` (`app/data/seed.py`) | Scientific model generation; unchanged by freeze. |
-| `PARAMETER_REGISTRY_VERSION` | `"R2-2026-08-26.2"` | Registry identity bumped for the evidence-bounded cultivar/timing/lookup semantic amendment; `MODEL_VERSION` remains `R2`. |
+| `PARAMETER_REGISTRY_VERSION` | `"R2-2026-08-26.3"` | Scientific parameter registry; unchanged between `.3` and `.4`. |
 | History schema version | `4` | Persistence schema of new simulations. |
 | `APP_VERSION` | deployment-injected (`settings.app_version`) | Release versioning is separate. |
 | `MODEL_COMMIT_SHA` | environment-injected (`settings.model_commit_sha`) | Build/runtime commit; never self-referential inside its own commit. |
@@ -107,15 +106,15 @@ requires a new registry/model version and a fresh pre-freeze review.
 
 ## 7. Phase-6 Candidate Freeze Reservation — not active
 
-The next verified-unused candidate identity is
-`PARAMETER_REGISTRY_VERSION=R2-2026-08-26.3` and
-`FREEZE_ID=R2-FREEZE-2026-08-26.3`; `MODEL_VERSION` remains `R2` because the
-seven input concepts and `Y_base * F_RD` model family remain intact. This
-docs-first stage neither changes seed constants nor activates a freeze.
+`.2` is the historical Phase-5C validated target; docs/12 remains unchanged.
 
-The Phase-5C `.2` freeze and docs/12 sign-off remain historical evidence and
-must not be rewritten as Phase-6 validation. `.3` may be activated only in the
-same clean committed implementation that contains the approved range-aware
-records, API/history changes, and passing tests. Immediately before activation,
-recheck that `.3` is still unused; otherwise stop with `VERSION_COLLISION` and
-select a new documented identity rather than overwrite any freeze.
+`.3` is the Phase-6 implementation candidate committed at
+`88a1ebfaff1716021017186f4ade13a50621a556`, recorded as
+`REJECTED_PRE_COMPARATOR_CANDIDATE`. Its harness/test/documentation integration
+was incomplete before comparator exposure. It was never empirically executed
+or empirically invalidated.
+
+`.4` is the current corrected Phase-6 pre-comparator candidate. No scientific
+coefficient changed between `.3` and `.4`, and no comparator result was
+inspected. `MODEL_VERSION=R2` and `PARAMETER_REGISTRY_VERSION=R2-2026-08-26.3`
+remain unchanged.

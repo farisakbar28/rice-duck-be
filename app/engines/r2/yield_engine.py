@@ -28,6 +28,8 @@ class YieldResult:
     yield_total_low_kg: Decimal | None = None
     yield_total_high_kg: Decimal | None = None
     source_id: str | None = None
+    baseline_source_id: str | None = None
+    frd_source_id: str | None = None
     evidence_strength: str | None = None
     evidence_warning: str | None = None
     reason_codes: tuple[ReasonCode, ...] = ()
@@ -56,4 +58,5 @@ def compute_yield(*, variety: RiceVariety | None, normalized_inputs: NormalizedI
         area = to_decimal(normalized_inputs.land_area_are)
         tr, tl, th = yr * area, yl * area, yh * area
     return YieldResult(AvailabilityStatus.AVAILABLE, group, True, ref, low, high, factor, yr, yl, yh, tr, tl, th,
-                       record["source_id"], record["evidence_strength"], record["warning"])
+                       record["source_id"], record["source_id"], F_RD_REFERENCE["source_id"],
+                       record["evidence_strength"], record["warning"])

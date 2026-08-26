@@ -8,7 +8,7 @@ from datetime import date
 from typing import Any
 
 from validation._bootstrap import configure_runtime_env
-from validation.metrics import calendar_metrics
+from validation.metrics import calendar_metrics, phase6_yield_metrics, phase6_yield_subgroups
 from validation.workbook_parser import Reconstruction
 
 configure_runtime_env()
@@ -70,8 +70,8 @@ def build_purchase_comparator(reconstruction: Reconstruction) -> dict[str, Any]:
     rows = []
     for row in reconstruction.clean_records:
         price = row["duck_purchase_price"]
-        provenance = row["input_fields"]["p_duck_buy"]["provenance"]
-        if provenance != "OBSERVED" or not isinstance(price, (int, float)) or price <= 0:
+        provenance = row["actual_provenance"].get("duck_purchase_price")
+        if provenance != "OBSERVED_VALUE" or not isinstance(price, (int, float)) or price <= 0:
             continue
         rows.append({
             "source_row": row["source_row"],
@@ -91,6 +91,72 @@ def build_purchase_comparator(reconstruction: Reconstruction) -> dict[str, Any]:
             float(statistics.median(prices)) if prices else None
         ),
         "rows": rows,
+    }
+
+
+def build_yield_comparator(reconstruction: Reconstruction) -> dict[str, Any]:
+    """Replay clean rows through the canonical HTTP runtime, without formulas.
+
+    This function is deliberately dormant unless source reconstruction has
+    succeeded.  It never opens a workbook itself and records the two
+    pre-registered supported-age assumptions for every executed row.
+    """
+    client = make_client()
+    records: list[dict[str, Any]] = []
+    for row in reconstruction.clean_records:
+        fields = row["input_fields"]
+        base_payload = {name: fields[name]["value"] for name in (
+            "land_area_are", "duck_count", "planting_date", "planting_system",
+            "rice_variety", "p_duck_buy",
+        )}
+        responses: dict[int, dict[str, Any]] = {}
+        for age in (21, 30):
+            payload = {**base_payload, "duck_age_days": age}
+            response = client.post(f"{API}/dss/simulate", json=payload)
+            responses[age] = response.json() if response.status_code == 200 else {}
+        y21, y30 = responses[21].get("yield", {}), responses[30].get("yield", {})
+        numeric_21 = y21.get("yield_ref_kg_per_are") is not None
+        invariant = not numeric_21 or all(
+            y21.get(key) == y30.get(key)
+            for key in ("yield_ref_kg_per_are", "yield_low_kg_per_are", "yield_high_kg_per_are")
+        )
+        if numeric_21 and not invariant:
+            raise RuntimeError(f"AGE_ASSUMPTION_YIELD_INVARIANCE_FAILED source_row={row['source_row']}")
+        actual = row.get("actual_yield_kg_per_are")
+        actual_provenance = row.get("actual_provenance", {}).get("actual_yield_kg_per_are")
+        if actual_provenance != "OBSERVED_VALUE":
+            actual = None
+        records.append({
+            "source_row": row["source_row"], "farmer_cluster_id": row["farmer_cluster_id"],
+            "model_version": responses[21].get("model", {}).get("model_version"),
+            "registry_version": responses[21].get("model", {}).get("parameter_registry_version"),
+            "freeze_id": responses[21].get("model", {}).get("freeze_id"),
+            "backend_commit_sha": responses[21].get("model", {}).get("model_commit_sha"),
+            "land_area_are": fields["land_area_are"]["value"], "land_area_are_provenance": fields["land_area_are"]["provenance"],
+            "duck_count": fields["duck_count"]["value"], "duck_count_provenance": fields["duck_count"]["provenance"],
+            "planting_system": fields["planting_system"]["value"], "planting_system_provenance": fields["planting_system"]["provenance"],
+            "rice_variety": fields["rice_variety"]["value"], "rice_variety_provenance": fields["rice_variety"]["provenance"],
+            "duck_age_days": 21, "duck_age_days_provenance": "VALIDATION_ASSUMPTION",
+            "planting_date": fields["planting_date"]["value"], "planting_date_provenance": fields["planting_date"]["provenance"],
+            "density": responses[21].get("operational", {}).get("density_are"),
+            "age_support": responses[21].get("operational", {}).get("age_support"),
+            "density_support": responses[21].get("operational", {}).get("density_support"),
+            "cultivar_group": y21.get("cultivar_group_code"),
+            "actual": actual, "actual_yield": actual, "actual_yield_provenance": actual_provenance,
+            "yield_availability": y21.get("availability"), "reason_codes": y21.get("reason_codes", []),
+            "pred_ref": y21.get("yield_ref_kg_per_are"), "pred_low": y21.get("yield_low_kg_per_are"), "pred_high": y21.get("yield_high_kg_per_are"),
+            "baseline_source_id": y21.get("yield_baseline_source_id"), "frd_source_id": y21.get("yield_frd_source_id"),
+            "evidence_strength": y21.get("yield_evidence_strength"), "evidence_warning": y21.get("yield_evidence_warning"),
+            "actual_inside_evidence_envelope": (y21.get("yield_low_kg_per_are") <= actual <= y21.get("yield_high_kg_per_are")) if numeric_21 and actual is not None else None,
+            "age_assumption_invariant": invariant,
+        })
+    metrics = phase6_yield_metrics(records)
+    return {
+        "status": "EVALUATED" if metrics["N_predicted"] else "NOT_EVALUABLE",
+        "age_assumptions_days": [21, 30], "age_assumption_provenance": "VALIDATION_ASSUMPTION",
+        "primary_replay_age_days": 21, "sensitivity_replay_age_days": 30,
+        "age_assumption_invariance": all(row["age_assumption_invariant"] for row in records),
+        "metrics": metrics, "subgroups": phase6_yield_subgroups(records), "rows": records,
     }
 
 

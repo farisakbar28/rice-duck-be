@@ -68,8 +68,8 @@
 | cage per-unit amortization | 150–200k/cycle | I1 | `local-estimate` |
 | weeding baseline | 6–38k/are | I1 | `local-estimate` |
 | local cultivar grouping | `SERTANI_GROUP` / `INPARI_GROUP`, approved aliases only | V1/V2 label audit | `system-design` / structure ready; not genetic identity |
-| Y_base local cultivar group | unresolved/null | future approved source | `literature-uncalibrated` / `PENDING_LOOKUP` |
-| F_RD response | unresolved/null exact-node lookup | R2 design context + future approved evidence | `literature-uncalibrated` / `PENDING_LOOKUP` |
+| Y_base local cultivar group | Phase-6 INPARI_GROUP / SERTANI_GROUP evidence ranges | approved external literature records | `literature-uncalibrated` / `ACTIVE_RANGE` |
+| F_RD response | global reference 1.028 (`FRD-FENG-2024`) | approved external literature record | `literature-uncalibrated` / `ACTIVE` |
 | feed cost | unresolved | I1/R3 candidate mechanism | `UNAVAILABLE` |
 | KCl price | unresolved | none accepted | `UNAVAILABLE` |
 

@@ -57,6 +57,10 @@ def test_visualization_contract_is_canonical_and_availability_aware() -> None:
     assert body["yield_series"]["availability"] == "AVAILABLE"
     assert body["yield_series"]["points"] == []
     assert body["yield_series"]["reason_codes"] == []
+    assert body["yield_series"]["yield_ref_kg_per_are"] == simulation["yield"]["yield_ref_kg_per_are"]
+    assert body["yield_series"]["yield_low_kg_per_are"] == simulation["yield"]["yield_low_kg_per_are"]
+    assert body["yield_series"]["yield_high_kg_per_are"] == simulation["yield"]["yield_high_kg_per_are"]
+    assert body["yield_series"]["yield_range_type"] == "LITERATURE_EVIDENCE_ENVELOPE"
 
     nodes = {node["key"]: node for node in body["financial_waterfall"]["nodes"]}
     assert nodes["terminal_duck_value_ref"]["kind"] == "ASSET_VALUE"

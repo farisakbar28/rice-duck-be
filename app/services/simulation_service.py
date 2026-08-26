@@ -164,6 +164,8 @@ _CONSUMED_PARAMETER_KEYS = (
     "pesticide_effect",
     "p_gabah_ref_rp_per_kg",
     "duck_terminal_value_rp_per_duck",
+    "yield_base_by_cultivar_group",
+    "f_rd_lookup",
 )
 
 # Regulatory-locked parameters surfaced as regulation versions in trace.
@@ -504,6 +506,8 @@ class DSSService:
             yield_evidence_strength=yld.evidence_strength,
             yield_evidence_warning=yld.evidence_warning,
             yield_source_id=yld.source_id,
+            yield_baseline_source_id=yld.baseline_source_id,
+            yield_frd_source_id=yld.frd_source_id,
             reason_codes=list(yld.reason_codes),
         )
 
@@ -604,11 +608,12 @@ class DSSService:
             )
         if yld.availability is AvailabilityStatus.UNAVAILABLE:
             warnings.append(
-                "YIELD_LOOKUP_UNAVAILABLE: yield numeric output is unavailable "
-                "until approved local-group baseline and exact-node rice-duck "
-                "response lookups "
-                "are configured."
+                "YIELD_UNAVAILABLE: yield is outside the supported evidence "
+                "domain or a required cultivar baseline/F_RD reference is missing; "
+                "see yield.reason_codes."
             )
+        elif yld.evidence_warning:
+            warnings.append(f"YIELD_EVIDENCE_WARNING: {yld.evidence_warning}")
         if feed.availability is AvailabilityStatus.UNAVAILABLE:
             warnings.append(
                 "FEED_COST_UNAVAILABLE: feed quantity and price lookups are "
@@ -677,8 +682,8 @@ class DSSService:
 
         lookup_states = {
             "parameter_registry": PARAMETER_REGISTRY_VERSION,
-            "yield_base_by_cultivar_group": "PENDING_LOOKUP",
-            "f_rd_lookup": "PENDING_LOOKUP",
+            "yield_base_by_cultivar_group": "ACTIVE_RANGE",
+            "f_rd_lookup": "ACTIVE",
             "feed_quantity_lookup": "UNAVAILABLE",
             "feed_price_lookup": "UNAVAILABLE",
             "cage_capacity_rule": "UNAVAILABLE",
