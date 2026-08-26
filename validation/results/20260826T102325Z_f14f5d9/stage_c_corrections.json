@@ -1,0 +1,35 @@
+{
+  "official_run_id": "20260826T102325Z_f14f5d9",
+  "scientific_target_sha": "f14f5d97b09d8afb29e4d0d840e41fe2b00886f5",
+  "evidence_commit_sha": "4ffa65b0ecaa1e880194802bd3786cb7f27a90b7",
+  "generated_at_utc": "2026-08-26T12:12:47Z",
+  "stage_c_review_status": "APPROVE TECHNICAL VALIDATION COMPLETE",
+  "findings": {
+    "F-01": {
+      "severity": "P2",
+      "status": "CORRECTED",
+      "original_issue": "purchase_validation.json labeled source rows 14 and 18 as OBSERVED_VALUE even though their raw unit-price cells are formula-derived ('=200000/9' and '=200000/AM18') and must be DERIVED_ACTUAL under the canonical provenance taxonomy; effective_n=29 therefore overstated the strictly observed cohort.",
+      "corrected_interpretation": "Strict observed-price comparator uses only the 27 OBSERVED_VALUE rows (min Rp5,000, max Rp32,000, mean Rp18,818.11, median Rp25,000 per duck). Rows 14 and 18 are disclosed separately as DERIVED_ACTUAL contextual evidence. 4 EXPLICIT_ZERO and 3 MISSING_UNKNOWN rows used the runtime local default when replayed and are excluded from directly observed comparators.",
+      "original_artifact_preserved": "validation/results/20260826T102325Z_f14f5d9/purchase_validation.json",
+      "corrected_artifact_path": "validation/results/20260826T102325Z_f14f5d9/purchase_validation_stage_c_corrected.json"
+    },
+    "F-02": {
+      "severity": "P3",
+      "status": "CORRECTED",
+      "original_issue": "validation_report.md sections 6 and 19 contained two stale pre-empirical placeholder statements about the calendar comparator ('Prior-audit expectation N=12 must be recomputed from source before any metric.' and 'Calendar: quantitatively evaluable only after source verification (blocked).') although calendar_validation.json reports status=EVALUATED with full metrics.",
+      "corrected_interpretation": "Calendar comparator is EVALUATED on N=12 eligible rows with 4 window hits, coverage 33.33% (4/12), mean distance-to-window 5.0 days, median 5.0 days, timing semantics HST_FROM_FIELD_TRANSPLANTING labeled VALIDATION_ASSUMPTION. Coverage is a window-hit rate, never model accuracy.",
+      "original_report_preserved": "validation/results/20260826T102325Z_f14f5d9/validation_report.md",
+      "corrected_report_path": "validation/results/20260826T102325Z_f14f5d9/validation_report_stage_c_corrected.md"
+    }
+  },
+  "scientific_model_changed": false,
+  "new_freeze_required": false,
+  "new_official_run_required": false,
+  "registry_continuity": {
+    "MODEL_VERSION": "R2",
+    "PARAMETER_REGISTRY_VERSION": "R2-2026-08-26.2",
+    "FREEZE_ID": "R2-FREEZE-2026-08-26.2",
+    "note": "post-review evidence interpretation only; no freeze bump to .3"
+  },
+  "publication_evidence_status": "READY_AFTER_STAGE_C_CORRECTIONS"
+}

@@ -151,16 +151,31 @@ Result: **MATCH — no CALENDAR_METRIC_REPRODUCTION_FAILURE**.
 
 ## 12. Purchase-cost comparator
 
+**Post-review correction (Stage-C finding F-01, P2): CLOSED.** The original run
+artifact `purchase_validation.json` labeled source rows 14 and 18 as
+OBSERVED_VALUE even though their raw unit-price cells are formula-derived
+(`=200000/9` and `=200000/AM18`); under the canonical provenance taxonomy they are
+DERIVED_ACTUAL. The publication-facing corrected evidence is
+`validation/results/20260826T102325Z_f14f5d9/purchase_validation_stage_c_corrected.json`;
+the original artifact is preserved unchanged for audit.
+
+Source-recomputed provenance of all 36 clean records:
+OBSERVED_VALUE = 27, DERIVED_ACTUAL = 2 (rows 14, 18), EXPLICIT_ZERO = 4
+(rows 37, 38, 43, 44), MISSING_UNKNOWN = 3 (rows 20, 24, 41); total = 36.
+
 | Item | Value |
 | --- | --- |
-| Eligible N (price positive AND provenance OBSERVED) | 29 |
+| Strict eligible N (price positive AND provenance OBSERVED_VALUE only) | **27** |
+| DERIVED_ACTUAL positive contextual rows (excluded from strict statistics) | 2 — source rows 14 (`=200000/9`, Rp22,222.22222 × 9 ducks) and 18 (`=200000/AM18`, Rp6,666.666667 × 30 ducks) |
 | Defaulted rows excluded (runtime default Rp26,500) | 7 — blank-price rows 20, 24, 41 plus zero-price rows 37, 38, 43, 44 (zeros/blanks are not R2 positive-price inputs; provenance LOCAL_DEFAULT) |
-| Observed price range observed in data | Rp5,000 – Rp32,000 per duck |
-| Mean / median observed price | Rp18,516.48 / Rp25,000 per duck |
-| Identity check | `C_duck_buy = J × observed p_duck_buy` verified per row in `purchase_validation.json`; runtime identity covered by V1 items + synthetic B12 |
+| Observed price range observed in data (strict cohort) | Rp5,000 – Rp32,000 per duck |
+| Mean / median strictly observed price | **Rp18,818.11 / Rp25,000 per duck** |
+| Identity check | `C_duck_buy = J × p_duck_buy` re-verified per row for all 27 OBSERVED_VALUE + 2 DERIVED_ACTUAL records in `purchase_validation_stage_c_corrected.json`; runtime identity covered by V1 items + synthetic B12 |
 
 Rows using the runtime default are explicitly NOT treated as observed-price
-accuracy observations.
+accuracy observations; the default is a model input-resolution rule, not observed
+evidence. The former N=29 / mean Rp18,516.48 figures from the preserved original
+artifact must not be cited as strict directly observed comparator results.
 
 ## 13. Yield final status
 
@@ -260,17 +275,30 @@ labeled DIRECT (3) / PARTIAL (6) / NONE (3) over 12 items
 validation. Technical empirical closure does not depend on the pending final
 expert judgement.
 
-## 19. Known reporting limitation (cosmetic)
+## 19. Reporting correction record (Stage-C findings F-01/F-02 — CLOSED)
 
-`validation_report.md` sections 6 and 19 contain two pre-empirical placeholder
-prose lines ("Prior-audit expectation N=12 …", "…(blocked)") inherited from the
-frozen Stage-A renderer; section 6 does state `status=EVALUATED`. The frozen
-harness could not be edited without breaking the clean-tree/HEAD official-gate
-requirements, so the authoritative empirical numbers are carried by the machine
-artifacts (`calendar_validation.json`, `purchase_validation.json`,
-`stress_results.json`, `cohort_reconstruction.json`) and by this sign-off
-document. A renderer refresh requires a new freeze-cycle commit before any next
-official run; no result value is affected.
+Stage C (post-review) approved technical validation with two publication-facing
+evidence corrections, both now closed through an explicit POST-REVIEW CORRECTION
+LAYER. The original official report `validation_report.md` of run
+`20260826T102325Z_f14f5d9` is **preserved unchanged for audit reproducibility**
+(it was NOT regenerated during the official run and has not been edited since);
+it contains two stale pre-empirical placeholder prose lines in sections 6 and 19
+inherited from the frozen Stage-A renderer ("Prior-audit expectation N=12 …",
+"…(blocked)"). The machine-readable Stage-B results were never affected:
+`calendar_validation.json` always reported status=EVALUATED with full metrics.
+
+A corrected publication-facing report now exists at
+`validation/results/20260826T102325Z_f14f5d9/validation_report_stage_c_corrected.md`,
+restating the authoritative calendar result (EVALUATED; N=12; hits=4;
+coverage 33.33%; mean/median distance-to-window 5.0 days) and the source-recomputed
+purchase provenance (strict observed N=27; DERIVED_ACTUAL rows 14/18 disclosed
+separately). Correction traceability: `stage_c_corrections.json`.
+Scientific model unchanged; no new freeze; no new official empirical execution.
+
+- **F-01 status = CLOSED** (corrected artifact:
+  `purchase_validation_stage_c_corrected.json`)
+- **F-02 status = CLOSED** (corrected report:
+  `validation_report_stage_c_corrected.md`)
 
 ## 20. Conclusion
 
@@ -282,4 +310,12 @@ correctly closed yield/feed/survival boundaries, complete stress set, privacy
 and leakage audits clean. No universal model accuracy percentage exists or is
 claimed anywhere in this package.
 
+Post-review (Stage C): APPROVE TECHNICAL VALIDATION COMPLETE with evidence
+corrections F-01/F-02 applied via the POST-REVIEW CORRECTION LAYER above; the
+scientific target `f14f5d97b09d8afb29e4d0d840e41fe2b00886f5`, freeze identity
+R2-FREEZE-2026-08-26.2, and the original official run artifacts remain unchanged.
+
 **PHASE_5C_OFFICIAL_EXECUTION_COMPLETE_READY_FOR_EVIDENCE_COMMIT**
+
+**POST-REVIEW EVIDENCE CORRECTIONS COMPLETE — PUBLICATION EVIDENCE:
+READY_AFTER_STAGE_C_CORRECTIONS**
