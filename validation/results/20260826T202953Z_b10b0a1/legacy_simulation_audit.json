@@ -1,0 +1,26 @@
+{
+  "role": "AUDIT_ONLY",
+  "sheets": [
+    {
+      "name": "Protokol & Klasifikasi",
+      "max_row": 0,
+      "max_column": 0
+    },
+    {
+      "name": "Dataset Actual Bersih",
+      "max_row": 0,
+      "max_column": 0
+    },
+    {
+      "name": "Hasil Skenario Sistem",
+      "max_row": 0,
+      "max_column": 0
+    },
+    {
+      "name": "Excluded Log Anomali",
+      "max_row": 0,
+      "max_column": 0
+    }
+  ],
+  "values_exposed_to_r2": false
+}

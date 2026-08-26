@@ -1,0 +1,126 @@
+{
+  "status": "EVALUATED_SEPARATELY",
+  "N": 8,
+  "executed_n": 5,
+  "input_unavailable_n": 3,
+  "all_executed_rows_finite": true,
+  "merged_into_headline_metrics": false,
+  "rows": [
+    {
+      "source_row": 16,
+      "farmer_cluster_id": "F011",
+      "status": "EXECUTED",
+      "http_status": 200,
+      "no_nan_or_infinity": true,
+      "density_support": "EXTRAPOLATION",
+      "yield_availability": "UNAVAILABLE",
+      "survival_availability": "UNAVAILABLE",
+      "warnings": [
+        "DENSITY_OUTSIDE_SUPPORTED_DOMAIN: stocking density is outside the supported range for this planting system.",
+        "SURVIVAL_UNAVAILABLE: the surviving-duck count requires supported age and density; no fallback estimate exists.",
+        "YIELD_UNAVAILABLE: yield is outside the supported evidence domain or a required cultivar baseline/F_RD reference is missing; see yield.reason_codes.",
+        "FEED_COST_UNAVAILABLE: feed quantity and price lookups are not configured.",
+        "CAGE_TOTAL_UNAVAILABLE: total cage cost requires a sourced capacity rule.",
+        "FULL_PROFIT_UNAVAILABLE: the full-profit estimate requires a complete cost ledger."
+      ],
+      "merged_into_headline_metrics": false
+    },
+    {
+      "source_row": 22,
+      "farmer_cluster_id": "F005",
+      "status": "NOT_EXECUTABLE_INPUT_UNAVAILABLE",
+      "missing_inputs": [
+        "duck_count"
+      ],
+      "merged_into_headline_metrics": false
+    },
+    {
+      "source_row": 29,
+      "farmer_cluster_id": "F013",
+      "status": "EXECUTED",
+      "http_status": 200,
+      "no_nan_or_infinity": true,
+      "density_support": "SUPPORTED",
+      "yield_availability": "AVAILABLE",
+      "survival_availability": "AVAILABLE",
+      "warnings": [
+        "YIELD_EVIDENCE_WARNING: LOW_EVIDENCE_TWO_LOCATION_EXTERNAL_RANGE",
+        "FEED_COST_UNAVAILABLE: feed quantity and price lookups are not configured.",
+        "CAGE_TOTAL_UNAVAILABLE: total cage cost requires a sourced capacity rule.",
+        "FULL_PROFIT_UNAVAILABLE: the full-profit estimate requires a complete cost ledger."
+      ],
+      "merged_into_headline_metrics": false
+    },
+    {
+      "source_row": 32,
+      "farmer_cluster_id": "F014",
+      "status": "NOT_EXECUTABLE_INPUT_UNAVAILABLE",
+      "missing_inputs": [
+        "rice_variety"
+      ],
+      "merged_into_headline_metrics": false
+    },
+    {
+      "source_row": 48,
+      "farmer_cluster_id": "F017",
+      "status": "EXECUTED",
+      "http_status": 200,
+      "no_nan_or_infinity": true,
+      "density_support": "SUPPORTED",
+      "yield_availability": "AVAILABLE",
+      "survival_availability": "AVAILABLE",
+      "warnings": [
+        "YIELD_EVIDENCE_WARNING: LOW_EVIDENCE_TWO_LOCATION_EXTERNAL_RANGE",
+        "FEED_COST_UNAVAILABLE: feed quantity and price lookups are not configured.",
+        "CAGE_TOTAL_UNAVAILABLE: total cage cost requires a sourced capacity rule.",
+        "FULL_PROFIT_UNAVAILABLE: the full-profit estimate requires a complete cost ledger."
+      ],
+      "merged_into_headline_metrics": false
+    },
+    {
+      "source_row": 57,
+      "farmer_cluster_id": "F021",
+      "status": "EXECUTED",
+      "http_status": 200,
+      "no_nan_or_infinity": true,
+      "density_support": "SUPPORTED",
+      "yield_availability": "AVAILABLE",
+      "survival_availability": "AVAILABLE",
+      "warnings": [
+        "YIELD_EVIDENCE_WARNING: LOW_EVIDENCE_TWO_LOCATION_EXTERNAL_RANGE",
+        "FEED_COST_UNAVAILABLE: feed quantity and price lookups are not configured.",
+        "CAGE_TOTAL_UNAVAILABLE: total cage cost requires a sourced capacity rule.",
+        "FULL_PROFIT_UNAVAILABLE: the full-profit estimate requires a complete cost ledger."
+      ],
+      "merged_into_headline_metrics": false
+    },
+    {
+      "source_row": 59,
+      "farmer_cluster_id": "F022",
+      "status": "EXECUTED",
+      "http_status": 200,
+      "no_nan_or_infinity": true,
+      "density_support": "EXTRAPOLATION",
+      "yield_availability": "UNAVAILABLE",
+      "survival_availability": "UNAVAILABLE",
+      "warnings": [
+        "DENSITY_OUTSIDE_SUPPORTED_DOMAIN: stocking density is outside the supported range for this planting system.",
+        "SURVIVAL_UNAVAILABLE: the surviving-duck count requires supported age and density; no fallback estimate exists.",
+        "YIELD_UNAVAILABLE: yield is outside the supported evidence domain or a required cultivar baseline/F_RD reference is missing; see yield.reason_codes.",
+        "FEED_COST_UNAVAILABLE: feed quantity and price lookups are not configured.",
+        "CAGE_TOTAL_UNAVAILABLE: total cage cost requires a sourced capacity rule.",
+        "FULL_PROFIT_UNAVAILABLE: the full-profit estimate requires a complete cost ledger."
+      ],
+      "merged_into_headline_metrics": false
+    },
+    {
+      "source_row": 64,
+      "farmer_cluster_id": "F026",
+      "status": "NOT_EXECUTABLE_INPUT_UNAVAILABLE",
+      "missing_inputs": [
+        "planting_system"
+      ],
+      "merged_into_headline_metrics": false
+    }
+  ]
+}

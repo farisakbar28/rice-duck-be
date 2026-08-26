@@ -1,0 +1,156 @@
+{
+  "empirical_source_status": "OK",
+  "reconstruction_status": "RECONSTRUCTION_OK",
+  "sources": {
+    "raw_recap": {
+      "role": "raw_recap",
+      "role_rules": {
+        "allowed_use": "provenance audit / zero-vs-missing tracing only",
+        "forbidden_use": "calibration, parameter derivation, prediction source"
+      },
+      "filename": "Recap Data CRS Bebek.xlsx",
+      "status": "PRESENT",
+      "path": "C:\\My Project\\rice-duck-be\\penelitian\\R2_validation_sources\\Recap Data CRS Bebek.xlsx",
+      "size_bytes": 97527,
+      "sha256": "6b73b34a418d36cddbdf61679944eeaaf7fda312f1ee88c64476670bc0da82d1",
+      "expected_sha256": "6b73b34a418d36cddbdf61679944eeaaf7fda312f1ee88c64476670bc0da82d1",
+      "fingerprint_valid": true,
+      "sheet_names": [
+        "Sheet1"
+      ]
+    },
+    "clean_cohort": {
+      "role": "clean_cohort",
+      "role_rules": {
+        "allowed_use": "comparator cohort (36 keep + 8 excluded) only",
+        "forbidden_use": "fitting, median parameters, baseline yield, calibration"
+      },
+      "filename": "DSS_Padi_Bebek_Rekap_Bersih_v10.xlsx",
+      "status": "PRESENT",
+      "path": "C:\\My Project\\rice-duck-be\\penelitian\\R2_validation_sources\\DSS_Padi_Bebek_Rekap_Bersih_v10.xlsx",
+      "size_bytes": 32893,
+      "sha256": "98fff237d24b6191d0d21a9e04048d54d4efd83082a61dae0da37c584405c2bd",
+      "expected_sha256": "98fff237d24b6191d0d21a9e04048d54d4efd83082a61dae0da37c584405c2bd",
+      "fingerprint_valid": true,
+      "sheet_names": [
+        "Protokol & Klasifikasi",
+        "Dataset Actual Bersih",
+        "Excluded Log Anomali"
+      ]
+    },
+    "legacy_simulation": {
+      "role": "legacy_simulation",
+      "role_rules": {
+        "allowed_use": "legacy simulation audit only",
+        "forbidden_use": "R2 prediction source; R2 input default; parameter registry entry; calibration coefficient"
+      },
+      "filename": "Dataset Bersih Rekap Include Hasil Simulasi Baru.xlsx",
+      "status": "PRESENT",
+      "path": "C:\\My Project\\rice-duck-be\\penelitian\\R2_validation_sources\\Dataset Bersih Rekap Include Hasil Simulasi Baru.xlsx",
+      "size_bytes": 78914,
+      "sha256": "f5e88945196c2300d57c36b16fc5c175c24ecfbd903468cc1c553771e1e94a46",
+      "expected_sha256": "f5e88945196c2300d57c36b16fc5c175c24ecfbd903468cc1c553771e1e94a46",
+      "fingerprint_valid": true,
+      "sheet_names": [
+        "Protokol & Klasifikasi",
+        "Dataset Actual Bersih",
+        "Hasil Skenario Sistem",
+        "Excluded Log Anomali"
+      ]
+    }
+  },
+  "cohort_metadata": {
+    "all_clean": {
+      "expected_from_prior_audit": 36,
+      "verified_from_source": true,
+      "recomputed_from_source": 36,
+      "status": "VERIFIED",
+      "note": "Counts are NEVER assumed into existence; they must be recomputed from the clean comparator workbook."
+    },
+    "excluded_stress": {
+      "expected_from_prior_audit": 8,
+      "verified_from_source": true,
+      "recomputed_from_source": 8,
+      "status": "VERIFIED",
+      "note": "Counts are NEVER assumed into existence; they must be recomputed from the clean comparator workbook."
+    },
+    "strict_supported_domain": {
+      "expected_from_prior_audit": 17,
+      "verified_from_source": true,
+      "recomputed_from_source": 17,
+      "status": "VERIFIED",
+      "note": "Counts are NEVER assumed into existence; they must be recomputed from the clean comparator workbook."
+    },
+    "calendar_eligible_both_observed_dates": {
+      "expected_from_prior_audit": 12,
+      "verified_from_source": true,
+      "recomputed_from_source": 12,
+      "status": "VERIFIED",
+      "note": "Counts are NEVER assumed into existence; they must be recomputed from the clean comparator workbook."
+    }
+  },
+  "input_policy": {
+    "fields": [
+      "land_area_are",
+      "duck_count",
+      "planting_date",
+      "planting_system",
+      "rice_variety",
+      "duck_age_days",
+      "p_duck_buy"
+    ],
+    "provenance_vocab": [
+      "OBSERVED",
+      "LOCAL_DEFAULT",
+      "VALIDATION_ASSUMPTION",
+      "UNAVAILABLE"
+    ],
+    "rules": [
+      "Never store a bare numeric value without its provenance tuple.",
+      "OBSERVED is never inferred from a cleaned/defaulted cell.",
+      "Missing/ambiguous/non-positive historical p_duck_buy -> request null (runtime default Rp26,500), provenance LOCAL_DEFAULT; such rows are excluded from observed purchase-price comparators.",
+      "Historical zero price is never reinterpreted as a valid R2 zero-price input (task §19).",
+      "Supported-age replay uses [21, 30] days, each marked VALIDATION_ASSUMPTION; numeric invariance between them is asserted at runtime.",
+      "Rows lacking an observed planting date use anchor 2025-01-01 (VALIDATION_ASSUMPTION) solely to execute non-calendar outputs; anchor-generated calendar dates never enter calendar metrics.",
+      "Strict supported-domain cohort requires OBSERVED system AND Jarwo d in [2,4] / Tegel d in [2,3]; defaulted-system rows are excluded from strict-domain N (task §18)."
+    ]
+  },
+  "comparator_policy": {
+    "provenance_vocab": [
+      "OBSERVED_VALUE",
+      "EXPLICIT_ZERO",
+      "MISSING_UNKNOWN",
+      "DERIVED_ACTUAL",
+      "LEGACY_IMPUTATION"
+    ],
+    "rules": [
+      "NULL != 0; UNRECORDED != 0; LEGACY_IMPUTATION != GROUND_TRUTH.",
+      "Ambiguous clean-workbook zeros stay MISSING_UNKNOWN unless the raw recap proves an explicit recorded zero (EXPLICIT_ZERO).",
+      "Residuals are computed ONLY where a semantic-compatibility eligibility mask is true."
+    ]
+  },
+  "privacy": {
+    "farmer_cluster_ids": "F001..Fnnn deterministic pseudonyms",
+    "private_mapping_location": "validation/local/ (gitignored)",
+    "forbidden_in_committed_artifacts": [
+      "full farmer name",
+      "phone number",
+      "email address",
+      "postal address"
+    ]
+  },
+  "roles_enforcement": {
+    "raw_recap": {
+      "allowed_use": "provenance audit / zero-vs-missing tracing only",
+      "forbidden_use": "calibration, parameter derivation, prediction source"
+    },
+    "clean_cohort": {
+      "allowed_use": "comparator cohort (36 keep + 8 excluded) only",
+      "forbidden_use": "fitting, median parameters, baseline yield, calibration"
+    },
+    "legacy_simulation": {
+      "allowed_use": "legacy simulation audit only",
+      "forbidden_use": "R2 prediction source; R2 input default; parameter registry entry; calibration coefficient"
+    }
+  }
+}

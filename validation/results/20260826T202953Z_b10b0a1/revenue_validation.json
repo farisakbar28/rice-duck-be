@@ -1,0 +1,66 @@
+{
+  "status": "NOT_EVALUABLE",
+  "current_hpp_rp_per_kg": 6500.0,
+  "diagnostics": {
+    "CURRENT_HPP_OPERATIONAL_VALUE_DIAGNOSTIC": {
+      "name": "CURRENT_HPP_OPERATIONAL_VALUE_DIAGNOSTIC",
+      "status": "NOT_EVALUABLE",
+      "reason": "NO_ELIGIBLE_PREDICTED_ROWS",
+      "metrics": {
+        "N_total_actual_eligible": 0,
+        "N_actual_eligible": 0,
+        "N_predicted": 0,
+        "prediction_coverage_fraction": null,
+        "prediction_coverage_percent": null,
+        "prediction_coverage": null,
+        "N": 0,
+        "MAE": null,
+        "RMSE": null,
+        "MedAE": null,
+        "MBE": null,
+        "WAPE": null,
+        "covered_N": 0,
+        "LITERATURE_EVIDENCE_ENVELOPE_COVERAGE": null,
+        "LITERATURE_EVIDENCE_ENVELOPE_COVERAGE_PERCENT": null,
+        "mean_envelope_width": null,
+        "median_envelope_width": null,
+        "MAE_RP_PER_CYCLE": null,
+        "RMSE_RP_PER_CYCLE": null,
+        "MedAE_RP_PER_CYCLE": null,
+        "MBE_RP_PER_CYCLE": null,
+        "WAPE_PERCENT": null
+      },
+      "rows": []
+    },
+    "PRICE_NEUTRAL_HISTORICAL_PRICE_DIAGNOSTIC": {
+      "name": "PRICE_NEUTRAL_HISTORICAL_PRICE_DIAGNOSTIC",
+      "status": "NOT_EVALUABLE",
+      "reason": "HISTORICAL_PADDY_PRICE_UNAVAILABLE",
+      "metrics": {
+        "N_total_actual_eligible": 0,
+        "N_actual_eligible": 0,
+        "N_predicted": 0,
+        "prediction_coverage_fraction": null,
+        "prediction_coverage_percent": null,
+        "prediction_coverage": null,
+        "N": 0,
+        "MAE": null,
+        "RMSE": null,
+        "MedAE": null,
+        "MBE": null,
+        "WAPE": null,
+        "covered_N": 0,
+        "LITERATURE_EVIDENCE_ENVELOPE_COVERAGE": null,
+        "LITERATURE_EVIDENCE_ENVELOPE_COVERAGE_PERCENT": null,
+        "mean_envelope_width": null,
+        "median_envelope_width": null,
+        "MAE_RP_PER_CYCLE": null,
+        "RMSE_RP_PER_CYCLE": null,
+        "MedAE_RP_PER_CYCLE": null,
+        "MBE_RP_PER_CYCLE": null,
+        "WAPE_PERCENT": null
+      },
+      "rows": []
+    }
+  }
+}
