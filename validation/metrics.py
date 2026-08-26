@@ -25,10 +25,13 @@ def _numeric_prediction(row: dict) -> bool:
 
 
 def is_strict_supported_domain_row(row: dict) -> bool:
-    """Apply the registered strict cohort mask, including provenance."""
+    """Apply the registered strict cohort mask, including provenance.
+
+    Prediction availability is intentionally not part of the cohort mask;
+    unavailable predictions remain in the actual-eligible denominator.
+    """
     return (
         row.get("actual") is not None
-        and _numeric_prediction(row)
         and row.get("age_support") == "SUPPORTED"
         and row.get("density_support") == "SUPPORTED"
         and row.get("planting_system_provenance") == "OBSERVED"
@@ -162,7 +165,10 @@ def phase6_yield_subgroups(rows: list[dict], *, minimum_n: int = 3) -> dict:
     result = {}
     for name, selector in selectors.items():
         subset = [row for row in rows if selector(row)]
-        predicted_n = sum(row.get("actual") is not None and row.get("pred_ref") is not None for row in subset)
+        predicted_n = sum(
+            row.get("actual") is not None and _numeric_prediction(row)
+            for row in subset
+        )
         actual_n = sum(row.get("actual") is not None for row in subset)
         result[name] = {
             "N_actual_eligible": actual_n,

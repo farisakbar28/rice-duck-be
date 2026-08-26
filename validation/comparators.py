@@ -21,6 +21,10 @@ from validation.metrics import (
 )
 from validation.provenance import git_head
 from validation.workbook_parser import Reconstruction
+from validation.yield_adjudication import (
+    adjudication_index,
+    evaluate_yield_actual_eligibility,
+)
 
 configure_runtime_env()
 
@@ -78,6 +82,7 @@ def build_calendar_comparator(reconstruction: Reconstruction) -> dict[str, Any]:
 
 
 def build_purchase_comparator(reconstruction: Reconstruction) -> dict[str, Any]:
+    """Use the purchase endpoint's strict OBSERVED_VALUE-positive policy."""
     provenance_counts = {
         "OBSERVED_VALUE": 0,
         "DERIVED_ACTUAL": 0,
@@ -215,6 +220,7 @@ def build_yield_comparator(
     *,
     backend_commit_sha: str | None = None,
     client=None,
+    yield_adjudication: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Replay clean rows through the canonical HTTP runtime, without formulas.
 
@@ -224,6 +230,7 @@ def build_yield_comparator(
     """
     client = client or make_client()
     backend_commit_sha = backend_commit_sha or git_head()
+    adjudicated_by_row = adjudication_index(yield_adjudication)
     records: list[dict[str, Any]] = []
     for row in reconstruction.clean_records:
         fields = row["input_fields"]
@@ -253,9 +260,22 @@ def build_yield_comparator(
         if invariant is False:
             raise RuntimeError(f"AGE_ASSUMPTION_YIELD_INVARIANCE_FAILED source_row={row['source_row']}")
         numeric_21 = y21.get("yield_ref_kg_per_are") is not None
-        actual = row.get("actual_yield_kg_per_are")
+        actual_before_adjudication = row.get("actual_yield_kg_per_are")
+        actual = actual_before_adjudication
         actual_provenance = row.get("actual_provenance", {}).get("actual_yield_kg_per_are")
-        if actual_provenance != "OBSERVED_VALUE":
+        adjudication_record = adjudicated_by_row.get(int(row["source_row"]))
+        if adjudication_record is not None and adjudication_record.get("actual_numeric_value") is not None:
+            actual = adjudication_record["actual_numeric_value"]
+        decision = evaluate_yield_actual_eligibility(
+            actual_provenance,
+            actual,
+            derived_actual_admissibility=(
+                adjudication_record.get("derived_actual_admissibility")
+                if adjudication_record is not None
+                else row.get("derived_actual_admissibility")
+            ),
+        )
+        if not decision["eligible"]:
             actual = None
         records.append({
             "source_row": row["source_row"], "farmer_cluster_id": row["farmer_cluster_id"],
@@ -278,7 +298,14 @@ def build_yield_comparator(
             "age_support": responses[21].get("operational", {}).get("age_support"),
             "density_support": responses[21].get("operational", {}).get("density_support"),
             "cultivar_group": y21.get("cultivar_group_code"),
-            "actual": actual, "actual_yield": actual, "actual_yield_provenance": actual_provenance,
+            "actual_before_adjudication": actual_before_adjudication,
+            "actual": actual, "actual_yield": actual,
+            "actual_yield_provenance": actual_provenance,
+            "actual_provenance": actual_provenance,
+            "derived_actual_admissibility": decision["derived_actual_admissibility"],
+            "actual_comparator_eligible": decision["eligible"],
+            "actual_adjudication_reason": decision["reason"],
+            "adjudication_artifact_record_present": adjudication_record is not None,
             "area_are": fields["land_area_are"]["value"],
             "paddy_price": row.get("paddy_price"),
             "paddy_price_provenance": row.get("actual_provenance", {}).get("paddy_price"),
