@@ -1,0 +1,171 @@
+{
+  "phase": "6E",
+  "review_type": "INDEPENDENT_ADVERSARIAL_AUDIT",
+  "status": "APPROVE_PHASE6_TECHNICAL_EMPIRICAL_VALIDATION_WITH_LIMITATIONS",
+  "scope": "Evidence-only audit of the frozen R2 validation target and the Phase-6D provenance correction.",
+  "repository_state": {
+    "branch": "master",
+    "review_head": "d2aa2f833bfa2c943b2d8266a05edf96fd5d78db",
+    "review_head_is_expected": true,
+    "working_tree_clean_before_audit": true,
+    "working_tree_clean_before_phase6e_artifacts": true
+  },
+  "identity": {
+    "model_version": "R2",
+    "parameter_registry_version": "R2-2026-08-26.3",
+    "freeze_id": "R2-FREEZE-2026-08-26.5",
+    "scientific_target_sha": "b10b0a1f83357c5db1d6cdfb9c41eaa84b6727a7",
+    "original_official_evidence_commit": "eda6a8035b89174e225999dec3aac0ec98685510",
+    "correction_commit": "d2aa2f833bfa2c943b2d8266a05edf96fd5d78db"
+  },
+  "commit_chain": {
+    "target_is_ancestor_of_official_evidence": true,
+    "official_evidence_is_ancestor_of_correction": true,
+    "target_to_official_scope": "freeze manifest replacement plus official evidence artifacts only",
+    "official_to_correction_scope": "validation/test implementation and corrected evidence artifacts only",
+    "application_code_changed_between_target_and_correction": false,
+    "scientific_documents_changed_between_target_and_correction": false
+  },
+  "documentation_audit": {
+    "requested_engine_spec_path": "docs/02_R2_ENGINE_SPEC.md",
+    "requested_engine_spec_present_at_target": false,
+    "requested_engine_spec_present_at_review_head": false,
+    "available_repository_document": "docs/02_R2_BACKEND_MIGRATION_PLAN.md",
+    "unchanged_scientific_documents": [
+      "docs/01_R2_MODEL_SSOT.md",
+      "docs/04_R2_PARAMETER_EXECUTION_REGISTRY.md",
+      "docs/10_R2_REFERENCE_PROVENANCE.md"
+    ],
+    "guard_limitation": "The named engine-spec path did not exist at either comparison point, so no content-level guard claim can be made for that path. This is recorded as a documentation limitation, not a changed scientific input."
+  },
+  "provenance_adjudication": {
+    "adjudication_type": "POST_EXPOSURE_PROVENANCE_SEMANTIC_ADJUDICATION",
+    "record_count": 36,
+    "admissible_derived_actual_count": 36,
+    "not_admissible_count": 0,
+    "yield_provenance_distribution": {
+      "OBSERVED_VALUE": 0,
+      "EXPLICIT_ZERO": 0,
+      "MISSING_UNKNOWN": 0,
+      "DERIVED_ACTUAL": 36,
+      "LEGACY_IMPUTATION": 0
+    },
+    "metric_calculation_performed": false,
+    "residuals_used_for_adjudication": false,
+    "model_performance_used_for_row_selection": false,
+    "formula_inventory": {
+      "relative_reference": 35,
+      "absolute_column_reference_variant": 1,
+      "semantic_class": "ACTUAL_HARVESTED_GABAH_KG_DIVIDED_BY_PROGRAM_RICE_AREA_ARE"
+    },
+    "raw_source_reproduction_max_difference_kg_per_are": 4.803155206900556e-09
+  },
+  "selection_audit": {
+    "status": "NO_POST_HOC_PERFORMANCE_SELECTION",
+    "source_admissibility_uses_prediction_or_residual": false,
+    "manual_favorable_row_list_found": false,
+    "hard_coded_residual_threshold_found": false,
+    "performance_metric_threshold_used_for_inclusion": false,
+    "correction_changes_model_or_parameters": false
+  },
+  "original_run_immutability": {
+    "original_run_id": "20260826T202953Z_b10b0a1",
+    "file_count": 15,
+    "original_run_byte_for_byte_preserved": true,
+    "before_manifest_equals_after_manifest": true,
+    "missing_files": [],
+    "unexpected_files": [],
+    "hash_mismatches": []
+  },
+  "corrected_yield": {
+    "actual_eligible_n": 36,
+    "predicted_n": 22,
+    "prediction_coverage_percent": 61.111111111111114,
+    "mae_kg_per_are": 9.183970959818181,
+    "rmse_kg_per_are": 13.421718631571618,
+    "medae_kg_per_are": 6.162351085000001,
+    "mbe_kg_per_are": 2.606386759818184,
+    "wape_percent": 20.68403714256823,
+    "literature_evidence_envelope_coverage_percent": 90.9090909090909,
+    "mean_envelope_width_kg_per_are": 47.60574545454545,
+    "scientific_unavailable_n": 14,
+    "http_execution_failure_n": 0,
+    "strict_supported_domain_n": 17,
+    "strict_supported_domain_predicted_n": 17,
+    "strict_cohort_improves_point_performance": false
+  },
+  "phase6_yield_classification": {
+    "computational_implementation": "VERIFIED_BY_COMMITTED_IMPLEMENTATION_AND_425_PASSING_TESTS",
+    "empirical_point_performance": "CORRECTED_COMPARATOR_DIAGNOSTIC_ONLY; NO_UNIVERSAL_PASS_FAIL_THRESHOLD",
+    "supported_domain_coverage": "22/36_PREDICTED = 61.111111111111114%; 14_SCIENTIFICALLY_UNAVAILABLE",
+    "literature_evidence_envelope_containment": "20/22_COVERED = 90.9090909090909%; NOT_ACCURACY_OR_CONFIDENCE_INTERVAL_COVERAGE",
+    "external_evidence_transfer_limitation": "LOW_EVIDENCE_TWO_LOCATION_EXTERNAL_RANGE; NO_LOCAL_BALI_CALIBRATION_CLAIM"
+  },
+  "calendar": {
+    "status": "EVALUATED",
+    "timing_status": "VALIDATION_ASSUMPTION",
+    "eligible_n": 12,
+    "window_hits": 4,
+    "window_coverage_fraction": 0.3333333333333333,
+    "mean_distance_days": 5.0,
+    "median_distance_days": 5.0,
+    "interpretation": "Calendar-window coverage diagnostic, not model accuracy."
+  },
+  "purchase": {
+    "status": "ELIGIBLE_OBSERVED_POSITIVE_ONLY",
+    "effective_n": 27,
+    "strict_n": 27,
+    "strict_excluded_n": 9,
+    "derived_actual_context_n": 2,
+    "derived_actual_rows_in_purchase_metric": false
+  },
+  "revenue": {
+    "status": "EVALUATED_DIAGNOSTICS",
+    "current_hpp_rp_per_kg": 6500.0,
+    "operational_mae_rp_per_cycle": 311527.7986064933,
+    "operational_wape_percent": 16.576559236396317,
+    "price_neutral_mae_rp_per_cycle": 297042.3196077955,
+    "price_neutral_wape_percent": 15.987950881921265,
+    "interpretation": "Current HPP is an operational value diagnostic; historical price is comparator metadata only. Neither is historical realized-revenue accuracy."
+  },
+  "stress": {
+    "status": "EVALUATED_SEPARATELY",
+    "n": 8,
+    "executed_n": 5,
+    "input_unavailable_n": 3,
+    "all_executed_outputs_finite": true,
+    "merged_into_headline": false
+  },
+  "component_status": {
+    "survival": "NO_COMPATIBLE_AGGREGATE_GROUND_TRUTH",
+    "feed": "NOT_EVALUABLE",
+    "cage_total": "UNAVAILABLE",
+    "infrastructure": "NO_METRIC",
+    "weed": "NO_MONETARY_AGGREGATE",
+    "pest": "SPARSE_CASE_DIAGNOSTICS_ONLY",
+    "fertilizer": "DESCRIPTIVE_ONLY",
+    "full_profit": "UNAVAILABLE",
+    "expert_final": "PENDING"
+  },
+  "privacy": {
+    "tracked_phase6_artifacts_contain_raw_private_workbook_contents": false,
+    "tracked_phase6_artifacts_contain_direct_pii": false,
+    "anonymous_cluster_ids_only": true,
+    "local_farmer_id_map_tracked": false,
+    "private_penelitian_tree_tracked": false
+  },
+  "qa": {
+    "pytest_collected": 425,
+    "pytest_passed": 425,
+    "compileall_app_validation_passed": true,
+    "independent_metric_reproduction_mismatches": 0,
+    "ci_status": "CI_STATUS_NOT_RECORDED_FOR_CORRECTION_COMMIT",
+    "all_required_qa_passed": true
+  },
+  "remaining_limitations": [
+    "The named docs/02_R2_ENGINE_SPEC.md path is absent at both target and review HEAD.",
+    "The corrected yield is a comparator diagnostic with 22/36 prediction coverage, not universal production accuracy.",
+    "Sertani subgroup statements require the LOW_EVIDENCE_TWO_LOCATION_EXTERNAL_RANGE qualifier.",
+    "Expert final signoff remains PENDING because compatible aggregate ground truth is incomplete."
+  ]
+}

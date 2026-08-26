@@ -1,0 +1,26 @@
+{
+  "phase": "6E",
+  "status": "PASS_WITH_APPROVED_PROVENANCE_METADATA",
+  "tracked_phase6_artifact_file_count": 24,
+  "raw_private_workbook_contents_tracked": false,
+  "direct_pii_found_in_tracked_phase6_artifacts": false,
+  "anonymous_cluster_id_pattern_only": true,
+  "approved_provenance_metadata": [
+    "source workbook filenames",
+    "source workbook SHA256 fingerprints",
+    "anonymous source row identifiers",
+    "anonymous farmer-cluster identifiers"
+  ],
+  "excluded_local_artifacts": {
+    "validation/local/farmer_id_map.json": {
+      "tracked": false,
+      "gitignore_rule": "validation/local/"
+    },
+    "penelitian/": {
+      "tracked": false,
+      "gitignore_rule": "/penelitian/"
+    }
+  },
+  "privacy_policy_text_false_positive_reviewed": true,
+  "conclusion": "No direct names, phone numbers, email addresses, postal addresses, or raw workbook rows were found in tracked Phase-6 evidence."
+}

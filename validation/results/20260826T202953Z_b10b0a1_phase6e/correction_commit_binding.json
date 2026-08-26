@@ -1,0 +1,50 @@
+{
+  "phase": "6E",
+  "status": "CORRECTION_WORKTREE_BOUND_TO_COMMIT",
+  "review_head": "d2aa2f833bfa2c943b2d8266a05edf96fd5d78db",
+  "scientific_target_sha": "b10b0a1f83357c5db1d6cdfb9c41eaa84b6727a7",
+  "original_official_evidence_commit": "eda6a8035b89174e225999dec3aac0ec98685510",
+  "recorded_artifact_harness_identity": "eda6a8035b89174e225999dec3aac0ec98685510+WORKTREE:324203cf8f08de5c90137590fe26c2ea5927020be2fb6378575366baa7bd1d79",
+  "recomputed_existing_harness_worktree_digest": "324203cf8f08de5c90137590fe26c2ea5927020be2fb6378575366baa7bd1d79",
+  "raw_byte_binding_method": "SHA256 of each required worktree file compared with git object blob content at review HEAD.",
+  "required_files": [
+    {
+      "path": "validation/comparators.py",
+      "sha256": "e2a506a67376d79c6744eb9ba76c1a08130e176e43ce34ef3e656626cfd6efe9",
+      "bytes": 22142,
+      "git_blob": "ffed0c8e187b1a92115f92ef41a44cc76689d8a1",
+      "worktree_bytes_equal_git_blob": true
+    },
+    {
+      "path": "validation/metrics.py",
+      "sha256": "7c2878055aa6a01e433a3fa0abac1dd1aed03cc80d7ebc29d24f24cf847afc4b",
+      "bytes": 14492,
+      "git_blob": "67bc0cb6662ae450439e2f9790c5c45fb50e95f4",
+      "worktree_bytes_equal_git_blob": true
+    },
+    {
+      "path": "validation/phase6dr.py",
+      "sha256": "003deca7a6efd96ced888cf625c6c84f09d4e6aec354b3f8edb2db5fc6e299b1",
+      "bytes": 39663,
+      "git_blob": "fab03779b7e1e7e4be75022b44cf59cf7922c381",
+      "worktree_bytes_equal_git_blob": true
+    },
+    {
+      "path": "validation/yield_adjudication.py",
+      "sha256": "786b7744fdc82582023e50fd5a461ea51f9e980b2eeb001a10ff0995854681e6",
+      "bytes": 20929,
+      "git_blob": "ca77c3519d750e35d530966d820ab6a974964f1a",
+      "worktree_bytes_equal_git_blob": true
+    },
+    {
+      "path": "tests/test_phase6dr_adjudication.py",
+      "sha256": "a1fb692508da2ad4dd9eb43c05aa7e015129d55b3529f4c845027bb4b3371f2e",
+      "bytes": 5718,
+      "git_blob": "5d36f981b9f3549d8b6c66e1c985bcbdd6de6c3e",
+      "worktree_bytes_equal_git_blob": true
+    }
+  ],
+  "all_required_file_contents_identical": true,
+  "model_rerun_or_recalibration": false,
+  "no_new_freeze": true
+}

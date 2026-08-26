@@ -1,0 +1,121 @@
+{
+  "phase": "6E",
+  "status": "PASS",
+  "method": "Independent basic-Python recomputation using json, math, random, statistics, and pathlib; validation modules were not imported.",
+  "tolerance": {
+    "relative": 1e-12,
+    "absolute": 1e-08
+  },
+  "mismatches": [],
+  "yield": {
+    "N_total_actual_eligible": 36,
+    "N_actual_eligible": 36,
+    "N_predicted": 22,
+    "prediction_coverage_percent": 61.111111111111114,
+    "N": 22,
+    "MAE": 9.183970959818181,
+    "RMSE": 13.421718631571618,
+    "MedAE": 6.162351085000001,
+    "MBE": 2.606386759818184,
+    "WAPE": 20.68403714256823,
+    "MAPE_supplementary": 46.662702734492015,
+    "R2_diagnostic": -0.05747750232820392,
+    "covered_N": 20,
+    "literature_evidence_envelope_coverage_percent": 90.9090909090909,
+    "mean_envelope_width_kg_per_are": 47.60574545454545,
+    "median_envelope_width_kg_per_are": 45.6432,
+    "http_execution_failure_n": 0,
+    "scientific_unavailable_n": 14
+  },
+  "subgroups": {
+    "strict_supported_domain": {
+      "actual_n": 17,
+      "predicted_n": 17,
+      "coverage_percent": 100.0,
+      "MAE": 9.855426004470589,
+      "RMSE": 14.436931455685956,
+      "MedAE": 6.682868839999998,
+      "MBE": 5.4026839856470605,
+      "WAPE": 23.478704172402782,
+      "envelope_coverage_percent": 88.23529411764706
+    },
+    "INPARI_GROUP": {
+      "actual_n": 5,
+      "predicted_n": 3,
+      "coverage_percent": 60.0,
+      "evidence_policy": "QUANTITATIVE; N=3 predicted rows is very small",
+      "MAE": 8.309602693333334,
+      "RMSE": 10.467747785900904,
+      "MedAE": 7.801030300000001,
+      "MBE": 7.789750839999999,
+      "WAPE": 17.60201414199902,
+      "envelope_coverage_percent": 100.0
+    },
+    "SERTANI_GROUP": {
+      "actual_n": 31,
+      "predicted_n": 19,
+      "coverage_percent": 61.29032258064516,
+      "evidence_policy": "QUANTITATIVE_WITH_QUALIFIER",
+      "required_qualifier": "LOW_EVIDENCE_TWO_LOCATION_EXTERNAL_RANGE",
+      "MAE": 9.322029107157894,
+      "RMSE": 13.83058101193071,
+      "MedAE": 5.641833330000004,
+      "MBE": 1.7879608524210553,
+      "WAPE": 21.206653635894305,
+      "envelope_coverage_percent": 89.47368421052632
+    },
+    "Jajar_Legowo": {
+      "actual_n": 32,
+      "predicted_n": 20,
+      "coverage_percent": 62.5,
+      "MAE": 8.8949165408,
+      "RMSE": 13.481510495508598,
+      "MedAE": 5.592565315000002,
+      "MBE": 1.6595739208000022,
+      "WAPE": 19.96657912338301,
+      "envelope_coverage_percent": 90.0
+    },
+    "Tegel": {
+      "actual_n": 4,
+      "predicted_n": 2,
+      "coverage_percent": 50.0,
+      "evidence_policy": "COUNT_ONLY_SMALL_N",
+      "quantitative_metrics_reported": false
+    }
+  },
+  "bootstrap": {
+    "status": "EVALUATED",
+    "cluster_unit": "farmer_cluster_id",
+    "resamples": 2000,
+    "seed": 20260826,
+    "percentile_interval": [0.025, 0.975],
+    "MAE": [5.338547626190476, 14.255541432705883],
+    "RMSE": [7.48075664347243, 19.285367878437786],
+    "MBE": [-2.391187468095236, 8.891407133200001],
+    "WAPE": [11.282456480039396, 36.907197894190645],
+    "literature_evidence_envelope_coverage": [0.75, 1.0]
+  },
+  "revenue_diagnostics": {
+    "CURRENT_HPP_OPERATIONAL_VALUE_DIAGNOSTIC": {
+      "N_actual": 36,
+      "N_predicted": 22,
+      "MAE_RP_PER_CYCLE": 311527.7986064933,
+      "RMSE_RP_PER_CYCLE": 420128.394071854,
+      "MedAE_RP_PER_CYCLE": 254786.2200136502,
+      "MBE_RP_PER_CYCLE": 41782.65592655224,
+      "WAPE_PERCENT": 16.576559236396317,
+      "envelope_coverage_percent": 90.9090909090909
+    },
+    "PRICE_NEUTRAL_HISTORICAL_PRICE_DIAGNOSTIC": {
+      "N_actual": 36,
+      "N_predicted": 22,
+      "MAE_RP_PER_CYCLE": 297042.3196077955,
+      "RMSE_RP_PER_CYCLE": 400883.6711827306,
+      "MedAE_RP_PER_CYCLE": 241702.28101260017,
+      "MBE_RP_PER_CYCLE": 30976.365834068216,
+      "WAPE_PERCENT": 15.987950881921265,
+      "envelope_coverage_percent": 90.9090909090909
+    }
+  },
+  "interpretation_guard": "These are corrected comparator diagnostics, not a universal accuracy pass/fail claim."
+}

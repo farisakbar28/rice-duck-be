@@ -1,0 +1,35 @@
+{
+  "phase": "6E",
+  "status": "PASS_WITH_CI_STATUS_UNRECORDED",
+  "tests": {
+    "collect_only": {
+      "command": "python -m pytest --collect-only -q",
+      "exit_code": 0,
+      "tests_collected": 425
+    },
+    "full_pytest": {
+      "command": "python -m pytest -q",
+      "exit_code": 0,
+      "tests_passed": 425,
+      "tests_failed": 0
+    },
+    "compileall": {
+      "command": "python -m compileall app validation",
+      "exit_code": 0,
+      "errors": 0
+    }
+  },
+  "independent_reproduction": {
+    "yield_mismatches": [],
+    "revenue_mismatches": [],
+    "bootstrap_mismatches": [],
+    "status": "PASS"
+  },
+  "immutability": {
+    "original_run_byte_for_byte_preserved": true,
+    "status": "PASS"
+  },
+  "ci_status": "CI_STATUS_NOT_RECORDED_FOR_CORRECTION_COMMIT",
+  "ci_reason": "No CI workflow or CI configuration is present locally; no successful remote status is asserted.",
+  "required_qa_all_passed": true
+}
