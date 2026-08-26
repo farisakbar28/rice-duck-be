@@ -83,7 +83,11 @@ from app.engines.r2.infrastructure import (  # noqa: E402
     NetInfrastructureResult,
     compute_infrastructure,
 )
-from app.engines.r2.normalization import NormalizedInputs, normalize_inputs  # noqa: E402
+from app.engines.r2.normalization import (  # noqa: E402
+    NormalizedInputs,
+    normalize_cultivar_group_label,
+    normalize_inputs,
+)
 from app.engines.r2.support import (  # noqa: E402
     SupportInterval,
     age_support_intervals,
@@ -95,11 +99,13 @@ from app.engines.r2.support import (  # noqa: E402
 from app.engines.r2.survival import SurvivalResult, compute_survival  # noqa: E402
 from app.engines.r2.yield_engine import (  # noqa: E402
     EMPTY_YIELD_LOOKUP_STORE,
+    DiscreteYieldLookupStore,
     EmptyYieldLookupStore,
     FRDEntry,
     YieldBaselineEntry,
     YieldLookupStore,
     YieldResult,
+    RELEASE_SEMANTICS_FIELD_TRANSPLANTING_HST,
     compute_yield,
 )
 
@@ -111,6 +117,7 @@ __all__ = [
     "CageInfrastructureResult",
     "EconomicLedgerResult",
     "EmptyYieldLookupStore",
+    "DiscreteYieldLookupStore",
     "FRDEntry",
     "FeedResult",
     "FertilizerResult",
@@ -125,6 +132,7 @@ __all__ = [
     "YieldBaselineEntry",
     "YieldLookupStore",
     "YieldResult",
+    "RELEASE_SEMANTICS_FIELD_TRANSPLANTING_HST",
     "age_support_intervals",
     "classify_age",
     "classify_density",
@@ -134,6 +142,7 @@ __all__ = [
     "compute_feed_cost",
     "compute_fertilizer_baseline",
     "compute_infrastructure",
+    "normalize_cultivar_group_label",
     "compute_pest_effect",
     "compute_survival",
     "compute_weeding_baseline",

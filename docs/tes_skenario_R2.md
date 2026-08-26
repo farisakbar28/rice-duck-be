@@ -20,7 +20,7 @@ Isi setiap execution batch:
 
 ```text
 model_version: R2
-parameter_registry_version:
+parameter_registry_version: R2-2026-08-26.2
 backend_commit_sha:
 python_version:
 app_version:
@@ -280,6 +280,11 @@ Do not recalculate R2 parameters from these residuals.
 
 Harvest-date validation only on the 12 cycles with both planting and harvest dates observed.
 
+For transplanted rice, the observed planting date is treated as the field
+transplanting date and HST is counted from transplanting. This is recorded as
+`VALIDATION_ASSUMPTION`; unresolved equivalence excludes the row with
+`TIMING_SEMANTICS_UNRESOLVED`.
+
 Report:
 
 ```text
@@ -334,4 +339,3 @@ official clean-tree frozen-execution run, is watermarked
 `NON_OFFICIAL_PRE_FREEZE` in every artifact header and MUST NOT be cited as an
 official frozen validation result. Synthetic cases remain contract evidence;
 they are never field observations.
-

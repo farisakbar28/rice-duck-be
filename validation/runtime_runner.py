@@ -99,8 +99,10 @@ def _yield_unavailable_checks() -> list[tuple]:
          lambda b: _g(b, "yield", "yield_kg_per_are") is None),
         ("yield_total_kg is null",
          lambda b: _g(b, "yield", "yield_total_kg") is None),
-        ("reason codes Y_BASE+F_RD missing",
-         lambda b: _reasons(b) == {"Y_BASE_LOOKUP_MISSING", "F_RD_LOOKUP_MISSING"}),
+        ("reason codes group baseline + exact F_RD node missing",
+         lambda b: _reasons(b) == {
+             "Y_BASE_GROUP_LOOKUP_MISSING", "F_RD_NODE_MISSING"
+         }),
         ("paddy_revenue_rp is null",
          lambda b: _g(b, "economics", "paddy_revenue_rp") is None),
         ("margin_core_rp is null",

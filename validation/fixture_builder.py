@@ -66,17 +66,29 @@ PRIOR_AUDIT_COUNTS = {
 }
 
 
-def build_fixture_manifest(sources: dict[str, SourceFile]) -> dict:
+def build_fixture_manifest(sources: dict[str, SourceFile], reconstruction=None) -> dict:
     clean_present = sources[ROLE_CLEAN_COHORT].present
     status = empirical_source_status(sources)
     blocked = status == EMPIRICAL_SOURCE_STATUS_BLOCKED or not clean_present
 
     def cohort_state(expected_key: str) -> dict:
+        verified = (
+            reconstruction is not None
+            and reconstruction.status == "RECONSTRUCTION_OK"
+            and reconstruction.counts.get(expected_key)
+            == PRIOR_AUDIT_COUNTS[expected_key]
+        )
         return {
             "expected_from_prior_audit": PRIOR_AUDIT_COUNTS[expected_key],
-            "verified_from_source": False,
+            "verified_from_source": verified,
+            "recomputed_from_source": (
+                reconstruction.counts.get(expected_key)
+                if reconstruction is not None else None
+            ),
             "status": (
-                "BLOCKED_SOURCE_FILES_MISSING" if blocked else "PENDING_VERIFICATION"
+                "VERIFIED" if verified else
+                "BLOCKED_SOURCE_FILES_MISSING" if blocked else
+                "SOURCE_VERSION_MISMATCH"
             ),
             "note": (
                 "Counts are NEVER assumed into existence; they must be "
@@ -86,6 +98,10 @@ def build_fixture_manifest(sources: dict[str, SourceFile]) -> dict:
 
     return {
         "empirical_source_status": status,
+        "reconstruction_status": (
+            reconstruction.status if reconstruction is not None
+            else "NOT_EXECUTED"
+        ),
         "sources": {role: src.to_dict() for role, src in sources.items()},
         "cohort_metadata": {
             "all_clean": cohort_state("clean_keep"),

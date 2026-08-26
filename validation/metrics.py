@@ -14,7 +14,7 @@ import statistics
 from datetime import date
 
 YIELD_STATUS_NOT_EVALUABLE = "NOT_EVALUABLE"
-YIELD_REASON_R2_UNAVAILABLE = "R2_YIELD_UNAVAILABLE"
+YIELD_REASON_R2_UNAVAILABLE = "R2_YIELD_EVIDENCE_INSUFFICIENT"
 
 
 def distance_to_window_days(actual: date, window_min: date, window_max: date) -> int:
@@ -48,12 +48,24 @@ def calendar_metrics(
     ]
     hits = sum(1 for d in distances if d == 0)
     n = len(rows)
+    row_results = []
+    for row, distance in zip(rows, distances):
+        row_results.append({
+            "source_row": row.get("source_row"),
+            "farmer_cluster_id": row.get("farmer_cluster_id"),
+            "predicted_min": row["predicted_min"].isoformat(),
+            "predicted_max": row["predicted_max"].isoformat(),
+            "actual_harvest": row["actual_harvest"].isoformat(),
+            "window_hit": distance == 0,
+            "distance_to_window_days": distance,
+        })
     return {
         "N": n,
         "hits": hits,
         "coverage": hits / n,
         "mean_distance_to_window_days": statistics.fmean(distances),
         "median_distance_to_window_days": float(statistics.median(distances)),
+        "rows": row_results,
     }
 
 

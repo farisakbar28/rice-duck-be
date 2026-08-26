@@ -21,7 +21,7 @@
 | ID | Citation / DOI | Year | Geography | R2 role | Scopus verification status |
 |---|---|---:|---|---|---|
 | `R1` | Vipriyanti, N.U. et al., *The efficiency of duck rice integrated system for sustainable farming*, DOI `10.1088/1755-1315/892/1/012008` | 2021 | Bali, Indonesia | Bali RDIS fertilizer/input baseline context | IOP EES series Scopus coverage verified during R2 audit |
-| `R2` | Nallasamy, T. et al., *Rice-duck integrated system (RDIS) sustains organic rice production in India*, DOI `10.1007/s13165-025-00508-6` | 2025 | Tamil Nadu, India | density 2/3/4 ducks/are and release timing mechanism; candidate future F_RD lookup source | Organic Agriculture Scopus active during R2 audit |
+| `R2` | Nallasamy, T. et al., *Rice-duck integrated system (RDIS) sustains organic rice production in India*, DOI `10.1007/s13165-025-00508-6` | 2025 | Tamil Nadu, India | design/mechanism reference only; supplementary evidence does not provide the complete transferable yield table required for executable F_RD | Organic Agriculture Scopus active during R2 audit |
 | `R3` | Alfiansyah, L.M.; Rahardja, D.P.; Padjung, R., DOI `10.24425/jwld.2025.156040` | 2025 | South Sulawesi, Indonesia | feed intake/FCR/economic mechanism; not direct local effect-size calibration | direct Scopus publication record `105033853270` noted during audit |
 | `R4` | Du, C. et al., DOI `10.1016/j.fcr.2025.110147` | 2025 | Central China | weed suppression biological evidence only | Field Crops Research Scopus coverage verified |
 | `R5` | Qian, P. et al., DOI `10.1080/09583157.2022.2044016` | 2022 | Zhejiang, China | evidence that pest response is heterogeneous/not universally beneficial | journal Scopus indexing verified |
@@ -67,8 +67,9 @@
 | net lifetime | 2–3 cycles | I1 | `local-estimate` |
 | cage per-unit amortization | 150–200k/cycle | I1 | `local-estimate` |
 | weeding baseline | 6–38k/are | I1 | `local-estimate` |
-| Y_base exact cultivar | unresolved | future approved source | `literature-uncalibrated` / `PENDING_LOOKUP` |
-| F_RD response | unresolved runtime lookup | R2 candidate + future approved encoding | `literature-uncalibrated` / `PENDING_LOOKUP` |
+| local cultivar grouping | `SERTANI_GROUP` / `INPARI_GROUP`, approved aliases only | V1/V2 label audit | `system-design` / structure ready; not genetic identity |
+| Y_base local cultivar group | unresolved/null | future approved source | `literature-uncalibrated` / `PENDING_LOOKUP` |
+| F_RD response | unresolved/null exact-node lookup | R2 design context + future approved evidence | `literature-uncalibrated` / `PENDING_LOOKUP` |
 | feed cost | unresolved | I1/R3 candidate mechanism | `UNAVAILABLE` |
 | KCl price | unresolved | none accepted | `UNAVAILABLE` |
 
@@ -102,3 +103,7 @@ Examples:
 
 Runtime values remain `literature-uncalibrated` until local calibration is legitimately possible or the research design explicitly accepts an uncalibrated literature lookup.
 
+Nallasamy is non-executable design context under the current evidence package.
+Vipriyanti supplies nutrient/input context only, and Alfiansyah supplies
+feed/economic mechanism context only. `V1`, `V2`, and `V3` comparator
+workbooks are never parameter sources; `V3` remains legacy-audit-only.

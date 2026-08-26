@@ -22,7 +22,7 @@ from validation.metrics import (
 )
 from validation.provenance import FreezeIdentity, GateResult
 from validation.source_loader import (
-    EMPIRICAL_SOURCE_STATUS_BLOCKED,
+    EMPIRICAL_SOURCE_STATUS_OK,
     ROLE_CLEAN_COHORT,
     ROLE_LEGACY_SIMULATION,
     SourceFile,
@@ -152,7 +152,9 @@ def build_freeze_manifest(
                 "harvest_hst_max": v.harvest_hst_max,
                 "calendar_status": v.calendar_status.value,
                 "yield_lookup_status": v.yield_lookup_status.value,
-                "exact_cultivar_code": v.exact_cultivar_code,
+                "cultivar_group_code": (
+                    v.cultivar_group_code.value if v.cultivar_group_code else None
+                ),
             }
             for v in RICE_VARIETIES
         ],
@@ -188,8 +190,8 @@ def build_freeze_manifest(
 def build_component_eligibility(
     sources: dict[str, SourceFile], probe: dict
 ) -> dict:
-    clean_present = sources[ROLE_CLEAN_COHORT].present
     source_status = empirical_source_status(sources)
+    source_ready = source_status == EMPIRICAL_SOURCE_STATUS_OK
 
     def comparator(n_key: str) -> dict:
         prior = {
@@ -216,8 +218,8 @@ def build_component_eligibility(
     components = {
         "calendar": {
             "eligible_when_source_available": True,
-            "status": "BLOCKED_SOURCE_FILES_MISSING" if not clean_present else "PENDING_EXECUTION",
-            "metric_allowed": clean_present,
+            "status": "PENDING_EXECUTION" if source_ready else source_status,
+            "metric_allowed": source_ready,
             "comparator": comparator("actual_active_duration"),
         },
         "yield": {
@@ -315,12 +317,13 @@ def build_yield_status_block(probe: dict, sources: dict[str, SourceFile]) -> dic
             "approved quantitative yield-validation protocol. Stop and run a "
             "new pre-freeze review before extending validation."
         )
-    clean_present = sources[ROLE_CLEAN_COHORT].present
+    source_ready = empirical_source_status(sources) == EMPIRICAL_SOURCE_STATUS_OK
     return {
         "status": YIELD_STATUS_NOT_EVALUABLE,
         "reason": YIELD_REASON_R2_UNAVAILABLE,
-        "actual_coverage": "36/36" if clean_present else "unverified_source_missing",
-        "prediction_coverage": "0/36",
+        "actual_coverage": "36/36" if source_ready else "unverified_source_gate",
+        "prediction_coverage": 0,
+        "prediction_coverage_label": "0/36",
         "quantitative_metrics": None,
         "metrics_not_computed": ["MAE", "RMSE", "MedAE", "MBE", "WAPE", "MAPE",
                                  "R2", "release_scenario_envelope_coverage"],
@@ -329,8 +332,8 @@ def build_yield_status_block(probe: dict, sources: dict[str, SourceFile]) -> dic
 
 
 def build_stress_block(sources: dict[str, SourceFile]) -> dict:
-    clean_present = sources[ROLE_CLEAN_COHORT].present
-    if not clean_present:
+    source_ready = empirical_source_status(sources) == EMPIRICAL_SOURCE_STATUS_OK
+    if not source_ready:
         return {
             "status": "BLOCKED_SOURCE_FILES_MISSING",
             "reason": "the 8 excluded/stress cycles are identifiable only from "
@@ -409,7 +412,7 @@ def render_validation_report_md(
     yb = yield_block
     add("## 7. Yield status")
     add(f"- status={yb['status']}; reason={yb['reason']}; "
-        f"actual_coverage={yb['actual_coverage']}; prediction_coverage={yb['prediction_coverage']}; "
+        f"actual_coverage={yb['actual_coverage']}; prediction_coverage={yb['prediction_coverage_label']}; "
         f"quantitative_metrics=None")
     add("")
     add("## 8. Revenue status")
@@ -454,8 +457,8 @@ def render_validation_report_md(
         "(see expert_transfer.json); global notes: " + " ".join(GLOBAL_NOTES))
     add("")
     add("## 17. Limitations")
-    add("- yield/feed/cage-total/full-profit unavailable by design; comparator workbooks "
-        "partially missing; strict-domain N=17 and calendar N=12 remain unverified hypotheses.")
+    add("- yield/feed/cage-total/full-profit remain unavailable by design; "
+        "cohort counts and comparator eligibility are source-version gated.")
     add("")
     add("## 18. No-recalibration declaration")
     add("- no fitting/optimization/calibration workflow exists in this package "

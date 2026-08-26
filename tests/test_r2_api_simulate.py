@@ -43,9 +43,9 @@ def test_supported_domain_default_price_semantics() -> None:
     model = body["model"]
     assert model["model_version"] == "R2"
     assert model["history_schema_version"] == 4
-    assert model["parameter_registry_version"] == "R2-2026-08-26.1"
+    assert model["parameter_registry_version"] == "R2-2026-08-26.2"
     assert model["frozen"] is True  # sourced from app.data.seed.MODEL_FROZEN (docs/11)
-    assert model["freeze_id"] == "R2-FREEZE-2026-08-26.1"
+    assert model["freeze_id"] == "R2-FREEZE-2026-08-26.2"
     assert model["generated_at"]
 
     # Input echo: omitted price resolves to registry default.
@@ -90,12 +90,15 @@ def test_supported_domain_default_price_semantics() -> None:
     # Yield fail-closed.
     yld = body["yield"]
     assert yld["availability"] == "UNAVAILABLE"
-    assert yld["exact_cultivar_resolved"] is False
+    assert yld["cultivar_group_code"] == "SERTANI_GROUP"
+    assert yld["cultivar_group_resolved"] is True
     assert yld["baseline_kg_per_are"] is None
     assert yld["rice_duck_response_factor"] is None
     assert yld["yield_kg_per_are"] is None
     assert yld["yield_total_kg"] is None
-    assert set(yld["reason_codes"]) == {"Y_BASE_LOOKUP_MISSING", "F_RD_LOOKUP_MISSING"}
+    assert set(yld["reason_codes"]) == {
+        "Y_BASE_GROUP_LOOKUP_MISSING", "F_RD_NODE_MISSING"
+    }
 
     # Fertilizer baseline available.
     fert = body["fertilizer_baseline"]
@@ -181,11 +184,11 @@ def test_supported_domain_default_price_semantics() -> None:
         {"field": "p_duck_buy", "resolved_value": 26500.0, "source": "I1", "status_tag": "mixed"}
     ]
     assert set(trace["availability_reasons"]["yield"]) == {
-        "Y_BASE_LOOKUP_MISSING",
-        "F_RD_LOOKUP_MISSING",
+        "Y_BASE_GROUP_LOOKUP_MISSING",
+        "F_RD_NODE_MISSING",
     }
-    assert trace["lookup_versions"]["parameter_registry"] == "R2-2026-08-26.1"
-    assert trace["lookup_versions"]["yield_base_by_variety"] == "PENDING_LOOKUP"
+    assert trace["lookup_versions"]["parameter_registry"] == "R2-2026-08-26.2"
+    assert trace["lookup_versions"]["yield_base_by_cultivar_group"] == "PENDING_LOOKUP"
 
 
 def test_response_top_level_yield_alias_and_no_flat_legacy_fields() -> None:

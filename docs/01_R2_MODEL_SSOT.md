@@ -12,9 +12,9 @@
 |---|---|---|
 | Active duck area | `A_are` | Required, `> 0` are. Active interaction area, not total farm area. |
 | Initial duck count | `J` | Required integer, `> 0`. |
-| Planting date | `D_tanam` | Required ISO date. |
+| Planting date | `D_tanam` | Required ISO date. For transplanted rice this means **field transplanting date**; HST is counted from transplanting. This is a `system-design` / validation assumption, not a newly observed field fact. |
 | Planting system | `S` | Required; canonical codes `jajar_legowo` or `tegel`. |
-| Rice variety | `V` | Required; UI may expose local labels, but yield lookup needs exact cultivar resolution. |
+| Rice variety | `V` | Required; the seven-input public API stays unchanged. Internally, only the approved local cultivar-group mapping below may be used for future yield lookup. |
 | Duck age | `U_duck` | Required integer `> 0` days. |
 | Duck purchase price | `p_duck_buy_manual` | **Optional**. Missing/null → internal default Rp26,500/duck. A supplied value must be `> 0`. Do not treat numeric `0` as a substitute for missing. |
 
@@ -28,9 +28,30 @@
 
 Default Rp26,500 is midpoint of local Rp25,000–28,000 range. The local range is `local-estimate`; midpoint selection is `system-design`; therefore effective default is `mixed`.
 
+### 1.2 Evidence-bounded local cultivar groups
+
+The historical labels support grouping for model lookup, not genetic identity.
+Normalization is exact after trimming surrounding whitespace and comparing
+case-insensitively; fuzzy matching and unlisted aliases are forbidden.
+
+| Internal group | Approved source labels |
+|---|---|
+| `SERTANI_GROUP` | `Sertani`, `Sertani 13`, `Sertani a 13`, `Seratih` |
+| `INPARI_GROUP` | `Inpari`, `Inpari 32` |
+
+The public options remain `sertani` and `inpari`; both resolve deterministically
+to their corresponding local group. An unlisted label resolves to no group and
+must fail closed with `CULTIVAR_GROUP_UNRESOLVED`.
+
 ## 2. Calendar Engine
 
 Calendar returns **windows**, not false-precision point estimates.
+
+`D_tanam` is the field-transplanting date for transplanted rice. Every R2 HST
+window below is counted from that date. Historical rows may enter calendar
+validation only when both planting/transplanting date and harvest date are
+observed. This semantic equivalence is a `system-design` / validation
+assumption and does not change any numeric window.
 
 ```text
 [local-estimate] HarvestHST(V):
@@ -135,7 +156,7 @@ R2 does **not** have a scientifically complete numeric yield runtime yet.
 Canonical structural formula:
 
 ```text
-[mixed] Yield_are_ref = Y_base(V_exact) * F_RD_lookup(d, HST_release_ref=30)
+[mixed] Yield_are_ref = Y_base(cultivar_group_code) * F_RD_lookup(system_scope, d, release=30)
 [system-design] Yield_total = Yield_are_ref * A_are
 ```
 
@@ -144,10 +165,11 @@ Availability gate:
 ```text
 [system-design] YieldAvailabilityFlag = AVAILABLE
   only if:
-    1. exact cultivar V_exact is resolved;
-    2. Y_base(V_exact) has a traceable valid source;
-    3. F_RD_lookup has a traceable valid literature table/model;
-    4. requested point is inside the supported lookup domain.
+    1. an approved local cultivar_group_code is resolved;
+    2. Y_base(group) has a traceable approved record;
+    3. F_RD has a traceable approved record for the exact system/density/release node;
+    4. the exact node is inside the record's supported domain;
+    5. release timing semantics are equivalent to the R2 transplanting-based HST semantics.
 otherwise UNAVAILABLE.
 ```
 
@@ -160,6 +182,16 @@ Yield_are = null
 Yield_total = null
 YieldAvailabilityFlag = UNAVAILABLE
 ```
+
+Current evidence closure is explicit: `LOCAL_CULTIVAR_GROUPING_READY` and
+`LOOKUP_STRUCTURE_READY`, but `Y_BASE_NOT_READY`, `F_RD_NOT_READY`, and
+`SYSTEM_UNRESOLVED_FAIL_CLOSED`. The verified density grid is descriptive
+evidence only and is not executable without approved numeric records.
+
+Future stores are discrete lookups only. Exact equality is required for
+`cultivar_group_code`, `system_scope`, `density_are`, and `release_day`.
+Interpolation, extrapolation, nearest-neighbour selection, range fallback,
+and cross-system fallback are forbidden. The production store is empty.
 
 ### Forbidden yield fallbacks
 
@@ -406,4 +438,3 @@ Runtime code should fail closed:
 
 - if a required lookup is missing -> return `UNAVAILABLE` with `null` numeric fields;
 - never fall back to a historical constant merely to keep a chart or total populated.
-

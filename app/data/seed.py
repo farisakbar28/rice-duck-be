@@ -24,6 +24,7 @@ docs/10_R2_REFERENCE_PROVENANCE.md):
 
 from app.domain.models import (
     ExecutionState,
+    LocalCultivarGroup,
     ParameterMetadata,
     PlantingSystem,
     ProvenanceStatus,
@@ -38,7 +39,7 @@ EFFECTIVE_FROM = "2026-08-26"
 # MODEL_VERSION, APP_VERSION, the history schema version, and any Git SHA.
 # Bump the trailing ".N" whenever a regulatory price or an approved lookup
 # changes without a structural formula change; MODEL_VERSION stays "R2".
-PARAMETER_REGISTRY_VERSION = "R2-2026-08-26.1"
+PARAMETER_REGISTRY_VERSION = "R2-2026-08-26.2"
 
 # ---------------------------------------------------------------------------
 # Freeze governance metadata (Phase 5; docs/11_R2_FREEZE_MANIFEST.md)
@@ -61,7 +62,7 @@ PARAMETER_REGISTRY_VERSION = "R2-2026-08-26.1"
 # at Phase-4 baseline 39fd69fbfa207862ce4da5be5d4f75e06eed6bdb with zero
 # scientific-coefficient changes (guarded by tests/test_r2_freeze_semantics.py).
 MODEL_FROZEN: bool = True
-FREEZE_ID: str | None = "R2-FREEZE-2026-08-26.1"
+FREEZE_ID: str | None = "R2-FREEZE-2026-08-26.2"
 FREEZE_EFFECTIVE_FROM: str | None = "2026-08-26"
 
 
@@ -78,10 +79,11 @@ RICE_VARIETIES: list[RiceVariety] = [
         calendar_status=ProvenanceStatus.LOCAL_ESTIMATE,
         yield_lookup_status=ExecutionState.PENDING_LOOKUP,
         note=(
-            "Harvest window is a local estimate (source I1). Exact-cultivar "
-            "yield baseline is not configured yet."
+            "Harvest window is a local estimate (source I1). SERTANI_GROUP is "
+            "a local label grouping, not genetic identity; its numeric yield "
+            "baseline is not configured."
         ),
-        exact_cultivar_code=None,
+        cultivar_group_code=LocalCultivarGroup.SERTANI_GROUP,
     ),
     RiceVariety(
         code="inpari",
@@ -91,10 +93,11 @@ RICE_VARIETIES: list[RiceVariety] = [
         calendar_status=ProvenanceStatus.LOCAL_ESTIMATE,
         yield_lookup_status=ExecutionState.PENDING_LOOKUP,
         note=(
-            "Harvest window is a local estimate (source I1). Exact-cultivar "
-            "yield baseline is not configured yet."
+            "Harvest window is a local estimate (source I1). INPARI_GROUP is "
+            "a local label grouping, not genetic identity; its numeric yield "
+            "baseline is not configured."
         ),
-        exact_cultivar_code=None,
+        cultivar_group_code=LocalCultivarGroup.INPARI_GROUP,
     ),
 ]
 
@@ -405,15 +408,15 @@ PARAMETER_REGISTRY: dict[str, ParameterMetadata] = {
         ),
     ),
     # --- Pending lookups / unavailable branches (value MUST stay None) -------
-    "yield_base_by_variety": _param(
-        "yield_base_by_variety",
+    "yield_base_by_cultivar_group": _param(
+        "yield_base_by_cultivar_group",
         value=None,
         unit="kg/are",
         status_tag=ProvenanceStatus.LITERATURE_UNCALIBRATED,
         execution_state=ExecutionState.PENDING_LOOKUP,
         source_ids=(),
         note=(
-            "Exact-cultivar baseline table not configured/approved yet "
+            "Local cultivar-group baseline table not configured/approved yet "
             "(registry R2-YLD-LKP-BASE). Missing lookup must yield null output, never a constant."
         ),
     ),

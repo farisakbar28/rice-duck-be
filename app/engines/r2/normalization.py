@@ -16,7 +16,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from app.domain.models import PurchasePriceSource
+from app.domain.models import LocalCultivarGroup, PurchasePriceSource
 from app.engines.r2.common import high_precision, to_decimal
 from app.engines.r2.config import R2EngineConfig
 
@@ -32,6 +32,34 @@ class NormalizedInputs:
     purchase_price_manual: Decimal | None
     purchase_price_effective: Decimal
     purchase_price_source: PurchasePriceSource
+
+
+# Closed evidence boundary: exact aliases only after harmless whitespace/case
+# normalization. Deliberately no substring, edit-distance, prefix, or fuzzy
+# matching.
+_CULTIVAR_GROUP_ALIASES = {
+    "sertani": LocalCultivarGroup.SERTANI_GROUP,
+    "sertani 13": LocalCultivarGroup.SERTANI_GROUP,
+    "sertani a 13": LocalCultivarGroup.SERTANI_GROUP,
+    "seratih": LocalCultivarGroup.SERTANI_GROUP,
+    "inpari": LocalCultivarGroup.INPARI_GROUP,
+    "inpari 32": LocalCultivarGroup.INPARI_GROUP,
+}
+
+
+def normalize_cultivar_group_label(
+    label: str | None,
+) -> LocalCultivarGroup | None:
+    """Resolve only explicitly approved local cultivar labels.
+
+    Surrounding whitespace and character case are formatting differences, not
+    aliases. Internal whitespace is otherwise preserved, so unapproved near
+    matches fail closed.
+    """
+
+    if not isinstance(label, str):
+        return None
+    return _CULTIVAR_GROUP_ALIASES.get(label.strip().casefold())
 
 
 def normalize_inputs(

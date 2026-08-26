@@ -85,7 +85,7 @@ EXPERT_TRANSFER_MATRIX: list[dict] = [
         "note": "Not a claim of zero manure contribution.",
     },
     {
-        "parameter": "yield lookup Y_base(V_exact)*F_RD_lookup (R2-YLD-01)",
+        "parameter": "yield lookup Y_base(local_group)*F_RD_exact_node (R2-YLD-01)",
         "transfer": "NONE",
         "evidence_reference": "-",
         "scope": "new formula not expert-reviewed",

@@ -174,12 +174,12 @@ class TestContractShape:
         meta = ModelMeta(
             model_version="R2",
             history_schema_version=4,
-            parameter_registry_version="R2-2026-08-26.1",
+            parameter_registry_version="R2-2026-08-26.2",
             model_commit_sha=None,
         ).model_dump()
         assert meta["model_version"] == "R2"
         assert meta["history_schema_version"] == 4
-        assert meta["parameter_registry_version"] == "R2-2026-08-26.1"
+        assert meta["parameter_registry_version"] == "R2-2026-08-26.2"
 
     def test_input_echo_keeps_manual_effective_source_distinct(self) -> None:
         echo = SimulationInputEcho(

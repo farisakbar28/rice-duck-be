@@ -93,7 +93,7 @@ Do not delete extreme residuals from the 36 after seeing results.
 
 ## 6. Yield Validation Gate
 
-**Current R2 state:** yield runtime is `PENDING_LOOKUP/UNAVAILABLE` until approved `Y_base(V_exact)` and `F_RD_lookup` are configured.
+**Current R2 state:** yield runtime is `PENDING_LOOKUP/UNAVAILABLE` until approved local-cultivar-group baseline and exact-node F_RD records are configured. Grouping and schema readiness are not numeric evidence.
 
 Therefore:
 
@@ -154,7 +154,11 @@ Audited coverage:
 - harvest date available: 15/36;
 - both together: 12/36.
 
-Harvest-window validation uses `N=12` only.
+Harvest-window validation uses the mechanically reconstructed `N=12` only.
+For this comparator, an observed historical planting date is interpreted as
+the field-transplanting date. This is an explicit validation assumption; if
+that equivalence cannot be maintained, use `TIMING_SEMANTICS_UNRESOLVED` and
+exclude the row rather than changing the calendar window.
 
 ```text
 Hit_i = 1 if actual harvest date in predicted window else 0
@@ -374,4 +378,3 @@ R2 can be considered implemented correctly even if empirical error is large, pro
 - empirical discrepancies are reported rather than tuned away.
 
 A large error is a research result, not permission to recalibrate from the comparator set.
-

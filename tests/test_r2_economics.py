@@ -15,6 +15,7 @@ from app.domain.models import (
     AvailabilityStatus,
     ComponentAvailability,
     CostCompletenessFlag,
+    LocalCultivarGroup,
     PriceBenchmarkType,
 )
 from app.engines.r2.config import load_default_config
@@ -85,7 +86,8 @@ def yield_available(total_kg: Decimal = Decimal("378")) -> YieldResult:
     """Synthetic AVAILABLE yield result (378 kg from the synthetic fixture path)."""
     return YieldResult(
         availability=AvailabilityStatus.AVAILABLE,
-        exact_cultivar_resolved=True,
+        cultivar_group_code=LocalCultivarGroup.SERTANI_GROUP,
+        cultivar_group_resolved=True,
         baseline_kg_per_are=Decimal("50"),
         rice_duck_response_factor=Decimal("1.08"),
         yield_kg_per_are=Decimal("54"),
@@ -97,12 +99,16 @@ def yield_available(total_kg: Decimal = Decimal("378")) -> YieldResult:
 def yield_unavailable() -> YieldResult:
     return YieldResult(
         availability=AvailabilityStatus.UNAVAILABLE,
-        exact_cultivar_resolved=False,
+        cultivar_group_code=LocalCultivarGroup.SERTANI_GROUP,
+        cultivar_group_resolved=True,
         baseline_kg_per_are=None,
         rice_duck_response_factor=None,
         yield_kg_per_are=None,
         yield_total_kg=None,
-        reason_codes=(ReasonCode.Y_BASE_LOOKUP_MISSING, ReasonCode.F_RD_LOOKUP_MISSING),
+        reason_codes=(
+            ReasonCode.Y_BASE_GROUP_LOOKUP_MISSING,
+            ReasonCode.F_RD_NODE_MISSING,
+        ),
     )
 
 

@@ -23,7 +23,7 @@ def _snapshot(**overrides) -> R2HistorySnapshot:
         user_id="user-r2-repo",
         schema_version=4,
         model_version="R2",
-        parameter_registry_version="R2-2026-08-26.1",
+        parameter_registry_version="R2-2026-08-26.2",
         model_commit_sha=None,
         created_at=datetime(2026, 8, 26, 12, 0, 0, tzinfo=timezone.utc),
         request_json='{"land_area_are":7.0}',

@@ -133,7 +133,7 @@ class TestFailClosedPendingEntries:
     @pytest.mark.parametrize(
         "key",
         [
-            "yield_base_by_variety",
+            "yield_base_by_cultivar_group",
             "f_rd_lookup",
         ],
     )

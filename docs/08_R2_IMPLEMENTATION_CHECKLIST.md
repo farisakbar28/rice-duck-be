@@ -63,7 +63,9 @@
 
 - [ ] implement lookup interface.
 - [ ] default lookup store is empty/pending.
-- [ ] missing exact cultivar/F_RD -> null, not legacy Y0.
+- [ ] exact approved local cultivar-group normalization only; no fuzzy aliases.
+- [ ] missing group baseline/exact-node F_RD -> null, not legacy Y0.
+- [ ] no interpolation/extrapolation/nearest-neighbour/cross-system yield lookup.
 - [ ] no system/age/density fallback multipliers.
 
 ### 3F Fertilizer baseline
@@ -180,4 +182,3 @@
 - [ ] Every active number/formula has provenance and status.
 - [ ] Every unavailable output has a reason code.
 - [ ] Backend behavior matches documentation, not the other way around.
-

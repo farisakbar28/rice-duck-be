@@ -34,7 +34,7 @@
 | `R2-SURV-01` | Safe survival ref | `lambda_safe_ref=0.90` | `local-estimate` | `CONDITIONAL` | expert safe-context estimate |
 | `R2-SURV-02` | Survival availability | 0.90 only if age+density both supported; else unavailable | `mixed` | `ACTIVE` gate | confirmed R2 design |
 | `R2-SURV-03` | Surviving ducks | `floor(J*lambda_eff)` | `system-design` | `CONDITIONAL` | deterministic once lambda available |
-| `R2-YLD-01` | Yield structure | `Y_base(V_exact)*F_RD_lookup(d,release=30)` | `mixed` | `PENDING_LOOKUP` | accepted structure; lookups missing |
+| `R2-YLD-01` | Yield structure | `Y_base(local_group)*F_RD_exact_node(system,d,release=30)` | `mixed` | `PENDING_LOOKUP` | local grouping and lookup structure ready; numeric records missing |
 | `R2-YLD-02` | Total yield | `Yield_are*A_are` | `system-design` | `CONDITIONAL` | requires `R2-YLD-01` available |
 | `R2-NUT-01` | N baseline | `1.1761*A_are` kg N | `literature-uncalibrated` | `ACTIVE_BASELINE` | Bali RDIS baseline reconstruction |
 | `R2-NUT-02` | P2O5 baseline | `0.2745*A_are` kg | `literature-uncalibrated` | `ACTIVE_BASELINE` | same |
@@ -64,8 +64,8 @@
 
 | ID | Component | Structural rule | Current state | Why numeric runtime is blocked |
 |---|---|---|---|---|
-| `R2-YLD-LKP-BASE` | Exact-cultivar baseline | `Y_base(V_exact)` | `PENDING_LOOKUP` | no approved exact-cultivar table configured |
-| `R2-YLD-LKP-RD` | Rice-duck response | `F_RD_lookup(d, release)` | `PENDING_LOOKUP` | literature treatment table not yet encoded/approved |
+| `R2-YLD-LKP-BASE` | Local cultivar-group baseline | `Y_base(cultivar_group_code)` | `PENDING_LOOKUP` | approved groups exist but no numeric baseline record is approved |
+| `R2-YLD-LKP-RD` | Rice-duck response | exact node `(system_scope,density_are,release_day)` | `PENDING_LOOKUP` | grid structure is verified but numeric response records and system scope remain unresolved |
 | `R2-FEED-01` | Feed cost | `sum N_t*q_feed*p_feed` | `UNAVAILABLE` | valid quantity + price lookup incomplete |
 | `R2-CAGE-02` | Total cage cost | `N_units*C_cage_unit_cycle` | `UNAVAILABLE` | cage capacity/unit-count rule absent |
 | `R2-WEED-02` | Weeding savings | baseline-to-saving function | `UNAVAILABLE` | biological suppression != monetary saving |
@@ -134,3 +134,18 @@ Do not store scientific status using current-master ad-hoc labels such as `local
 7. Incomplete cost ledger -> full profit null.
 8. Unknown value in aggregation -> exclude only if metric is explicitly named `available`/partial; never coerce unknown to zero.
 
+9. Yield lookups are `DISCRETE_LOOKUP_ONLY`: exact-node match or null. No interpolation, extrapolation, nearest node, density band, release fallback, or cross-system fallback.
+
+## 7. Future Yield Record Schemas (empty in production)
+
+Baseline rows require: `cultivar_group_code`, `kg_per_are`, `moisture_basis`,
+`control_condition`, `site`, `season`, `system_scope`, `management_context`,
+`source_id`, `source_location`, `provenance_status`, `version`.
+
+F_RD rows require: `cultivar_scope`, `system_scope`, `density_are`,
+`release_day`, `release_semantics`, `factor`, `treatment_yield`,
+`control_yield`, `yield_unit`, `season`, `uncertainty`, `source_id`,
+`source_location`, `provenance_status`, `supported_domain`, `version`.
+
+Schema readiness does not activate either lookup. Both production record sets
+remain empty and all numeric yield outputs remain unavailable.

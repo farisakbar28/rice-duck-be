@@ -94,7 +94,7 @@ Rules:
 |---|---|---:|---|
 | `land_area_are` | finite float | yes | `>0` |
 | `duck_count` | integer | yes | `>0` |
-| `planting_date` | ISO date | yes | valid date |
+| `planting_date` | ISO date | yes | valid field-transplanting date for transplanted rice; HST is counted from transplanting (`system-design` / validation assumption) |
 | `planting_system` | string | yes | lookup value |
 | `rice_variety` | string | yes | lookup value |
 | `duck_age_days` | integer | yes | `>0` |
@@ -133,6 +133,13 @@ p_duck_buy: float | None = Field(default=None, gt=0, allow_inf_nan=False)
 
 Use nested semantic groups. Do not repeat old flat naming solely to satisfy legacy frontend code.
 
+Yield reason codes are specific and fail-closed: `CULTIVAR_GROUP_UNRESOLVED`,
+`Y_BASE_GROUP_LOOKUP_MISSING`, `F_RD_NODE_MISSING`,
+`RELEASE_NODE_UNSUPPORTED`, `F_RD_SYSTEM_SCOPE_UNSUPPORTED`, and
+`TIMING_SEMANTICS_UNRESOLVED`. Generic availability semantics remain
+`availability=UNAVAILABLE` plus null numeric outputs. No code authorizes
+interpolation, extrapolation, nearest-neighbour selection, or a numeric fallback.
+
 ```json
 {
   "model": {
@@ -160,6 +167,7 @@ Use nested semantic groups. Do not repeat old flat naming solely to satisfy lega
     "extrapolation": "IN_DOMAIN"
   },
   "calendar": {
+    "hst_origin_semantics": "FIELD_TRANSPLANTING_DATE",
     "release_hst_min": 21,
     "release_hst_max": 30,
     "release_date_min": "2026-06-22",
@@ -189,12 +197,13 @@ Use nested semantic groups. Do not repeat old flat naming solely to satisfy lega
   },
   "yield": {
     "availability": "UNAVAILABLE",
-    "exact_cultivar_resolved": false,
+    "cultivar_group_code": "SERTANI_GROUP",
+    "cultivar_group_resolved": true,
     "baseline_kg_per_are": null,
     "rice_duck_response_factor": null,
     "yield_kg_per_are": null,
     "yield_total_kg": null,
-    "reason_codes": ["Y_BASE_LOOKUP_MISSING", "F_RD_LOOKUP_MISSING"]
+    "reason_codes": ["Y_BASE_GROUP_LOOKUP_MISSING", "F_RD_NODE_MISSING"]
   },
   "fertilizer_baseline": {
     "availability": "AVAILABLE",
@@ -267,7 +276,7 @@ Use nested semantic groups. Do not repeat old flat naming solely to satisfy lega
     "extrapolation": "IN_DOMAIN"
   },
   "warnings": [
-    "Yield numeric output is unavailable until exact-cultivar and F_RD lookups are configured.",
+    "Yield numeric output is unavailable until approved group-baseline and exact-node F_RD records are configured.",
     "Feed cost is unavailable; full profit is not computed."
   ],
   "trace": {
@@ -363,7 +372,7 @@ Canonical top-level response:
   "yield_series": {
     "availability": "UNAVAILABLE",
     "points": [],
-    "reason_codes": ["Y_BASE_LOOKUP_MISSING", "F_RD_LOOKUP_MISSING"]
+    "reason_codes": ["Y_BASE_GROUP_LOOKUP_MISSING", "F_RD_NODE_MISSING"]
   },
   "financial_waterfall": {
     "availability": "PARTIAL",

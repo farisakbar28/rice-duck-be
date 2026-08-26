@@ -107,7 +107,7 @@ created_at = UTC timestamp
 Recommended registry version format:
 
 ```text
-R2-2026-08-26.1
+R2-2026-08-26.2
 ```
 
 If regulatory prices or approved lookup tables later change without changing structural formulas, increment the registry version even if `model_version` remains R2.

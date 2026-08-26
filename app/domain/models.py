@@ -116,6 +116,13 @@ class PurchasePriceSource(str, Enum):
     LOCAL_DEFAULT_MIDPOINT = "LOCAL_DEFAULT_MIDPOINT"
 
 
+class LocalCultivarGroup(str, Enum):
+    """Evidence-bounded local label groups; these are not genetic identities."""
+
+    SERTANI_GROUP = "SERTANI_GROUP"
+    INPARI_GROUP = "INPARI_GROUP"
+
+
 class ComponentAvailability(str, Enum):
     """Availability vocabulary for cost components that can be range-valued.
 
@@ -142,8 +149,9 @@ class RiceVariety:
 
     Harvest windows are local estimates (Sertani/Seratih 100-110,
     Inpari 90-100 HST). Yield resolution is PENDING_LOOKUP until an approved
-    exact-cultivar baseline table exists; no numeric yield baseline may be
-    attached to this type.
+    local-group baseline table exists; no numeric yield baseline may be
+    attached to this type. ``cultivar_group_code`` is a historical-label
+    grouping for lookup only and must never be described as genetic identity.
     """
 
     code: str
@@ -153,10 +161,7 @@ class RiceVariety:
     calendar_status: ProvenanceStatus
     yield_lookup_status: ExecutionState
     note: str = ""
-    # Generic API variety choices are not automatically exact cultivars.
-    # A future sourced yield lookup must resolve this identity explicitly
-    # before an exact-cultivar baseline can be queried.
-    exact_cultivar_code: str | None = None
+    cultivar_group_code: LocalCultivarGroup | None = None
 
 
 @dataclass(frozen=True)

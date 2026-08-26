@@ -21,6 +21,12 @@ configure_runtime_env()
 from validation import report as report_mod  # noqa: E402
 from validation.expert_transfer import EXPERT_TRANSFER_MATRIX  # noqa: E402
 from validation.fixture_builder import build_fixture_manifest  # noqa: E402
+from validation.comparators import (  # noqa: E402
+    build_calendar_comparator,
+    build_component_comparators,
+    build_purchase_comparator,
+    run_stress_rows,
+)
 from validation.provenance import (  # noqa: E402
     evaluate_official_gate,
     git_head,
@@ -35,7 +41,18 @@ from validation.runtime_runner import (  # noqa: E402
     run_v1_matrix,
     probe_production_availability,
 )
-from validation.source_loader import discover_sources  # noqa: E402
+from validation.source_loader import (  # noqa: E402
+    ROLE_LEGACY_SIMULATION,
+    ROLE_RAW_RECAP,
+    ROLE_CLEAN_COHORT,
+    discover_sources,
+)
+from validation.workbook_parser import (  # noqa: E402
+    RECONSTRUCTION_OK,
+    SOURCE_VERSION_MISMATCH,
+    parse_legacy_simulation,
+    reconstruct_cohorts,
+)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -92,10 +109,47 @@ def main(argv: list[str] | None = None) -> int:
     print("[validation] executing docs/06 section-19 V1 matrix via pytest ...")
     v1 = run_v1_matrix()
 
-    fixture_manifest = build_fixture_manifest(sources)
+    reconstruction = reconstruct_cohorts(
+        sources,
+        private_map_path=REPO_ROOT / "validation" / "local" / "farmer_id_map.json",
+    )
+    fixture_manifest = build_fixture_manifest(sources, reconstruction)
     eligibility = report_mod.build_component_eligibility(sources, probe)
     yield_block = report_mod.build_yield_status_block(probe, sources)
-    stress_block = report_mod.build_stress_block(sources)
+    calendar_block = (
+        build_calendar_comparator(reconstruction)
+        if reconstruction.status == RECONSTRUCTION_OK else {
+            "status": reconstruction.status, "metrics": None
+        }
+    )
+    purchase_block = (
+        build_purchase_comparator(reconstruction)
+        if reconstruction.status == RECONSTRUCTION_OK else {
+            "status": reconstruction.status, "effective_n": 0, "rows": []
+        }
+    )
+    component_block = (
+        build_component_comparators(reconstruction)
+        if reconstruction.status == RECONSTRUCTION_OK else {
+            "status": reconstruction.status
+        }
+    )
+    stress_block = (
+        run_stress_rows(reconstruction)
+        if reconstruction.status == RECONSTRUCTION_OK else {
+            "status": reconstruction.status,
+            "rows": [],
+            "merged_into_headline_metrics": False,
+        }
+    )
+    eligibility["components"]["calendar"]["status"] = calendar_block["status"]
+    eligibility["components"]["calendar"]["metrics"] = calendar_block.get("metrics")
+    eligibility["components"]["duck_purchase_cost_identity"][
+        "observed_positive_comparator"
+    ] = {
+        "status": purchase_block["status"],
+        "effective_n": purchase_block["effective_n"],
+    }
 
     gate = evaluate_official_gate(
         identity,
@@ -103,6 +157,16 @@ def main(argv: list[str] | None = None) -> int:
         tree_clean=clean,
         tests_passed=bool(test_summary["all_passed"]),
         source_discovery_executed=True,
+        source_fingerprints_valid=(
+            sources[ROLE_RAW_RECAP].fingerprint_valid
+            and sources[ROLE_CLEAN_COHORT].fingerprint_valid
+        ),
+        cohort_reconstruction_successful=(
+            reconstruction.status == RECONSTRUCTION_OK
+        ),
+        source_version_mismatch=(
+            reconstruction.status == SOURCE_VERSION_MISMATCH
+        ),
     )
     manifest = report_mod.build_freeze_manifest(
         identity, gate, head, sources, test_summary
@@ -121,19 +185,25 @@ def main(argv: list[str] | None = None) -> int:
         },
     )
     report_mod.write_json(run_dir / "fixture_manifest.json", fixture_manifest)
+    report_mod.write_json(
+        run_dir / "cohort_reconstruction.json", reconstruction.manifest()
+    )
     report_mod.write_json(run_dir / "component_eligibility.json", eligibility)
     report_mod.write_json(
         run_dir / "calendar_validation.json",
-        {
-            "status": eligibility["components"]["calendar"]["status"],
-            "eligibility_rule": "OBSERVED planting_date AND OBSERVED harvest_date",
-            "prior_audit_expected_n": 12,
-            "recomputed_n": None,
-            "metrics": None,
-            "note": "windows are never recalibrated; see metrics.py",
-        },
+        calendar_block,
     )
+    report_mod.write_json(run_dir / "purchase_validation.json", purchase_block)
+    report_mod.write_json(run_dir / "component_comparators.json", component_block)
     report_mod.write_json(run_dir / "stress_results.json", stress_block)
+    legacy_source = sources[ROLE_LEGACY_SIMULATION]
+    legacy_audit = (
+        parse_legacy_simulation(Path(legacy_source.path or "")).audit
+        if legacy_source.present else {
+            "role": "AUDIT_ONLY", "status": legacy_source.status
+        }
+    )
+    report_mod.write_json(run_dir / "legacy_simulation_audit.json", legacy_audit)
     report_mod.write_json(
         run_dir / "expert_transfer.json",
         {"items": EXPERT_TRANSFER_MATRIX,

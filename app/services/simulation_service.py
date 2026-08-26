@@ -469,7 +469,10 @@ class DSSService:
     def _to_yield_outputs(yld):
         return YieldOutputs(
             availability=yld.availability,
-            exact_cultivar_resolved=yld.exact_cultivar_resolved,
+            cultivar_group_code=(
+                yld.cultivar_group_code.value if yld.cultivar_group_code else None
+            ),
+            cultivar_group_resolved=yld.cultivar_group_resolved,
             baseline_kg_per_are=_f(yld.baseline_kg_per_are),
             rice_duck_response_factor=_f(yld.rice_duck_response_factor),
             yield_kg_per_are=_f(yld.yield_kg_per_are),
@@ -575,7 +578,8 @@ class DSSService:
         if yld.availability is AvailabilityStatus.UNAVAILABLE:
             warnings.append(
                 "YIELD_LOOKUP_UNAVAILABLE: yield numeric output is unavailable "
-                "until exact-cultivar baseline and rice-duck response lookups "
+                "until approved local-group baseline and exact-node rice-duck "
+                "response lookups "
                 "are configured."
             )
         if feed.availability is AvailabilityStatus.UNAVAILABLE:
@@ -646,7 +650,7 @@ class DSSService:
 
         lookup_states = {
             "parameter_registry": PARAMETER_REGISTRY_VERSION,
-            "yield_base_by_variety": "PENDING_LOOKUP",
+            "yield_base_by_cultivar_group": "PENDING_LOOKUP",
             "f_rd_lookup": "PENDING_LOOKUP",
             "feed_quantity_lookup": "UNAVAILABLE",
             "feed_price_lookup": "UNAVAILABLE",
@@ -654,7 +658,7 @@ class DSSService:
         }
         # Read the states truthfully from the live registry instead of
         # trusting the literals above.
-        for key in ("yield_base_by_variety", "f_rd_lookup", "feed_quantity_lookup",
+        for key in ("yield_base_by_cultivar_group", "f_rd_lookup", "feed_quantity_lookup",
                     "feed_price_lookup", "cage_capacity_rule"):
             entry = PARAMETER_REGISTRY.get(key)
             if entry is not None:

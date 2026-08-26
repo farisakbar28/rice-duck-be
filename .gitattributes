@@ -27,3 +27,6 @@
 *.pem binary
 *.key binary
 *.crt binary
+
+# Research artefacts
+penelitian/

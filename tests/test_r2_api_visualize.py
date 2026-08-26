@@ -57,8 +57,8 @@ def test_visualization_contract_is_canonical_and_availability_aware() -> None:
     assert body["yield_series"]["availability"] == "UNAVAILABLE"
     assert body["yield_series"]["points"] == []
     assert set(body["yield_series"]["reason_codes"]) == {
-        "Y_BASE_LOOKUP_MISSING",
-        "F_RD_LOOKUP_MISSING",
+        "Y_BASE_GROUP_LOOKUP_MISSING",
+        "F_RD_NODE_MISSING",
     }
 
     nodes = {node["key"]: node for node in body["financial_waterfall"]["nodes"]}
@@ -125,4 +125,3 @@ def test_visualization_validation_reference_and_openapi_contract() -> None:
     assert operation["responses"]["200"]
     assert operation["responses"]["400"]
     assert operation["responses"]["422"]
-

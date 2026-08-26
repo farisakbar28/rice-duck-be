@@ -57,6 +57,12 @@ class ReasonCode(str, Enum):
 
     Y_BASE_LOOKUP_MISSING = "Y_BASE_LOOKUP_MISSING"
     F_RD_LOOKUP_MISSING = "F_RD_LOOKUP_MISSING"
+    CULTIVAR_GROUP_UNRESOLVED = "CULTIVAR_GROUP_UNRESOLVED"
+    Y_BASE_GROUP_LOOKUP_MISSING = "Y_BASE_GROUP_LOOKUP_MISSING"
+    F_RD_NODE_MISSING = "F_RD_NODE_MISSING"
+    RELEASE_NODE_UNSUPPORTED = "RELEASE_NODE_UNSUPPORTED"
+    F_RD_SYSTEM_SCOPE_UNSUPPORTED = "F_RD_SYSTEM_SCOPE_UNSUPPORTED"
+    TIMING_SEMANTICS_UNRESOLVED = "TIMING_SEMANTICS_UNRESOLVED"
     FEED_QUANTITY_LOOKUP_MISSING = "FEED_QUANTITY_LOOKUP_MISSING"
     FEED_PRICE_LOOKUP_MISSING = "FEED_PRICE_LOOKUP_MISSING"
     CAGE_CAPACITY_RULE_MISSING = "CAGE_CAPACITY_RULE_MISSING"
@@ -65,6 +71,7 @@ class ReasonCode(str, Enum):
 NutrientBasis = Literal["N-P2O5-K2O"]
 GeometryAssumption = Literal["SQUARE_EQUIVALENT"]
 ProfitFullStatus = Literal["UNAVAILABLE_INCOMPLETE_COST"]
+HSTOriginSemantics = Literal["FIELD_TRANSPLANTING_DATE"]
 
 
 # ---------------------------------------------------------------------------
@@ -140,7 +147,12 @@ class DSSSimulationRequest(BaseModel):
 
     land_area_are: float = Field(gt=0, description="Active duck interaction area in are (> 0).")
     duck_count: int = Field(gt=0, description="Initial duck count (> 0).")
-    planting_date: date = Field(description="Planting date (ISO). Required; no fallback.")
+    planting_date: date = Field(
+        description=(
+            "Field-transplanting date (ISO) for transplanted rice. All HST "
+            "windows are counted from this date; required, no fallback."
+        )
+    )
     planting_system: str = Field(min_length=1, description="Lookup value ('jajar_legowo' | 'tegel').")
     rice_variety: str = Field(min_length=1, description="Lookup value ('sertani' | 'inpari').")
     duck_age_days: int = Field(gt=0, description="Duck age at release in days (> 0).")
@@ -210,6 +222,7 @@ class OperationalProfile(BaseModel):
 class CalendarWindow(BaseModel):
     """Calendar as windows; no false-precision release/pull points."""
 
+    hst_origin_semantics: HSTOriginSemantics = "FIELD_TRANSPLANTING_DATE"
     release_hst_min: int | None = None
     release_hst_max: int | None = None
     release_date_min: date | None = None
@@ -250,7 +263,8 @@ class YieldOutputs(BaseModel):
     """Fail-closed yield group (SSOT section 6): null until lookups exist."""
 
     availability: AvailabilityStatus | None = None
-    exact_cultivar_resolved: bool | None = None
+    cultivar_group_code: str | None = None
+    cultivar_group_resolved: bool | None = None
     baseline_kg_per_are: float | None = None
     rice_duck_response_factor: float | None = None
     yield_kg_per_are: float | None = None

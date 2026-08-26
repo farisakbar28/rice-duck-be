@@ -1,7 +1,7 @@
 # R2 Freeze Manifest — Governance, Semantics, and Reproducibility
 
 > **Status:** CANONICAL Phase-5 freeze documentation.
-> **Freeze candidate:** `FREEZE_ID = R2-FREEZE-2026-08-26.1`,
+> **Freeze candidate:** `FREEZE_ID = R2-FREEZE-2026-08-26.2`,
 > `FREEZE_EFFECTIVE_FROM = 2026-08-26`, established on top of the Phase-4
 > scientific baseline `39fd69fbfa207862ce4da5be5d4f75e06eed6bdb`.
 
@@ -23,7 +23,7 @@ It does **NOT** mean:
 | Dimension | Value / source | Notes |
 |---|---|---|
 | `MODEL_VERSION` | `"R2"` (`app/data/seed.py`) | Scientific model generation; unchanged by freeze. |
-| `PARAMETER_REGISTRY_VERSION` | `"R2-2026-08-26.1"` | Registry identity; NOT bumped by freeze because no parameter value/status changed. |
+| `PARAMETER_REGISTRY_VERSION` | `"R2-2026-08-26.2"` | Registry identity bumped for the evidence-bounded cultivar/timing/lookup semantic amendment; `MODEL_VERSION` remains `R2`. |
 | History schema version | `4` | Persistence schema of new simulations. |
 | `APP_VERSION` | deployment-injected (`settings.app_version`) | Release versioning is separate. |
 | `MODEL_COMMIT_SHA` | environment-injected (`settings.model_commit_sha`) | Build/runtime commit; never self-referential inside its own commit. |
@@ -75,13 +75,26 @@ Official frozen-validation artifacts require ALL of:
 4. `FREEZE_ID` set;
 5. full active test suite passing (`tests/legacy_invalid/` stays excluded);
 6. `PARAMETER_REGISTRY_VERSION` equals the expected frozen value;
-7. source discovery executed and fingerprints recorded (missing comparator
-   files are recorded as such — empirical execution then reports
-   `EMPIRICAL_SOURCE_STATUS=BLOCKED_SOURCE_FILES_MISSING`).
+7. raw recap and clean-v10 comparator present with valid fingerprints;
+8. cohort reconstruction successful with no `SOURCE_VERSION_MISMATCH`;
+9. clean Git, known HEAD, passing tests, and known freeze/registry identities.
 
 Any unmet condition produces watermarked output:
 `run_mode = NON_OFFICIAL_PRE_FREEZE`. A dirty tree additionally reports
 `OFFICIAL_VALIDATION_BLOCKED_DIRTY_TREE`.
+
+### Phase 5C empirical source conditions
+
+Source discovery alone is insufficient for an official empirical run. The raw
+recap and clean-v10 comparator must both be present with valid fingerprints;
+cohort reconstruction must succeed at 44 raw / 36 clean / 8 excluded, strict
+supported-domain N=17, and calendar N=12; and no
+`SOURCE_VERSION_MISMATCH` may be reported. These conditions supersede the
+earlier permissive missing-source wording above.
+
+The legacy-simulation workbook is independently fingerprinted for its
+audit-only role. It never substitutes for raw/clean evidence and is never a
+parameter, prediction, or comparator source.
 
 ## 6. Anti-calibration guarantees
 

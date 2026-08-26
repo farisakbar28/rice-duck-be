@@ -26,8 +26,8 @@ from app.core.config import settings
 from app.main import app
 from tests.r2_api_utils import API, DEFAULT_SIMULATION_PAYLOAD, make_client
 
-PHASE4_REGISTRY_VERSION = "R2-2026-08-26.1"
-PHASE4_FREEZE_ID = "R2-FREEZE-2026-08-26.1"
+PHASE5C_REGISTRY_VERSION = "R2-2026-08-26.2"
+PHASE5C_FREEZE_ID = "R2-FREEZE-2026-08-26.2"
 
 # Approved Phase-4 scientific snapshot (docs/01/docs/04/docs/10). Any drift
 # here means a scientific change happened outside a formally approved
@@ -83,7 +83,7 @@ class TestFreezeMetadataSource:
 
     def test_frozen_flag_is_true_for_phase5_candidate(self) -> None:
         assert seed.MODEL_FROZEN is True
-        assert seed.FREEZE_ID == PHASE4_FREEZE_ID
+        assert seed.FREEZE_ID == PHASE5C_FREEZE_ID
 
     def test_visualization_model_matches_simulation_freeze_identity(self) -> None:
         client = make_client()
@@ -126,8 +126,8 @@ class TestFreezeIdentityDimensions:
         assert not re.fullmatch(r"[0-9a-f]{40}", seed.FREEZE_ID or "")
         assert not re.fullmatch(r"[0-9a-f]{64}", seed.FREEZE_ID or "")
 
-    def test_registry_version_unchanged_from_phase4(self) -> None:
-        assert seed.PARAMETER_REGISTRY_VERSION == PHASE4_REGISTRY_VERSION
+    def test_registry_version_bumped_for_phase5c_semantics(self) -> None:
+        assert seed.PARAMETER_REGISTRY_VERSION == PHASE5C_REGISTRY_VERSION
 
     def test_model_version_and_history_schema_unchanged(self) -> None:
         assert seed.MODEL_VERSION == "R2"
@@ -165,7 +165,7 @@ class TestNoScientificDriftSincePhase4:
             ) == expected
 
     def test_pending_and_unavailable_states_unchanged(self) -> None:
-        for key in ("yield_base_by_variety", "f_rd_lookup"):
+        for key in ("yield_base_by_cultivar_group", "f_rd_lookup"):
             p = seed.PARAMETER_REGISTRY[key]
             assert p.value is None
             assert p.execution_state.value == "PENDING_LOOKUP"
@@ -188,8 +188,8 @@ class TestFrozenDoesNotChangeAvailability:
         assert yld["yield_kg_per_are"] is None
         assert yld["yield_total_kg"] is None
         assert set(yld["reason_codes"]) == {
-            "Y_BASE_LOOKUP_MISSING",
-            "F_RD_LOOKUP_MISSING",
+            "Y_BASE_GROUP_LOOKUP_MISSING",
+            "F_RD_NODE_MISSING",
         }
 
     def test_feed_cage_profit_stay_unavailable_after_freeze(self) -> None:

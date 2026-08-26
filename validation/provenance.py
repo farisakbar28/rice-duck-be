@@ -16,7 +16,7 @@ from pathlib import Path
 
 from validation._bootstrap import REPO_ROOT
 
-EXPECTED_PARAMETER_REGISTRY_VERSION = "R2-2026-08-26.1"
+EXPECTED_PARAMETER_REGISTRY_VERSION = "R2-2026-08-26.2"
 PHASE4_BASELINE_COMMIT = "39fd69fbfa207862ce4da5be5d4f75e06eed6bdb"
 
 RUN_MODE_OFFICIAL = "OFFICIAL_FROZEN_EXECUTION"
@@ -111,6 +111,9 @@ def evaluate_official_gate(
     tree_clean: bool,
     tests_passed: bool,
     source_discovery_executed: bool,
+    source_fingerprints_valid: bool = False,
+    cohort_reconstruction_successful: bool = False,
+    source_version_mismatch: bool = False,
 ) -> GateResult:
     """Task §36: ALL conditions must hold for OFFICIAL artifacts."""
     failed: list[str] = []
@@ -132,6 +135,12 @@ def evaluate_official_gate(
         )
     if not source_discovery_executed:
         failed.append("SOURCE_DISCOVERY_NOT_EXECUTED")
+    if not source_fingerprints_valid:
+        failed.append("SOURCE_FINGERPRINTS_INVALID_OR_MISSING")
+    if source_version_mismatch:
+        failed.append("SOURCE_VERSION_MISMATCH")
+    if not cohort_reconstruction_successful:
+        failed.append("COHORT_RECONSTRUCTION_NOT_VERIFIED")
     official = not failed
     return GateResult(
         official=official,

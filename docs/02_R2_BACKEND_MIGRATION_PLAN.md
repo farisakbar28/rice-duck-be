@@ -39,7 +39,7 @@ Therefore the R2 migration must not be implemented as `git checkout 78f... && ch
 | Calendar | 21 -> 65, 44d; 114/134 harvest | 21 -> 65, 44d; 100–110 / 109–116 | release 21–30; pull 56–60; t ref 32 [28–40]; harvest 100–110 / 90–100 |
 | Survival | 0.78125 with age/density penalties | 100% if d<=8; 60% if d>8 | 0.90 only in supported age+density domain; otherwise unavailable |
 | Sale state | survivor used for duck revenue | survivor used for potential duck sale | survivor and sold state separated; no sale assumption |
-| Yield | Y0 47.8767507 × invented factors | fixed 47.8767507 | PENDING `Y_base(V_exact)*F_RD_lookup`; unavailable until source lookup |
+| Yield | Y0 47.8767507 × invented factors | fixed 47.8767507 | PENDING `Y_base(local_cultivar_group)*F_RD_exact_node`; local grouping/lookup structure ready, numeric records unavailable |
 | Paddy price | 6,000 | 6,000 | 6,500 regulatory HPP benchmark |
 | Duck end price | 35,000 revenue | 52,500 potential revenue | 45,000 terminal value ref; 30–60k sensitivity; not cash sale |
 | Feed | 4,500 × invented modifiers, isolated | 20,000/duck core | unavailable until q_feed + p_feed lookup |
@@ -284,4 +284,3 @@ Not a mathematical requirement, but current repo contains a default JWT secret i
 - Do not recalculate R2 coefficients from historical replay error.
 - Do not equate terminal duck value with realized sale revenue.
 - Do not reactivate optimizer legacy formulas as part of DSS core migration.
-
