@@ -226,12 +226,12 @@ Do not name the new method `create_v3` or reuse `SimulationHistory` v3 dataclass
 7. ownership isolation (`user A` cannot read/delete `user B`).
 8. deletion works for v4.
 
-## 11. Phase-6 Candidate Persistence Amendment (R2.3)
+## 11. Active Phase-6 Persistence Amendment (R2)
 
 The canonical `response_json` and `trace_json` snapshot must preserve every
-Phase-6 yield semantic: reference, low, and high per-are and total yields;
+active Phase-6 yield semantic: reference, low, and high per-are and total yields;
 `yield_range_type=LITERATURE_EVIDENCE_ENVELOPE`; evidence status, strength and
-warning; source IDs; registry version; and freeze ID. Thus a future R2.3
+warning; source IDs; registry version; and freeze ID. Thus a current Phase-6
 snapshot remains self-interpretable even if a later registry changes.
 
 For list/search efficiency, add nullable R2-table summary columns for

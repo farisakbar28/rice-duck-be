@@ -431,7 +431,7 @@ If frontend migration needs temporary aliases, place them behind an explicitly t
 ## 9. Current Phase-6 Yield Contract
 
 The seven-input request is unchanged. The active runtime uses registry
-`R2-2026-08-26.3` and corrected pre-comparator freeze `.4`.
+`R2-2026-08-26.3` and final corrected freeze `R2-FREEZE-2026-08-26.5`.
 
 For a request that passes the full Phase-6 supported-domain gate, `yield` must
 contain the following exact semantic representation:

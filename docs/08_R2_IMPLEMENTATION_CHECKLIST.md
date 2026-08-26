@@ -1,5 +1,11 @@
 # R2 Backend Agent Implementation Checklist
 
+> **Role:** `IMPLEMENTATION_HISTORY`; the checklist records the migration plan
+> and is not a current completion dashboard. Current release closure is in
+> `docs/14_R2_FINAL_RELEASE_CLOSURE.md`.
+> The Phase-6 candidate/implementation checklist below is retained as a
+> completed historical work plan; it does not authorize another freeze or run.
+
 > Execute in order. Do not skip to “make tests green” by preserving legacy semantics.
 
 ## Phase 0 — Establish Working Baseline
@@ -193,5 +199,6 @@
 - [ ] Keep feed, cage total, monetary savings, manure credit, and full profit unavailable; terminal duck value stays an asset.
 - [ ] Add the additive v4-history columns/migration and preserve all R2.2 rows unchanged.
 - [ ] Implement the Phase-6 test matrix in docs/06; verify source isolation and no interpolation/extrapolation.
-- [ ] Bump registry/freeze to `.3` only with the implementation, full passing tests, and a clean committed target.
+- [ ] Historical plan item: bump the registry/freeze to the then-planned `.3`
+  only with the implementation, full passing tests, and a clean committed target.
 - [ ] Only after that freeze, run the comparator and publish pre-registered reference/envelope metrics without recalibration.

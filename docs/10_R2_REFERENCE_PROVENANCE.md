@@ -108,7 +108,7 @@ Vipriyanti supplies nutrient/input context only, and Alfiansyah supplies
 feed/economic mechanism context only. `V1`, `V2`, and `V3` comparator
 workbooks are never parameter sources; `V3` remains legacy-audit-only.
 
-## 7. Phase-6 External-Evidence Sources (candidate R2.3 registry)
+## 7. Active Phase-6 External-Evidence Sources (R2 registry)
 
 | Source ID | Citation and Scopus check | Production role and bound |
 |---|---|---|
@@ -116,7 +116,8 @@ workbooks are never parameter sources; `V3` remains legacy-audit-only.
 | `YB-SERTANI-SULAEMAN-2022` | Sulaeman et al. (2022), *Resources*, DOI `10.3390/resources11120116`; bundle records verified Scopus | `SERTANI_GROUP` 44.5/22.3/66.7 kg/are; two locations only; mandatory `LOW_EVIDENCE_TWO_LOCATION_EXTERNAL_RANGE` |
 | `FRD-FENG-2024` | Feng et al. (2024), *Ecosystem Health and Sustainability*, DOI `10.34133/ehs.0166`; bundle records verified Scopus | pooled rice-duck reference `F_RD_ref=1.028`; 25 studies/38 observations; `P < 0.1`; no numeric CI/PI available |
 
-All three are `LITERATURE_UNCALIBRATED`, non-comparator sources. The first two
+All three are `LITERATURE_UNCALIBRATED`, non-comparator sources active under
+registry `R2-2026-08-26.3` and freeze `R2-FREEZE-2026-08-26.5`. The first two
 provide a literature evidence envelope rather than a local calibration; the
 third is globally pooled and not an exact density, release, system, or cultivar
 modifier. The non-Scopus Sertani AMMI record, Mofidian 2015, and Nallasamy 2025

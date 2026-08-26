@@ -1,7 +1,7 @@
 # R2 Freeze Manifest — Governance, Semantics, and Reproducibility
 
-> **Status:** CANONICAL Phase-6 pre-comparator freeze documentation.
-> **Current corrected candidate:** `FREEZE_ID = R2-FREEZE-2026-08-26.5`,
+> **Status:** CANONICAL final Phase-6 freeze and reproducibility documentation.
+> **Current final frozen target:** `FREEZE_ID = R2-FREEZE-2026-08-26.5`,
 > `FREEZE_EFFECTIVE_FROM = 2026-08-26`.
 
 ## 1. What "frozen" means — and what it does NOT mean
@@ -22,7 +22,7 @@ It does **NOT** mean:
 | Dimension | Value / source | Notes |
 |---|---|---|
 | `MODEL_VERSION` | `"R2"` (`app/data/seed.py`) | Scientific model generation; unchanged by freeze. |
-| `PARAMETER_REGISTRY_VERSION` | `"R2-2026-08-26.3"` | Scientific parameter registry; unchanged between `.3` and `.4`. |
+| `PARAMETER_REGISTRY_VERSION` | `"R2-2026-08-26.3"` | Scientific parameter registry; unchanged across the `.3`/`.4`/`.5` freeze lineage. |
 | History schema version | `4` | Persistence schema of new simulations. |
 | `APP_VERSION` | deployment-injected (`settings.app_version`) | Release versioning is separate. |
 | `MODEL_COMMIT_SHA` | environment-injected (`settings.model_commit_sha`) | Build/runtime commit; never self-referential inside its own commit. |
@@ -105,7 +105,7 @@ residuals are reported, never used to modify `app/data/seed.py`,
 `app/engines/r2/`, or any SSOT coefficient. Any future scientific change
 requires a new registry/model version and a fresh pre-freeze review.
 
-## 7. Phase-6 Candidate Freeze Reservation — not active
+## 7. Phase-6 Freeze Lineage and Current Evidence
 
 `.2` is the historical Phase-5C validated target; docs/12 remains unchanged.
 
@@ -115,7 +115,15 @@ comparator outcomes and is not called empirically invalid.
 `.4` is the superseded Phase-6 pre-comparator integration candidate. It was
 never exposed to comparator outcomes and is not called empirically invalid.
 
-`.5` is the final corrected Phase-6 pre-comparator candidate. No scientific
-coefficient changed between `.3`, `.4`, and `.5`; `MODEL_VERSION=R2` and
-`PARAMETER_REGISTRY_VERSION=R2-2026-08-26.3` remain unchanged. This document
-does not authorize real comparator execution.
+`.5` is the final corrected Phase-6 frozen target. No scientific coefficient
+changed between `.3`, `.4`, and `.5`; `MODEL_VERSION=R2` and
+`PARAMETER_REGISTRY_VERSION=R2-2026-08-26.3` remain unchanged. The clean
+frozen execution and correction are recorded in
+`validation/results/20260826T202953Z_b10b0a1_phase6dr/`; Phase 6E independently
+approved that corrected evidence with limitations. The current release closes
+the documentation package without creating a `.6` freeze.
+
+The original official run under `.5` remains byte-for-byte preserved as
+historical audit evidence. Its initial N=0 yield result is superseded by the
+Phase-6D-R semantic-provenance correction and is not the current empirical
+conclusion.

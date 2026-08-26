@@ -1,5 +1,9 @@
 # R2 Technical Validation Sign-Off — Phase 5C Stage B (Official Frozen Execution)
 
+> **Role:** `HISTORICAL_AUDIT`. This is the preserved Phase-5C `.2` sign-off;
+> it is not the current R2 scientific identity or Phase-6 result. The current
+> release sign-off is `docs/13_R2_PHASE6_TECHNICAL_EMPIRICAL_SIGNOFF.md`.
+
 Status: **TECHNICAL EMPIRICAL CLOSURE — EVIDENCE/SIGN-OFF DOCUMENT**
 
 This document records the official frozen empirical execution of the R2

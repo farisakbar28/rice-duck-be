@@ -382,12 +382,14 @@ R2 can be considered implemented correctly even if empirical error is large, pro
 
 A large error is a research result, not permission to recalibrate from the comparator set.
 
-## 22. Phase-6 Pre-registered Yield Validation (execute only after R2.3 freeze)
+## 22. Phase-6 Yield Validation Protocol and Executed Closure
 
 This amendment supersedes the former exact-node/release scenario-envelope
-proposal. Do not access any yield comparator outcome until the Phase-6 code,
-tests, registry `R2-2026-08-26.3`, and matching committed freeze are complete
-on a clean tree.
+proposal. Its pre-comparator gate required the Phase-6 code, tests, registry
+`R2-2026-08-26.3`, and matching committed freeze to be complete on a clean
+tree. That gate was satisfied by the frozen target
+`R2-FREEZE-2026-08-26.5`; the corrected execution and independent Phase-6E
+audit are now the authoritative result.
 
 Primary yield cohort: all clean records with semantically compatible actual
 yield. `prediction_coverage = N_predicted / N_total_actual_eligible`; metrics
@@ -418,7 +420,9 @@ boundary, or envelope may be changed after inspecting comparator results. A
 correction requires a new registry version and a new freeze before another
 comparison. The validation harness may then add yield replay, row-level
 reference predictions, residuals, envelope coverage, and subgroup metrics; it
-must not import comparator outcomes into production modules.
+must not import comparator outcomes into production modules. The current
+corrected metrics are reported in the separate release evidence section below,
+not as model parameters.
 
 ## 23. Phase-6 Stress Amendment
 
@@ -427,3 +431,33 @@ cultivar group, missing baseline/factor, and all CAUTION/LIMITED_TEST/
 HIGH_RISK/EXTRAPOLATION states return unavailable yield with null ref/low/high;
 no nearest-value fallback, interpolation, extrapolation, NaN, or Infinity;
 correct reason/warning codes; and downstream economic null propagation.
+
+## 24. Completed Phase-6 evidence status
+
+The pre-registered protocol was executed against the frozen target and corrected
+by source-semantic provenance adjudication before publication of the current
+closure. The authoritative result is Phase-6D-R, independently reproduced and
+approved by Phase 6E. It uses 36 semantically admissible `DERIVED_ACTUAL`
+yield rows, 22 numeric predictions, and no HTTP execution failures.
+
+| Quantity | Exact result |
+|---|---:|
+| Actual-eligible yield N | 36 |
+| Predicted yield N | 22 |
+| Prediction coverage | 61.111111111111114% |
+| MAE (kg/are) | 9.183970959818181 |
+| RMSE (kg/are) | 13.421718631571618 |
+| MedAE (kg/are) | 6.162351085000001 |
+| MBE (kg/are) | 2.606386759818184 |
+| WAPE | 20.68403714256823% |
+| Supplementary MAPE | 46.662702734492015% |
+| Diagnostic R² | -0.05747750232820392 |
+| Literature evidence-envelope coverage | 20/22 = 90.9090909090909% |
+
+The evidence envelope is broad; containment is not point precision or accuracy.
+The cluster bootstrap uses `farmer_cluster_id`, 2,000 resamples, seed
+`20260826`, and empirical percentiles `[0.025, 0.975]`. Calendar coverage is
+`4/12 = 33.33333333333333%` under
+`HST_FROM_FIELD_TRANSPLANTING` / `VALIDATION_ASSUMPTION`. Strict purchase
+validation is `N=27`; final expert review is
+`EXPERT_FINAL_REVIEW=PENDING_NON_BLOCKING` and is not a release gate.

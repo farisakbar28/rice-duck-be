@@ -136,7 +136,7 @@ Do not store scientific status using current-master ad-hoc labels such as `local
 
 9. Yield lookups are `DISCRETE_LOOKUP_ONLY`: exact-node match or null. No interpolation, extrapolation, nearest node, density band, release fallback, or cross-system fallback.
 
-## 7. Future Yield Record Schemas (empty in production)
+## 7. Historical exact-node schema (superseded for current R2)
 
 Baseline rows require: `cultivar_group_code`, `kg_per_are`, `moisture_basis`,
 `control_condition`, `site`, `season`, `system_scope`, `management_context`,
@@ -147,14 +147,17 @@ F_RD rows require: `cultivar_scope`, `system_scope`, `density_are`,
 `control_yield`, `yield_unit`, `season`, `uncertainty`, `source_id`,
 `source_location`, `provenance_status`, `supported_domain`, `version`.
 
-Schema readiness does not activate either lookup. Both production record sets
-remain empty and all numeric yield outputs remain unavailable.
+This schema records the earlier exact-node design. It is retained for
+implementation history and must not be read as the current runtime state. The
+current Phase-6 production payload is the group-range plus pooled-reference
+configuration in the next section.
 
-## 8. Phase-6 Candidate Registry — R2.3 (not yet activated)
+## 8. Active Phase-6 Registry — R2
 
-This section supersedes the empty-yield and exact-node `F_RD` design above for
-the next registry only. It is a documentation specification, not permission to
-change the active R2.2 seed, freeze, or runtime before Phase-6 implementation.
+This section supersedes the historical empty-yield and exact-node `F_RD`
+design above for the current runtime. It is active under registry
+`R2-2026-08-26.3` and freeze `R2-FREEZE-2026-08-26.5`; it does not authorize a
+new freeze or a scientific change.
 
 | ID / parameter | Value or rule | Unit | Source / provenance | State and limitations |
 |---|---|---|---|---|
@@ -169,7 +172,7 @@ ID and citation, provenance, execution state, domain, limitation,
 `effective_registry_version=R2-2026-08-26.3`, and evidence-strength/reason
 metadata. The registry contains no comparator-derived values.
 
-The candidate response factor is deliberately not a density, planting-system,
+The configured response factor is deliberately not a density, planting-system,
 or release-time table. `ACTIVE_RANGE` is an execution-state property of the
 baseline/output representation; the API availability is still simply
 `AVAILABLE` when the complete gate succeeds and `UNAVAILABLE` otherwise.

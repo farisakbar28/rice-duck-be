@@ -3,8 +3,11 @@
 > This manifest records the repository artifacts reviewed for the R2 migration.  
 > Baseline: `78f46ebd8004b8ebfdd7559a1c0648482d3eeeaa`.  
 > Current audited master: `2a4824d97933e662cfe9b7a70e1d442f7fb43ac4`.
+> **Role:** `HISTORICAL_AUDIT`; “current master” refers to the pre-R2 audit
+> snapshot, not the current Phase-6 release checkout. See
+> `docs/14_R2_FINAL_RELEASE_CLOSURE.md` for current status.
 
-## 1. Current Master Artifact Inventory
+## 1. Historical Pre-R2 Master Artifact Inventory
 
 ### Root
 
@@ -177,4 +180,3 @@ required bearer on history list/detail/delete
 ```
 
 Optimizer flow is separate and currently a stub. It must remain isolated during R2 core migration.
-

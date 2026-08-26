@@ -1,7 +1,9 @@
 # Panduan Pengujian Skenario R2 — Runtime Evidence
 
-> **Status:** TEMPLATE.  
-> Jangan isi output backend sebelum implementasi R2 benar-benar dijalankan.  
+> **Status:** `SUPPORTING_REFERENCE`; Phase-6 runtime and retrospective
+> evidence are complete.
+> This document remains a scenario/provenance template and does not replace
+> the committed machine-readable evidence or the final release closure.
 > Jangan menyalin output/metric dari `docs/tes_skenario.md` lama.
 
 ## 1. Tujuan
@@ -265,14 +267,15 @@ Only semantically compatible actual values receive residual/error metrics.
 
 ## 6. Yield Comparator
 
-Do not run/publish R2 yield metrics while yield availability is unavailable.
-
-After approved yield lookup is implemented and frozen:
+The approved yield lookup is implemented under registry
+`R2-2026-08-26.3` and final freeze `R2-FREEZE-2026-08-26.5`. The completed
+corrected result is recorded in the Phase-6D-R evidence; this guide preserves
+the protocol and provenance rules for future additive validation.
 
 - all clean cohort `N=36`;
 - strict supported-domain cohort `N=17`;
 - metrics MAE/RMSE/MedAE/MBE/WAPE;
-- release scenario-envelope coverage;
+- literature evidence-envelope coverage;
 - cluster-bootstrap interval by farmer if uncertainty is reported.
 
 Do not recalculate R2 parameters from these residuals.
@@ -334,7 +337,7 @@ construction: it records the backend commit, sends every request through the
 canonical FastAPI HTTP path, stores each raw response JSON verbatim, computes
 invariant pass/fail from observed responses, and captures provenance policies.
 
-## 12. Current Phase-6 Test Addendum (freeze `.4`)
+## 12. Phase-6 Test Addendum and Completed Evidence (freeze `.5`)
 
 Required deterministic cases: Inpari and Sertani supported-domain reference
 and low/high yields; exact arithmetic (`54.998/20.56/80.5952` for Inpari and
@@ -342,14 +345,18 @@ and low/high yields; exact arithmetic (`54.998/20.56/80.5952` for Inpari and
 2 and 4; Tegel boundaries 2 and 3; age 20/21/30/31; unknown group; missing F_RD;
 no interpolation or extrapolation; source metadata; Sertani low-evidence
 metadata; reference-alias backward compatibility; reference/low/high economics;
-full-profit unavailability; v4 persistence round-trip; registry/freeze `.3`;
-serialization precision; and stress null propagation.
+full-profit unavailability; v4 persistence round-trip; registry `.3` / freeze
+`.5`;
+serialization precision; and stress null propagation. These tests passed in the
+committed Phase-6 evidence; the corrected retrospective result is not a new
+runtime run.
 
 Outside the joint supported domain, every yield reference/envelope field and
 its aliases must be null. The Phase-6 range is named
 `LITERATURE_EVIDENCE_ENVELOPE`, not a confidence or prediction interval. These
-synthetic checks are not comparator access; historical yield replay begins only
-under docs/06 section 22 after the committed freeze.
+synthetic checks are not comparator access. Historical yield replay was
+performed only after the committed freeze and is preserved in
+`validation/results/20260826T202953Z_b10b0a1_phase6dr/`.
 
 Artifacts live under `validation/results/<run_id>/` (notably
 `synthetic_cases.json`). Any run executed on a dirty tree, or before the

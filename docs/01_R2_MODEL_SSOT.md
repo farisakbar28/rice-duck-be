@@ -14,7 +14,7 @@
 | Initial duck count | `J` | Required integer, `> 0`. |
 | Planting date | `D_tanam` | Required ISO date. For transplanted rice this means **field transplanting date**; HST is counted from transplanting. This is a `system-design` / validation assumption, not a newly observed field fact. |
 | Planting system | `S` | Required; canonical codes `jajar_legowo` or `tegel`. |
-| Rice variety | `V` | Required; the seven-input public API stays unchanged. Internally, only the approved local cultivar-group mapping below may be used for future yield lookup. |
+| Rice variety | `V` | Required; the seven-input public API stays unchanged. Internally, only the approved local cultivar-group mapping below is used by the active Phase-6 yield evidence gate. |
 | Duck age | `U_duck` | Required integer `> 0` days. |
 | Duck purchase price | `p_duck_buy_manual` | **Optional**. Missing/null → internal default Rp26,500/duck. A supplied value must be `> 0`. Do not treat numeric `0` as a substitute for missing. |
 
@@ -149,12 +149,14 @@ The 0.90 value is a safe-context local working estimate, not a universal biologi
 - `N_survive=floor(0.60*J)` for `d>8`.
 - using historical sold/initial ratios as survival calibration.
 
-## 6. Yield Engine — Phase-6 External-Evidence Candidate
+## 6. Yield Engine — Active Phase-6 External-Evidence Configuration
 
-This is the canonical R2.3 candidate specification. It is not a claim that
-the current R2.2 runtime or its historical sign-off has already changed.
-Activation requires implementation, tests, a new committed freeze, and then
-the pre-registered comparator run.
+This is the active Phase-6 external-evidence configuration for the current R2
+runtime. It is not a local calibration: the parameter registry remains
+`R2-2026-08-26.3` and the frozen validation target is
+`R2-FREEZE-2026-08-26.5`. Its implementation and tests are complete, and the
+corrected comparator evidence is documented separately in the Phase-6D-R and
+Phase-6E artifacts. No comparator-derived value is a model parameter.
 
 The structural model generation remains R2:
 

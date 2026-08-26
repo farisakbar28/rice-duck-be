@@ -98,7 +98,7 @@ The full test suite collected and passed 425 tests. `python -m compileall app va
 
 `CI_STATUS_NOT_RECORDED_FOR_CORRECTION_COMMIT`: no CI workflow/configuration is present locally, so no successful CI status is asserted.
 
-Final disposition: approve Phase-6 technical-empirical validation with limitations. Expert final signoff remains pending. The corrected comparator evidence must not be described as universal production accuracy or used to justify post-hoc recalibration.
+Final disposition: approve Phase-6 technical-empirical validation with limitations. `EXPERT_FINAL_REVIEW=PENDING_NON_BLOCKING_EVIDENCE_STREAM`: final expert judgement remains pending, is not a release blocker, and was not used to select parameters, determine comparator eligibility, or calculate retrospective results. The corrected comparator evidence must not be described as universal production accuracy or used to justify post-hoc recalibration.
 
 NO MODEL CHANGE.
 NO PARAMETER CHANGE.

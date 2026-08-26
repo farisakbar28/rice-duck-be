@@ -4,6 +4,9 @@
 > **Audited master:** `2a4824d97933e662cfe9b7a70e1d442f7fb43ac4`  
 > **Master relation:** 3 commits ahead of baseline, 0 behind.  
 > **Rule:** baseline is a code-architecture recovery point, not a mathematical recovery point.
+> **Role:** `IMPLEMENTATION_HISTORY`; its migration plan and pre-Phase-6
+> current-master snapshot are not the current release state. See
+> `docs/14_R2_FINAL_RELEASE_CLOSURE.md` for closure status.
 
 ## 1. What Happened After the Baseline
 
@@ -29,7 +32,7 @@ The result is not a small constant drift. It changes:
 
 Therefore the R2 migration must not be implemented as `git checkout 78f... && change a few numbers`.
 
-## 2. Baseline vs Current Master vs R2
+## 2. Historical Baseline vs Pre-R2 Master vs R2 Target
 
 | Concern | `78f46e` | Current master | R2 target |
 |---|---|---|---|
@@ -51,7 +54,7 @@ Therefore the R2 migration must not be implemented as `git checkout 78f... && ch
 | History | schema v2 | schema v3 | **schema v4** |
 | Visualization | invented scientific curves | zone curves + wrong financial waterfall | only truthful availability/support/benchmark series; no fake yield/survival curves |
 
-## 3. Current-Master File Audit
+## 3. Historical Pre-R2-Master File Audit
 
 Every artifact present on current `master` is classified below. `REWRITE` means its R2-relevant semantics must change. `KEEP` means no model-semantic rewrite is required, though naming/docs may still be updated. `ARCHIVE/INVALIDATE` means keep only as historical evidence, not active implementation guidance.
 
@@ -148,7 +151,7 @@ The following `__init__.py` artifacts are module markers and contain no R2 mathe
 |---|---|---|
 | `app/main.py` | REWRITE DOC STRINGS | App wiring remains; remove wrong SoT and `Net_Cash_Contribution_DSS` descriptions. Optimizer description must not advertise reuse of legacy formulas as scientifically approved. |
 
-### 3.11 Active docs on master
+### 3.11 Active docs on the pre-R2 master snapshot
 
 | Path | Disposition | Reason |
 |---|---|---|

@@ -65,19 +65,20 @@ reference codes are returned by `/dss/options`. Schema validation uses HTTP
 
 ## R2 output semantics
 
-Current, scientifically intentional limitations are explicit: yield is
-currently `UNAVAILABLE`, feed cost is currently `UNAVAILABLE`, cage total is
-currently `UNAVAILABLE`, and `profit_full_est_rp` is currently `UNAVAILABLE`.
-Terminal duck value is not realized cash revenue. These states are not
-implementation defects; they prevent unsupported numeric claims.
+Current, scientifically intentional limitations are explicit: Phase-6 yield is
+available only inside the resolved cultivar-group, supported-age, and supported-
+density evidence domain; feed cost, cage total, and full profit remain
+`UNAVAILABLE`. Terminal duck value is not realized cash revenue. These states
+prevent unsupported numeric claims.
 
 - Calendar values are windows, including release, pull, harvest, and active
   duration support ranges.
 - Age and density values are applicability flags. They gate survival
   availability; they are not yield multipliers or penalties.
-- Yield stays `UNAVAILABLE` until both an exact-cultivar baseline and a sourced
-  rice-duck response lookup exist. The current generic variety choices do not
-  claim exact-cultivar resolution.
+- Yield is available only after an approved cultivar-group baseline, supported
+  age and density, and the pooled rice-duck reference all resolve. Unknown or
+  out-of-domain requests remain `UNAVAILABLE`; the active group baselines are
+  external literature ranges, not exact local-cultivar or Bali calibration.
 - Fertilizer is an available `BASELINE-NO-CREDIT` estimate. It does not claim
   that manure contributes zero nutrients.
 - Net infrastructure is a calculated request-area range. Cage unit cost is a
@@ -99,25 +100,29 @@ presentation-only view over the same canonical result:
 - the same calendar window returned by `/dss/simulate`;
 - the calculated infrastructure range for the request area;
 - NPK and urea fertilizer baseline components;
-- an empty, explicitly unavailable yield series until sourced lookups exist;
+- the selected Phase-6 yield reference/evidence envelope, or an explicitly
+  unavailable series outside the supported domain;
 - a partial financial waterfall that separates cash revenue, livestock asset
   value, costs, available-cost subtotal, and unavailable full profit.
 
 The endpoint always calls simulation anonymously. It never writes history,
 even if a bearer token is included.
 
-## Freeze status (Phase 5)
+## Freeze and Phase-6 release status
 
 R2 is **frozen for validation**: `model.frozen = true`,
-`freeze_id = R2-FREEZE-2026-08-26.1`. Frozen means the model/registry identity
+`freeze_id = R2-FREEZE-2026-08-26.5`, with registry
+`R2-2026-08-26.3`. Frozen means the model/registry identity
 is an immutable validation target — it does **not** mean empirically validated,
-accurate, or complete. Yield remains `UNAVAILABLE` (exact-cultivar baseline and
-rice-duck response lookups are not configured), so no yield accuracy metric can
-exist. See
+accurate, or complete. Phase 6E approved technical-empirical validation with
+limitations; corrected Phase-6D-R evidence reports yield and revenue
+diagnostics. The final expert assessment remains
+`PENDING_NON_BLOCKING_EVIDENCE_STREAM` and is not a release blocker. See
 [`docs/11_R2_FREEZE_MANIFEST.md`](docs/11_R2_FREEZE_MANIFEST.md) and the
 research-only harness under [`validation/`](validation/) (dependencies:
 [`requirements-validation.txt`](requirements-validation.txt); never imported by
-production code).
+production code). The release map is
+[`docs/14_R2_FINAL_RELEASE_CLOSURE.md`](docs/14_R2_FINAL_RELEASE_CLOSURE.md).
 
 ## History and versioning
 
@@ -155,16 +160,19 @@ The Postman assets in [`postman/`](postman/) exercise options, anonymous and
 authenticated simulation, visualization semantics, history round-trip, and
 negative validation/reference cases.
 
-## Phase-6 docs-first candidate
+## Phase-6 final export sources
 
-The documented next R2 registry is `R2-2026-08-26.3`, with candidate freeze
-`R2-FREEZE-2026-08-26.3`; neither is active in this checkout. The approved
-future yield branch is literature-uncalibrated and range-aware: Inpari
-53.5/20.0/78.4 kg/are, Sertani 44.5/22.3/66.7 kg/are (explicit low evidence),
-and pooled `F_RD_ref=1.028`. It may execute only for resolved cultivar groups
-within the current supported age/density domain, returning a
+The active Phase-6 yield branch is literature-uncalibrated and range-aware:
+Inpari 53.5/20.0/78.4 kg/are, Sertani 44.5/22.3/66.7 kg/are (explicit low
+evidence), and pooled `F_RD_ref=1.028`. It executes only for resolved cultivar
+groups within the supported age/density domain, returning a
 `LITERATURE_EVIDENCE_ENVELOPE`, never a confidence or prediction interval.
+The authoritative later-generation sources are:
 
-The current R2.2 runtime remains unchanged until the Phase-6 implementation,
-tests, clean committed freeze, and only then the pre-registered comparator
-validation are complete. Comparator workbooks are never parameter sources.
+- [`docs/export/R2_FINAL_MATHEMATICAL_MODEL_SOURCE.md`](docs/export/R2_FINAL_MATHEMATICAL_MODEL_SOURCE.md)
+- [`docs/export/R2_FINAL_VALIDATION_METHODOLOGY_SOURCE.md`](docs/export/R2_FINAL_VALIDATION_METHODOLOGY_SOURCE.md)
+- [`docs/export/R2_IJOST_MANUSCRIPT_FACT_PACKAGE.md`](docs/export/R2_IJOST_MANUSCRIPT_FACT_PACKAGE.md)
+- [`docs/export/R2_EXPORT_SOURCE_AUDIT.md`](docs/export/R2_EXPORT_SOURCE_AUDIT.md)
+
+Comparator workbooks remain validation evidence only and were not used for
+parameter fitting or recalibration.
